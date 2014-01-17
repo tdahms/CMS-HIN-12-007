@@ -1,5 +1,6 @@
 *.root
 *.o
-Tree2Datasets*
+Tree2Datasets
+Tree2DatasetsMC
 Fit*DDataPbPb*
 /.project
