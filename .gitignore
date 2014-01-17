@@ -1,6 +1,12 @@
 *.root
 *.o
+*.pdf
+*.png
+*.txt
+*.log
+*.gz
 Tree2Datasets
 Tree2DatasetsMC
 Fit*DDataPbPb*
+root_files
 /.project
