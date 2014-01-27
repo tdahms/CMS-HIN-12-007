@@ -212,7 +212,7 @@ int main(int argc, char* argv[]) {
   // Draw data
   string titlestr;
 
-  int nbins = 125;
+  int nbins = 100;
   // Define binning for true lifetime
   //  ws->var("Jpsi_Mass")->setBins(80);
   ws->var("Jpsi_Mass")->setBins(nbins);
@@ -263,9 +263,9 @@ int main(int argc, char* argv[]) {
 
   // Binning for invariant mass distribution
 
-  RooBinning rbm(2.0,4.5);
+  RooBinning rbm(2.2,4.2);
   //  rbm.addUniform(80,2.6,4.2);
-  rbm.addUniform(nbins,2.0,4.5);
+  rbm.addUniform(nbins,2.2,4.2);
   //  rbm.addUniform(50,2.6,4.6);
   //  rbm.addUniform(55,2.5,4.7);
 
@@ -431,6 +431,8 @@ int main(int argc, char* argv[]) {
 	ws->var("alpha")->setVal(2.0);
 	ws->var("enne")->setVal(1.4);
       }
+      ws->var("alpha")->setConstant(kTRUE);
+      ws->var("enne")->setConstant(kTRUE);
     }
     else {
       if (prange=="6.5-30.0" && yrange=="0.0-2.4") {
@@ -728,6 +730,7 @@ int main(int argc, char* argv[]) {
     */
     //    ws->var("NJpsi")->setVal(0.0);ws->var("NJpsi")->setConstant(true);
   fitM = ws->pdf("sigMassPDF")->fitTo(*redDataCut,Extended(1),Minos(1),Save(1),SumW2Error(kTRUE),NumCPU(8));
+  int nFitParam = fitM->floatParsFinal().getSize();
   resultF.cd(); cout << "fitM->Write(sigMassPDF):" << fitM->Write("sigMassPDF") << endl;
     //  }
 
@@ -744,6 +747,8 @@ int main(int argc, char* argv[]) {
   RooHist *hpull_jpsi;
   RooHist *hpull_psip;
   RooHist *hpull; 
+  double chi2FromRoo = 0.0;
+
   if (fitSubRange) {
     ws->pdf("jpsiMassPDF")->plotOn(mframe_wob,DrawOption("F"),FillColor(kBlack),FillStyle(3354));
 
@@ -763,6 +768,9 @@ int main(int argc, char* argv[]) {
   }
   else {
     ws->pdf("sigMassPDF")->plotOn(mframe_wob,DrawOption("F"),FillColor(kBlack),FillStyle(3354),Normalization(redDataCut->sumEntries(),RooAbsReal::NumEvent));
+    chi2FromRoo = mframe_wob->chiSquare(nFitParam);
+    hpull = mframe_wob->pullHist(0,0,true); hpull->SetName("hpullhist");
+    
 
     ws->pdf("sigMassPDF")->plotOn(mframe_wob,Components(mBkgFunct.c_str()),DrawOption("F"),FillColor(kAzure-9),FillStyle(1001),Normalization(redDataCut->sumEntries(),RooAbsReal::NumEvent));
     
@@ -773,8 +781,6 @@ int main(int argc, char* argv[]) {
     }
 
     ws->pdf("sigMassPDF")->plotOn(mframe_wob,LineColor(kBlack),LineWidth(2),Normalization(redDataCut->sumEntries(),RooAbsReal::NumEvent));
-    
-    hpull = mframe_wob->pullHist(0,0,true); hpull->SetName("hpullhist");
     
     // if (prefitMass) {
     //   ws->pdf("jpsiMassPDF")->plotOn(mframe_wob,DrawOption("F"),FillColor(kBlack),FillStyle(3354));
@@ -831,15 +837,13 @@ int main(int argc, char* argv[]) {
   }
 
   double UnNormChi2 = Chi2;
-  int nFitParam = fitM->floatParsFinal().getSize();
+  //  int nFitParam = fitM->floatParsFinal().getSize();
   int Dof = nFullBinsPull - nFitParam;
   if (Dof!=0)
     Chi2 /= Dof;
 
   double theNLL=0;
   theNLL = fitM->minNll();
-
-  double chi2FromRoo = mframe_wob->chiSquare(nFitParam);
 
   double UnNormChi2P = Chi2P;
   int nFitParamP = 0;

@@ -92,8 +92,8 @@ double CorrectMass(const TLorentzVector* mu1,const TLorentzVector* mu2, int mode
 int main(int argc, char* argv[]) {
 
   const int RPNUM = 21;
-  const double Jpsi_MassMin=2.0;
-  const double Jpsi_MassMax=4.5;
+  const double Jpsi_MassMin=2.2;
+  const double Jpsi_MassMax=4.2;
   const double Jpsi_PtMin=0;
   const double Jpsi_PtMax=50;
   const double Jpsi_YMin=0;
@@ -105,7 +105,7 @@ int main(int argc, char* argv[]) {
   const double Jpsi_dPhiMin=-6.28;
   const double Jpsi_dPhiMax=6.28;
 
-  const bool isHI = true;
+  const bool isHI = false;
 
   char fileName[100];
   if ( argc != 5 && argc != 3 ){
