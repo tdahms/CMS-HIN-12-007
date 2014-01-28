@@ -5,6 +5,7 @@
 
 #include <TROOT.h>
 #include <TFile.h>
+#include <TF1.h>
 #include <TH1F.h>
 #include <TH2F.h>
 #include <TGraphErrors.h>
@@ -21,11 +22,8 @@
 #include "RooGenericPdf.h"
 
 #include "RooAbsPdf.h"
-//#include "RooRealProxy.h"
 #include "RooDataHist.h"
 
-//#include <RooHistPdfConv.h>
-//#include <RooExp2.h>
 #include <RooWorkspace.h>
 #include <RooBinning.h>
 #include <RooHistPdf.h>
@@ -48,7 +46,6 @@ bool oneGaussianResol = false;
 
 void getOptRange(string &ran,float *min,float *max);
 void setWSRange(RooWorkspace *ws);
-//RooBinning setCtBinning(float lmin,float lmax);
 void defineMassBkg(RooWorkspace *ws);
 void defineMassSig(RooWorkspace *ws);
 
@@ -66,7 +63,7 @@ int main(int argc, char* argv[]) {
   int isMB = false;
   int isMBCtau = false;
   bool isPT = false;
-  string prange, lrange, yrange, crange, phirange, errrange;
+  string prange, lrange, yrange, crange;
   string dirPre;
   string rpmethod = "etHF";
   bool fitRatio=false;
@@ -151,16 +148,44 @@ int main(int argc, char* argv[]) {
   getOptRange(prange,&pmin,&pmax);
   getOptRange(crange,&cmin,&cmax);
   getOptRange(yrange,&ymin,&ymax);
-  getOptRange(phirange,&psmin,&psmax);
 
+  string yrange_str, prange_str;
+  if (yrange == "0.0-2.4")
+    yrange_str = "0-24";
+  else if (yrange == "0.0-1.2")
+    yrange_str = "0-12";
+  else if (yrange == "0.0-1.6")
+    yrange_str = "0-16";
+  else if (yrange == "1.2-1.6")
+    yrange_str = "12-16";
+  else if (yrange == "1.6-2.4")
+    yrange_str = "16-24";
+  else
+    yrange_str = yrange;
+
+  if (prange == "0.0-40.0")
+    prange_str = "0-40";
+  else if (prange == "0.0-30.0")
+    prange_str = "0-30";
+  else if (prange == "3.0-40.0")
+    prange_str = "3-40";
+  else if (prange == "3.0-30.0")
+    prange_str = "3-30";
+  else if (prange == "6.5-40.0")
+    prange_str = "65-40";
+  else if (prange == "6.5-30.0")
+    prange_str = "65-30";
+  else if (prange == "3.0-6.5")
+    prange_str = "3-65";
+  else
+    prange_str = prange;
 
   // *** TFile for saving fitting results
   string resultFN;
-  resultFN = dirPre + "_" + mBkgFunct + "_rap" + yrange + "_pT" + prange + "_cent" + crange + "_dPhi" + phirange + "_fitResult.root";
+  resultFN = dirPre + "_" + mBkgFunct + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + "_fitResult.root";
   TFile resultF(resultFN.c_str(),"RECREATE");
 
   // *** Read Data files
-
   if (FileName.find("pp")!=string::npos)
     isPbPb = false;
   TFile fInData(FileName.c_str());
@@ -213,11 +238,7 @@ int main(int argc, char* argv[]) {
   string titlestr;
 
   int nbins = 100;
-  // Define binning for true lifetime
-  //  ws->var("Jpsi_Mass")->setBins(80);
   ws->var("Jpsi_Mass")->setBins(nbins);
-  //  ws->var("Jpsi_Mass")->setBins(50);
-  //  ws->var("Jpsi_Mass")->setBins(55);
 
   // Additional cuts on data and get sub-datasets/histograms
   RooDataSet *redDataCut;
@@ -229,6 +250,7 @@ int main(int argc, char* argv[]) {
   } else {
     redDataCut = (RooDataSet*)redData->reduce("Jpsi_Ct < 600000.");
   }
+  redDataCut->SetName("redDataCut");
 
   RooDataHist *binData = new RooDataHist("binData","binData",RooArgSet( *(ws->var("Jpsi_Mass")) ), *redDataCut);
   cout << "DATA :: N events to fit: " << binData->sumEntries() << endl;
@@ -243,15 +265,13 @@ int main(int argc, char* argv[]) {
   RooDataHist *binDataSB = new RooDataHist("binDataSB","Data distribution for background",RooArgSet( *(ws->var("Jpsi_Mass")) ),*redDataSB);
   RooDataSet *redDataSIG = (RooDataSet*)redDataCut->reduce("Jpsi_Mass > 2.9 && Jpsi_Mass < 3.3");
 
-  //  ws->factory("Chebychev::test(Jpsi_Mass,{coeffPol[-0.8,-1.0,1.0]})");
-
   // *** Define PDFs with parameters (mass and ctau)
-  // J/psi mass parameterization
-
+  // Just so RooFit does not crash on Ubuntu
   RooRealVar aa("aa","aa",0.5,-1,1);
   RooRealVar ab("ab","ab",-0.5,-1,1);
   RooChebychev tmpPol("tmpPol","tmpPol",*(ws->var("Jpsi_Mass")),RooArgSet(aa,ab));
 
+  // J/psi mass parameterization
   defineMassBkg(ws);
   defineMassSig(ws);
 
@@ -262,20 +282,48 @@ int main(int argc, char* argv[]) {
   else { partTit = "all"; partFile = "ALL"; }
 
   // Binning for invariant mass distribution
-
   RooBinning rbm(2.2,4.2);
-  //  rbm.addUniform(80,2.6,4.2);
   rbm.addUniform(nbins,2.2,4.2);
-  //  rbm.addUniform(50,2.6,4.6);
-  //  rbm.addUniform(55,2.5,4.7);
 
   // Global TLatex, TH1, TGraph objects for drawing
-  TLatex *t = new TLatex();
-  t->SetNDC(); t->SetTextAlign(12);
+  TLatex *lCMS = new TLatex();
+  lCMS->SetNDC(); lCMS->SetTextAlign(12);
+  TLatex *lLumi = new TLatex();
+  lLumi->SetNDC(); lLumi->SetTextAlign(12);
+  TLatex *lRap = new TLatex();
+  lRap->SetNDC(); lRap->SetTextAlign(12);
+  TLatex *lPt = new TLatex();
+  lPt->SetNDC(); lPt->SetTextAlign(12);
+  TLatex *lNLL = new TLatex();
+  lNLL->SetNDC(); lNLL->SetTextAlign(12);
+  TLatex *lChi = new TLatex();
+  lChi->SetNDC(); lChi->SetTextAlign(12);
+  TLatex *lPval = new TLatex();
+  lPval->SetNDC(); lPval->SetTextAlign(12);
+  TLatex *lNJpsi = new TLatex();
+  lNJpsi->SetNDC(); lNJpsi->SetTextAlign(12);
+  TLatex *lRpsi = new TLatex();
+  lRpsi->SetNDC(); lRpsi->SetTextAlign(12);
+  TLatex *lNpsiP = new TLatex();
+  lNpsiP->SetNDC(); lNpsiP->SetTextAlign(12);
+  TLatex *lSigCB = new TLatex();
+  lSigCB->SetNDC(); lSigCB->SetTextAlign(12);
+  TLatex *lSigG = new TLatex();
+  lSigG->SetNDC(); lSigG->SetTextAlign(12);
+  TLatex *lNG = new TLatex();
+  lNG->SetNDC(); lNG->SetTextAlign(12);
+  TLatex *lSigma = new TLatex();
+  lSigma->SetNDC(); lSigma->SetTextAlign(12);
+  TLatex *lAlpha = new TLatex();
+  lAlpha->SetNDC(); lAlpha->SetTextAlign(12);
+  TLatex *lN = new TLatex();
+  lN->SetNDC(); lN->SetTextAlign(12);
+  TLatex *lFG = new TLatex();
+  lFG->SetNDC(); lFG->SetTextAlign(12);
 
   Double_t fx[2], fy[2], fex[2], fey[2];
   TGraphErrors *gfake1 = new TGraphErrors(2,fx,fy,fex,fey);
-  gfake1->SetMarkerStyle(20); gfake1->SetMarkerSize(0.9);
+  gfake1->SetMarkerStyle(20); gfake1->SetMarkerSize(0.8);
   TH1F hfake11 = TH1F("hfake1","hfake1",100,200,300);
   hfake11.SetLineColor(kBlue); hfake11.SetLineWidth(4); hfake11.SetLineStyle(7); hfake11.SetFillColor(kAzure-9); hfake11.SetFillStyle(1001);
   TH1F hfake21 = TH1F("hfake21","hfake21",100,200,300);
@@ -310,14 +358,12 @@ int main(int argc, char* argv[]) {
     double wideFactor; double wideFactorErr;
     double alpha;     double alphaErr;
     double enne;      double enneErr;
-    //    double enneW;     double enneWErr;
   };
 
   PARAM inputCB;
   PARAM inputCBG;
 
   bool centConst = false;  //False: fit w/o any constrained parameters (centrality dep.)
-  bool dPhiConst = false;  //False: fit w/o any constrained parameters (dPhi dep.)
   double inputN[4] = {0};  //Number of Jpsi, psiP, fracP, and background in the 0-1.571 rad bin
   if (isMB != 0) {
     if (isMB != 4 && (mJpsiFunct.compare("sigCB2WNG1") || mBkgFunct.compare("expFunct"))) {
@@ -329,21 +375,16 @@ int main(int argc, char* argv[]) {
     }
   } //End of isMB != 0
 
-  // RooRealVar *NJpsi  = new RooRealVar("NJpsi","J/psi yield", 4000.0, 0.0, 50000.0);  ws->import(*NJpsi);
-  // RooRealVar *NBkg  = new RooRealVar("NBkg","Brackground yield", 2000.0,0.0,500000.0);   ws->import(*NBkg);
-  // RooRealVar *NBkg2  = new RooRealVar("NBkg2","Second brackground yield", 2000.0,1.0,500000.0);   ws->import(*NBkg2);
   RooRealVar *NJpsi  = new RooRealVar("NJpsi","J/psi yield",0.5*binData->sumEntries(),0.0,2.0*binData->sumEntries());  ws->import(*NJpsi);
   RooRealVar *NBkg  = new RooRealVar("NBkg","Brackground yield", 0.5*binData->sumEntries(),0.0,2.0*binData->sumEntries());   ws->import(*NBkg);
   RooRealVar *NBkg2  = new RooRealVar("NBkg2","Second brackground yield",0.5*binData->sumEntries(),0.0,2.0*binData->sumEntries());   ws->import(*NBkg2);
 
   if (fitRatio) {
     RooRealVar *fracP  = new RooRealVar("fracP","psi(2S) fraction" ,0.01);
-    //    fracP->setVal(0.0);fracP->setConstant(true);ws->import(*fracP);
     fracP->setConstant(false); ws->import(*fracP);
     RooFormulaVar *NPsiP = new RooFormulaVar("NPsiP", "@0*@1", RooArgList(*(ws->var("NJpsi")),*(ws->var("fracP"))));  ws->import(*NPsiP);
   }
   else {
-    //    RooRealVar *NPsiP  = new RooRealVar("NPsiP","psi(2S) yield", 400.0, 1.0, 50000.0);  ws->import(*NPsiP);
     RooRealVar *NPsiP  = new RooRealVar("NPsiP","psi(2S) yield", 0.01*binData->sumEntries(),0.0,2.0*binData->sumEntries());  ws->import(*NPsiP);
   }
   
@@ -385,13 +426,6 @@ int main(int argc, char* argv[]) {
       ws->factory(funct);
     }
   }
-  // if (!yrange.compare("0.0-1.2")) {
-  //   sprintf(funct,"SUM::sigMassPDF(NJpsi[4000.0,1.0,50000.0]*%s,NBkg[2000.0,1.0,500000.0]*%s)",mSigFunct.c_str(),mBkgFunct.c_str());
-  // } else if (!yrange.compare("1.6-2.4")) {
-  //   sprintf(funct,"SUM::sigMassPDF(NJpsi[1000.0,1.0,50000.0]*%s,NBkg[25000.0,1.0,500000.0]*%s)",mSigFunct.c_str(),mBkgFunct.c_str());
-  // } else {
-  //   sprintf(funct,"SUM::sigMassPDF(NJpsi[5000.0,1.0,50000.0]*%s,NBkg[6000.0,1.0,500000.0]*%s)",mSigFunct.c_str(),mBkgFunct.c_str());
-  // }
 
 
     
@@ -459,290 +493,58 @@ int main(int argc, char* argv[]) {
 	ws->var("alpha")->setVal(2.0);
 	ws->var("enne")->setVal(1.4);
       }
+      ws->var("alpha")->setConstant(kTRUE);
+      ws->var("enne")->setConstant(kTRUE);
     }
-    // ws->var("alpha")->setConstant(kTRUE);
-    // ws->var("enne")->setConstant(kTRUE);
   }
 
-  /* 20131218
-  // PbPb centrality dependence: CB + CBG
-  if ( (crange.compare("0-100") || found!=string::npos) ) {
-    // fix CB parameters within centrality bins to MB (use CB also for CBG)
-    string inputFNcb;
-
-    inputFNcb =  dirPre2 + "_rap" + yrange + "_pT" + prange + "_cent0-100_dPhi.txt";
-
-    ifstream input;
-    input.open(inputFNcb.c_str());
-    if (!input.good()) { cout << "Failed to open: " <<inputFNcb << endl; return 1; }
-    string tmp;
-    double inputTmp[2] = {0};
-    PARAM inputCB;
-    input >> tmp >> inputTmp[0] >> inputTmp[1]; //NJpsi
-    inputN[0] = inputTmp[0];  //NJpsi
-    if (fitRatio) {
-      input >> tmp >> inputTmp[0]; //NPsiP
-      inputN[1] = inputTmp[0];  //NPsiP
-      input >> tmp >> inputTmp[0] >> inputTmp[1]; //fracP
-    }
-    else {
-      input >> tmp >> inputTmp[0] >> inputTmp[1]; //NPsiP
-      inputN[1] = inputTmp[0];  //NPsiP
-      input >> tmp >> inputTmp[0]; //fracP
-    }
-
-    input >> tmp >> inputTmp[0] >> inputTmp[1]; //Resolution
-    input >> tmp >> inputTmp[0] >> inputTmp[1]; //NBkg
-    inputN[2] = inputTmp[0];  //NBkg
-
-    for (int p=0; p<11; p++) {   //Mass signal parameters
-      input >> tmp >> inputTmp[0] >> inputTmp[1];
-      cout << tmp << " " << inputTmp[0] << endl;
-      if (!tmp.compare("coeffGaus")) inputCB.coeffGaus = inputTmp[0];
-      else if (!tmp.compare("coeffExp")) inputCB.coeffExp = inputTmp[0];
-      else if (!tmp.compare("coeffExp2")) inputCB.coeffExp2 = inputTmp[0];
-      else if (!tmp.compare("cutx")) inputCB.cutx = inputTmp[0];
-      else if (!tmp.compare("meanSig1")) inputCB.meanSig1 = inputTmp[0];
-      else if (!tmp.compare("sigmaSig1")) inputCB.sigmaSig1 = inputTmp[0];
-      else if (!tmp.compare("sigmaSig2")) inputCB.sigmaSig2 = inputTmp[0];
-      else if (!tmp.compare("alpha")) inputCB.alpha = inputTmp[0];
-      else if (!tmp.compare("enne")) inputCB.enne = inputTmp[0];
-      //      else if (!tmp.compare("enneW")) inputCB.enneW = inputTmp[0];
-    }
-
-
-    ws->var("alpha")->setVal(inputCB.alpha);
-    ws->var("enne")->setVal(inputCB.enne);
-    //    ws->var("enneW")->setVal(inputCB.enneW);
-
-    // ws->var("coeffExp")->setVal(inputCB.coeffExp);
-    // ws->var("coeffExp2")->setVal(inputCB.coeffExp2);
-    // ws->var("cutx")->setVal(inputCB.cutx);
-
-    ws->var("alpha")->setConstant(kTRUE);
-    ws->var("enne")->setConstant(kTRUE);
-    //    ws->var("enneW")->setConstant(kTRUE);
-
-    // ws->var("coeffExp")->setConstant(kTRUE);
-    // ws->var("coeffExp2")->setConstant(kTRUE);
-    // ws->var("cutx")->setConstant(kTRUE);
-
-  }
-  */
-
-  /* 20131218
+  // 20140128: seed with CB fit parameters
   if ( found!=string::npos ) {
-    // fix cutx parameters within centrality bins to MB (use CB for CBG)
     string inputFNcb;
-
-    inputFNcb =  dirPre2 + "_rap" + yrange + "_pT" + prange + "_cent" + crange + "_dPhi.txt";
-
-    ifstream input;
-    input.open(inputFNcb.c_str());
-    if (!input.good()) { cout << "Failed to open: " <<inputFNcb << endl; return 1; }
-    string tmp;
-    double inputTmp[2] = {0};
-    PARAM inputCB;
-    input >> tmp >> inputTmp[0] >> inputTmp[1]; //NJpsi
-    inputN[0] = inputTmp[0];  //NJpsi
-    if (fitRatio) {
-      input >> tmp >> inputTmp[0]; //NPsiP
-      inputN[1] = inputTmp[0];  //NPsiP
-      input >> tmp >> inputTmp[0] >> inputTmp[1]; //fracP
-    }
-    else {
-      input >> tmp >> inputTmp[0] >> inputTmp[1]; //NPsiP
-      inputN[1] = inputTmp[0];  //NPsiP
-      input >> tmp >> inputTmp[0]; //fracP
-    }
-
-    input >> tmp >> inputTmp[0] >> inputTmp[1]; //Resolution
-    input >> tmp >> inputTmp[0] >> inputTmp[1]; //NBkg
-    inputN[2] = inputTmp[0];  //NBkg
-
-    for (int p=0; p<11; p++) {   //Mass signal parameters
-      input >> tmp >> inputTmp[0] >> inputTmp[1];
-      cout << tmp << " " << inputTmp[0] << endl;
-      if (!tmp.compare("cutx")) inputCB.cutx = inputTmp[0];
-    }
-    // ws->var("cutx")->setVal(inputCB.cutx);
-    // ws->var("cutx")->setConstant(kTRUE);  
-  }
-  */
-  
-  // PbPb centrality dependence: CBG only
-  if ( (crange.compare("0-100") && found!=string::npos) ) {
-    // fix Gaussian parameters within centrality bins to MB (only needed for CBG)
-    string inputFNcb;
-    inputFNcb =  dirPre + "_" + mBkgFunct + "_rap" + yrange + "_pT" + prange + "_cent0-100_dPhi.txt";
-
-    ifstream input;
-    input.open(inputFNcb.c_str());
-    if (!input.good()) { cout << "Failed to open: " <<inputFNcb << endl; return 1; }
-    string tmp;
-    double inputTmp[2] = {0};
-
-    input >> tmp >> inputTmp[0] >> inputTmp[1]; //NJpsi
-    inputN[0] = inputTmp[0];  //NJpsi
-    if (fitRatio) {
-      input >> tmp >> inputTmp[0]; //NPsiP
-      inputN[1] = inputTmp[0];  //NPsiP
-      input >> tmp >> inputTmp[0] >> inputTmp[1]; //fracP
-    }
-    else {
-      input >> tmp >> inputTmp[0] >> inputTmp[1]; //NPsiP
-      inputN[1] = inputTmp[0];  //NPsiP
-      input >> tmp >> inputTmp[0]; //fracP
-    }
-
-    input >> tmp >> inputTmp[0] >> inputTmp[1]; //Resolution
-    input >> tmp >> inputTmp[0] >> inputTmp[1]; //NBkg
-    inputN[2] = inputTmp[0];  //NBkg
-
-    for (int p=0; p<11; p++) {   //Mass signal parameters
-      input >> tmp >> inputTmp[0] >> inputTmp[1];
-      cout << tmp << " " << inputTmp[0] << endl;
-      if (!tmp.compare("coeffGaus")) {
-	inputCBG.coeffGaus = inputTmp[0];
-	inputCBG.coeffGausErr = inputTmp[1];
-      }
-      else if (!tmp.compare("sigmaSig1")) {
-	inputCBG.sigmaSig1 = inputTmp[0];
-	inputCBG.sigmaSig1Err = inputTmp[1];
-      }
-      else if (!tmp.compare("sigmaSig2")) {
-	inputCBG.sigmaSig2 = inputTmp[0];
-	inputCBG.sigmaSig2Err = inputTmp[1];
-      }
-      else if (!tmp.compare("wideFactor")) {
-	inputCBG.wideFactor = inputTmp[0];
-	inputCBG.wideFactorErr = inputTmp[1];
-      }
-      else if (!tmp.compare("alpha")) inputCBG.alpha = inputTmp[0];
-      else if (!tmp.compare("enne")) inputCBG.enne = inputTmp[0];
-      //      else if (!tmp.compare("enneW")) inputCBG.enneW = inputTmp[0];
-      else if (!tmp.compare("coeffExp")) inputCBG.coeffExp = inputTmp[0];
-      else if (!tmp.compare("coeffExp2")) inputCBG.coeffExp2 = inputTmp[0];
-      else if (!tmp.compare("cutx")) inputCBG.cutx = inputTmp[0];
-      else if (!tmp.compare("bkgMean")) inputCB.bkgMean = inputTmp[0];
-      else if (!tmp.compare("bkgSigma")) inputCB.bkgSigma = inputTmp[0];
-      else if (!tmp.compare("coeffPol1")) inputCB.coeffPol1 = inputTmp[0];
-      else if (!tmp.compare("coeffPol2")) inputCB.coeffPol2 = inputTmp[0];
-      else if (!tmp.compare("coeffPol3")) inputCB.coeffPol3 = inputTmp[0];
-      else if (!tmp.compare("coeffPol4")) inputCB.coeffPol4 = inputTmp[0];
-      else if (!tmp.compare("coeffPol5")) inputCB.coeffPol5 = inputTmp[0];
-    }
-
-    ws->var("sigmaSig1")->setVal(inputCBG.sigmaSig1);
-    //    ws->var("sigmaSig2")->setVal(inputCBG.sigmaSig2);
-    ws->var("wideFactor")->setVal(inputCBG.wideFactor);
-    ws->var("coeffGaus")->setVal(inputCBG.coeffGaus);
-    // ws->var("alpha")->setVal(inputCBG.alpha);
-    // ws->var("enne")->setVal(inputCBG.enne);
-    // ws->var("enneW")->setVal(inputCBG.enneW);
-
-    //    ws->var("coeffExp")->setVal(inputCBG.coeffExp);
-    //    ws->var("coeffExp2")->setVal(inputCBG.coeffExp2);
-    //    ws->var("cutx")->setVal(inputCBG.cutx);
-
-    // ws->var("bkgMean")->setVal(inputCBG.bkgMean);
-    // ws->var("bkgSigma")->setVal(inputCBG.bkgSigma);
-
-    ws->var("coeffPol1")->setVal(inputCBG.coeffPol1);
-    ws->var("coeffPol2")->setVal(inputCBG.coeffPol2);
-    ws->var("coeffPol3")->setVal(inputCBG.coeffPol3);
-    ws->var("coeffPol4")->setVal(inputCBG.coeffPol4);
-    //    ws->var("coeffPol5")->setVal(inputCBG.coeffPol5);
-
-    //    ws->var("wideFactor")->setConstant(kTRUE);
-    //    ws->var("coeffGaus")->setConstant(kTRUE);
-    // ws->var("alpha")->setConstant(kTRUE);
-    // ws->var("enne")->setConstant(kTRUE);
-    // ws->var("enneW")->setConstant(kTRUE);
-
-    // ws->var("coeffExp")->setConstant(kTRUE);
-    // ws->var("coeffExp2")->setConstant(kTRUE);
-    // ws->var("cutx")->setConstant(kTRUE);
-
-    // ws->var("bkgMean")->setConstant(kTRUE);
-    // ws->var("bkgSigma")->setConstant(kTRUE);
-
+    inputFNcb =  dirPre2 + "_" + mBkgFunct + "_rap" + yrange_str + "_pT" + prange_str + "_cent0-100_allVars.txt";
+    RooArgSet set;
+    set.readFromFile(inputFNcb.c_str());
+    cout << "Import variable values from CB fit: " << inputFNcb << endl;
+    ws->import(set);
   }
 
-  // ws->var("Jpsi_Mass")->setRange("jpsi",2.6,3.55);
-  // ws->var("Jpsi_Mass")->setRange("psip",3.4,4.2);
+  fitM = ws->pdf("sigMassPDF")->fitTo(*redDataCut,Extended(1),Hesse(1),Minos(1),Save(1),SumW2Error(0),NumCPU(8),PrintEvalErrors(0),Verbose(0));
+  fitM->printMultiline(cout,1,1,"");
 
-  /* 20131218
-  if (fitSubRange) {
-    // ws->var("fracP")->setVal(0.0);
-    // ws->var("fracP")->setConstant(kTRUE);
-    fitM = ws->pdf("jpsiMassPDF")->fitTo(*redDataCut,Extended(1),Minos(0),Save(1),SumW2Error(kTRUE),NumCPU(8),Range("jpsi"));
+  int edmStatus = 1;
+  if (fitM->edm()<1.0e-03)
+    edmStatus = 0;
 
-    cout << "Fitting psi(2S)" << endl;
-    ws->var("alpha")->setConstant(kTRUE);
-    ws->var("enne")->setConstant(kTRUE);
-    //    ws->var("enneW")->setConstant(kTRUE);
-    ws->var("sigmaSig2")->setConstant(kTRUE);
-    ws->var("sigmaSig1")->setConstant(kTRUE);
-    ws->var("meanSig1")->setConstant(kTRUE);
-    ws->var("coeffGaus")->setConstant(kTRUE);
-    ws->var("NJpsi")->setConstant(kTRUE);
+  int covStatus = 1;
+  if (fitM->covQual()==3)
+    covStatus = 0;
 
-    fitP = ws->pdf("psipMassPDF")->fitTo(*redDataCut,Extended(1),Minos(0),Save(1),SumW2Error(kTRUE),NumCPU(8),Range("psip"));
-    resultF.cd();
-    cout << "fitM->Write(jpsiMassPDF):" << fitM->Write("jpsiMassPDF") << endl;
-    cout << "fitP->Write(psipMassPDF):" << fitP->Write("psipMassPDF") << endl;
+  int fitStatus = fitM->status();
+  if (found!=string::npos)
+    cout << "CBG_" << mBkgFunct << "_rap" << yrange << "_pT" << prange << "_cent" << crange << endl;
+  else
+    cout << "CB_" << mBkgFunct << "_rap" << yrange << "_pT" << prange << "_cent" << crange << endl;
+
+  cout << "---FIT result summary: " << edmStatus << covStatus << fitStatus;
+  for (int i=0; i<fitM->numStatusHistory(); ++i) {
+    cout << fitM->statusCodeHistory(i);
   }
-  else {
-    if (prefitMass) {
-      // ws->var("alpha")->setConstant(false);
-      // ws->var("enne")->setConstant(false);
-      // ws->var("enneW")->setConstant(false);
-      // ws->var("fracP")->setVal(0.0);
-      // ws->var("fracP")->setConstant(kTRUE);
-      // ws->var("NBkg")->setVal(0.0);
-      // ws->var("NBkg")->setConstant(true);
-      fitM_pre = ws->pdf("jpsiMassPDF")->fitTo(*redDataCut,Extended(1),Minos(0),Save(1),SumW2Error(kTRUE),NumCPU(8),Range("jpsi"));
-      fitM_pre->Print("v");
-      string resultFN_pre = dirPre + "_rap" + yrange + "_pT" + prange + "_cent" + crange + "_dPhi" + phirange + "_preFitResult.root";
-      TFile resultPreF(resultFN_pre.c_str(),"RECREATE");
-      resultPreF.cd(); cout << "fitM_pre->Write(jpsiMassPDF):" << fitM_pre->Write("jpsiMassPDF") << endl;resultPreF.Close();
-      // ws->var("coeffExp")->setVal(ws->var("coeffExp")->getVal());
-      // ws->var("enne")->setConstant(true);
-      // ws->var("enneW")->setConstant(true);
-      // ws->var("alpha")->setConstant(true);
-      // ws->var("meanSig1")->setConstant(kTRUE);
-      // ws->var("meanSig2")->setConstant(kTRUE);
+  cout << " ---" << endl;
 
-      // if ( (!crange.compare("0-100") && found==string::npos) )
-      // 	ws->var("enne")->setConstant(true);
-      // 	ws->var("enneW")->setConstant(true);
-
-	 if (!crange.compare("0-100")){
-	 inputCBG.sigmaSig1Err = ws->var("sigmaSig1")->getError();
-	 inputCBG.coeffGausErr = ws->var("coeffGaus")->getError();
-
-	 ws->var("sigmaSig1")->setConstant(kTRUE);
-	 // ws->var("sigmaSig2")->setConstant(kTRUE);
-	 ws->var("coeffGaus")->setConstant(kTRUE);
-	 }
-    }
-    */
-    //    ws->var("NJpsi")->setVal(0.0);ws->var("NJpsi")->setConstant(true);
-  fitM = ws->pdf("sigMassPDF")->fitTo(*redDataCut,Extended(1),Minos(1),Save(1),SumW2Error(kTRUE),NumCPU(8));
   int nFitParam = fitM->floatParsFinal().getSize();
-  resultF.cd(); cout << "fitM->Write(sigMassPDF):" << fitM->Write("sigMassPDF") << endl;
-    //  }
+  resultF.cd();
+  fitM->Write();
+  cout << "fitM->Write() into: " << resultFN << endl;
 
-  // *** Draw mass plot before do ctau fit
-  RooPlot *mframe_wob = ws->var("Jpsi_Mass")->frame();
-  redDataCut->plotOn(mframe_wob,DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.9),Binning(rbm));
-  titlestr = "2D fit for" + partTit + "muons (mass projection), p_{T} = " + prange  + "_dPhi" + phirange + " GeV/c and |y| = " + yrange;
-  mframe_wob->GetXaxis()->SetTitle("m_{#mu^{+}#mu^{-}} (GeV/c^{2})");
-  mframe_wob->GetXaxis()->CenterTitle(1);
-  double max = mframe_wob->GetMaximum() * 1.3;
+  // *** Draw mass plot
+  RooPlot *mframe = ws->var("Jpsi_Mass")->frame();
+  redDataCut->plotOn(mframe,DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(rbm));
+  titlestr = "2D fit for" + partTit + "muons (mass projection), p_{T} = " + prange + " GeV/c and |y| = " + yrange;
+  mframe->GetXaxis()->SetTitle("m_{#mu^{+}#mu^{-}} (GeV/c^{2})");
+  mframe->GetXaxis()->CenterTitle(1);
+  double max = mframe->GetMaximum() * 1.3;
   double min = 0.0;
-  mframe_wob->SetMaximum(max);
+  mframe->SetMaximum(max);
   min = ws->var("NBkg")->getVal()/(double(nbins)) * 0.7;
   RooHist *hpull_jpsi;
   RooHist *hpull_psip;
@@ -750,53 +552,37 @@ int main(int argc, char* argv[]) {
   double chi2FromRoo = 0.0;
 
   if (fitSubRange) {
-    ws->pdf("jpsiMassPDF")->plotOn(mframe_wob,DrawOption("F"),FillColor(kBlack),FillStyle(3354));
+    ws->pdf("jpsiMassPDF")->plotOn(mframe,DrawOption("F"),FillColor(kBlack),FillStyle(3354));
+    ws->pdf("jpsiMassPDF")->plotOn(mframe,Components(mBkgFunct.c_str()),LineColor(kBlue),LineStyle(7),LineWidth(5));
+    ws->pdf("jpsiMassPDF")->plotOn(mframe,LineColor(kBlack),LineWidth(2));
+    hpull_jpsi = mframe->pullHist(0,0,true); hpull_jpsi->SetName("hpullhist");
 
-    //    ws->pdf("jpsiMassPDF")->plotOn(mframe_wob,Components(mBkgFunct.c_str()),DrawOption("F"),FillColor(kAzure-9),FillStyle(1001));
-    ws->pdf("jpsiMassPDF")->plotOn(mframe_wob,Components(mBkgFunct.c_str()),LineColor(kBlue),LineStyle(7),LineWidth(5));
-    ws->pdf("jpsiMassPDF")->plotOn(mframe_wob,LineColor(kBlack),LineWidth(2));
-    hpull_jpsi = mframe_wob->pullHist(0,0,true); hpull_jpsi->SetName("hpullhist");
-
-    ws->pdf("psipMassPDF")->plotOn(mframe_wob,DrawOption("F"),FillColor(kGreen+2),FillStyle(3354));
+    ws->pdf("psipMassPDF")->plotOn(mframe,DrawOption("F"),FillColor(kGreen+2),FillStyle(3354));
     
-    //    ws->pdf("psipMassPDF")->plotOn(mframe_wob,Components(mBkgFunctP.c_str()),DrawOption("F"),FillColor(kRed-9),FillStyle(1001));
-    
-    ws->pdf("psipMassPDF")->plotOn(mframe_wob,Components(mBkgFunctP.c_str()),LineColor(kRed),LineStyle(7),LineWidth(5));
-    ws->pdf("psipMassPDF")->plotOn(mframe_wob,LineColor(kGreen+2),LineWidth(2));
-    hpull_psip = mframe_wob->pullHist(0,0,true); hpull_psip->SetName("hpullhistP");
+    ws->pdf("psipMassPDF")->plotOn(mframe,Components(mBkgFunctP.c_str()),LineColor(kRed),LineStyle(7),LineWidth(5));
+    ws->pdf("psipMassPDF")->plotOn(mframe,LineColor(kGreen+2),LineWidth(2));
+    hpull_psip = mframe->pullHist(0,0,true); hpull_psip->SetName("hpullhistP");
     hpull_psip->SetMarkerColor(kGreen+2);
   }
   else {
-    ws->pdf("sigMassPDF")->plotOn(mframe_wob,DrawOption("F"),FillColor(kBlack),FillStyle(3354),Normalization(redDataCut->sumEntries(),RooAbsReal::NumEvent));
-    chi2FromRoo = mframe_wob->chiSquare(nFitParam);
-    hpull = mframe_wob->pullHist(0,0,true); hpull->SetName("hpullhist");
-    
+    ws->pdf("sigMassPDF")->plotOn(mframe,VisualizeError(*fitM,1,kFALSE),FillColor(kGray),Normalization(redDataCut->sumEntries(),RooAbsReal::NumEvent));
+    ws->pdf("sigMassPDF")->plotOn(mframe,LineColor(kBlack),LineWidth(2),Normalization(redDataCut->sumEntries(),RooAbsReal::NumEvent));
 
-    ws->pdf("sigMassPDF")->plotOn(mframe_wob,Components(mBkgFunct.c_str()),DrawOption("F"),FillColor(kAzure-9),FillStyle(1001),Normalization(redDataCut->sumEntries(),RooAbsReal::NumEvent));
+    hpull = mframe->pullHist(0,0,true); hpull->SetName("hpullhist");
     
-    ws->pdf("sigMassPDF")->plotOn(mframe_wob,Components(mBkgFunct.c_str()),LineColor(kBlue),LineStyle(7),LineWidth(5),Normalization(redDataCut->sumEntries(),RooAbsReal::NumEvent));
+    ws->pdf("sigMassPDF")->plotOn(mframe,Components(mBkgFunct.c_str()),VisualizeError(*fitM,1,kFALSE),FillColor(kCyan),Normalization(redDataCut->sumEntries(),RooAbsReal::NumEvent));
+    ws->pdf("sigMassPDF")->plotOn(mframe,Components(mBkgFunct.c_str()),LineColor(kBlue),LineStyle(kDashed),LineWidth(2),Normalization(redDataCut->sumEntries(),RooAbsReal::NumEvent));
+
     if (!isPaper && found!=string::npos) { 
-      ws->pdf("sigMassPDF")->plotOn(mframe_wob,Components((mBkgFunct+",signalG2,signalG2P").c_str()),LineColor(kGreen+2),LineStyle(kDashed),LineWidth(3));
-      //      ws->pdf("sigMassPDF")->plotOn(mframe_wob,Components((mBkgFunct+",signalG2P").c_str()),LineColor(kOrange+2),LineStyle(kDashed),LineWidth(3));
+      ws->pdf("sigMassPDF")->plotOn(mframe,VisualizeError(*fitM,1,kFALSE),FillColor(kGreen-9),Components((mBkgFunct+",signalG2,signalG2P").c_str()));
+      ws->pdf("sigMassPDF")->plotOn(mframe,Components((mBkgFunct+",signalG2,signalG2P").c_str()),LineColor(kGreen+2),LineStyle(kDashed),LineWidth(2));
     }
-
-    ws->pdf("sigMassPDF")->plotOn(mframe_wob,LineColor(kBlack),LineWidth(2),Normalization(redDataCut->sumEntries(),RooAbsReal::NumEvent));
-    
-    // if (prefitMass) {
-    //   ws->pdf("jpsiMassPDF")->plotOn(mframe_wob,DrawOption("F"),FillColor(kBlack),FillStyle(3354));
-
-    //   ws->pdf("jpsiMassPDF")->plotOn(mframe_wob,Components(mBkgFunct.c_str()),DrawOption("F"),FillColor(kAzure-9),FillStyle(1001));
-    
-    //   ws->pdf("jpsiMassPDF")->plotOn(mframe_wob,Components(mBkgFunct.c_str()),LineColor(kBlue),LineStyle(7),LineWidth(5));
-    //   ws->pdf("jpsiMassPDF")->plotOn(mframe_wob,LineColor(kRed),LineWidth(2));
-    // }
-
   }
-  redDataCut->plotOn(mframe_wob,DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.9),Binning(rbm));
+  redDataCut->plotOn(mframe,DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(rbm));
 
   TH1 *hdata = redDataCut->createHistogram("hdata",*ws->var("Jpsi_Mass"),Binning(rbm));
-  // *** Calculate chi2/nDof for mass fitting
 
+  // *** Calculate chi2/nDof for mass fitting
   unsigned int nBins = hdata->GetNbinsX();
   double Chi2 = 0;
   int nFullBinsPull = 0;
@@ -837,7 +623,6 @@ int main(int argc, char* argv[]) {
   }
 
   double UnNormChi2 = Chi2;
-  //  int nFitParam = fitM->floatParsFinal().getSize();
   int Dof = nFullBinsPull - nFitParam;
   if (Dof!=0)
     Chi2 /= Dof;
@@ -874,14 +659,33 @@ int main(int argc, char* argv[]) {
   mframepull->GetXaxis()->SetTitle("m_{#mu#mu} (GeV/c^{2})");
   mframepull->GetXaxis()->CenterTitle(1);
 
+  TF1 *f0 = new TF1("f0","0",2.2,4.2);
+  f0->SetLineWidth(2);
+  f0->SetLineStyle(1);
+  f0->SetLineColor(kBlack);
+
+  TF1 *f1 = new TF1("f1","2",2.2,4.2);
+  f1->SetLineWidth(1);
+  f1->SetLineStyle(2);
+  f1->SetLineColor(kBlack);
+
+  TF1 *f2 = new TF1("f2","-2",2.2,4.2);
+  f2->SetLineWidth(1);
+  f2->SetLineStyle(2);
+  f2->SetLineColor(kBlack);
+
+  mframepull->addObject(f0,"same");
+  mframepull->addObject(f1,"same");
+  mframepull->addObject(f2,"same");
+
   // *** Check in narrower signal region NSig
   //  ws->var("Jpsi_Mass")->setRange("sigpeak",2.9,3.3);
 
   //  RooAbsReal *inteAll = ws->pdf(mJpsiFunct.c_str())->createIntegral(RooArgSet(*ws->var("Jpsi_Mass")),NormSet(RooArgSet(*ws->var("Jpsi_Mass"))));
   //  RooAbsReal *inteSig = ws->pdf(mSigFunct.c_str())->createIntegral(RooArgSet(*ws->var("Jpsi_Mass")),Range("sigpeak"),NormSet(RooArgSet(*ws->var("Jpsi_Mass"))),Range("sigpeak"));
 
-  // mframe_wob->SetMinimum(0.03*max);
-  // mframe_wob->SetMaximum(5.0*max);
+  // mframe->SetMinimum(0.03*max);
+  // mframe->SetMaximum(5.0*max);
   TCanvas c00; c00.cd();
 
   TPad *pad1 = new TPad("pad1","This is pad1",0.05,0.35,0.95,0.97);
@@ -896,7 +700,7 @@ int main(int argc, char* argv[]) {
   }
 
   // if (!isPbPb)
-  //   ws->pdf("sigMassPDF_mix")->plotOn(mframe_wob,LineColor(kRed),LineStyle(2),LineWidth(4),Normalization(redDataCut->sumEntries(),RooAbsReal::NumEvent));
+  //   ws->pdf("sigMassPDF_mix")->plotOn(mframe,LineColor(kRed),LineStyle(2),LineWidth(4),Normalization(redDataCut->sumEntries(),RooAbsReal::NumEvent));
 
   if (logScale) {
     if (isPaper)
@@ -904,49 +708,51 @@ int main(int argc, char* argv[]) {
     else
       pad1->SetLogy(1);
 
-    mframe_wob->SetMinimum(0.2*min);
+    mframe->SetMinimum(0.2*min);
     if (yrange == "0.0-1.6" && isPbPb) {
-      mframe_wob->SetMaximum(2.5*max);
-      mframe_wob->SetMinimum(0.8*min);
+      mframe->SetMaximum(2.5*max);
+      mframe->SetMinimum(0.8*min);
     }
     else if (yrange == "1.6-2.4" && isPbPb) {
-      mframe_wob->SetMaximum(1.5*max);
-      mframe_wob->SetMinimum(0.9*min);
+      mframe->SetMaximum(1.5*max);
+      mframe->SetMinimum(0.9*min);
     }
     else 
-      mframe_wob->SetMaximum(25*max);
+      mframe->SetMaximum(25*max);
   }
   else if (zoom) {
     if (min>0)
-      mframe_wob->SetMinimum(0.5*min);
+      mframe->SetMinimum(0.5*min);
 
     if (yrange == "1.6-2.4") {
       if (prange == "3.0-6.5" && crange == "0-20")
-       	mframe_wob->SetMaximum(max);
+       	mframe->SetMaximum(max);
       else if (prange == "3.0-30.0" && crange == "20-40")
-       	mframe_wob->SetMaximum(max*0.3);
+       	mframe->SetMaximum(max*0.3);
       else if (prange == "3.0-30.0" && crange=="40-100")
-       	mframe_wob->SetMaximum(max*0.2);
+       	mframe->SetMaximum(max*0.2);
       else 
-	mframe_wob->SetMaximum(max*0.5);
+	mframe->SetMaximum(max*0.5);
     }
     else
-      mframe_wob->SetMaximum(max*0.15);
+      mframe->SetMaximum(max*0.15);
   }
 
-  mframe_wob->Draw();
-  t->SetTextSize(0.05);
-  //  t->DrawLatex(0.17,0.90,"CMS Preliminary");
+  lCMS->SetTextSize(0.05);
   if (isPbPb)
-    t->DrawLatex(0.17,0.90,"CMS PbPb #sqrt{s_{NN}} = 2.76 TeV");
-  else 
-    t->DrawLatex(0.17,0.90,"CMS pp #sqrt{s} = 2.76 TeV");
-  t->SetTextSize(0.04);
-  if (isPbPb)
-    t->DrawLatex(0.17,0.83,"L_{int} = 150 #mub^{-1}");
+    lCMS->SetText(0.17,0.90,"CMS PbPb #sqrt{s_{NN}} = 2.76 TeV");
   else
-    t->DrawLatex(0.17,0.83,"L_{int} = 5.3 pb^{-1}");
-  t->SetTextSize(0.035);
+    lCMS->SetText(0.17,0.90,"CMS pp #sqrt{s} = 2.76 TeV");
+  mframe->addObject(lCMS,"");
+
+  lLumi->SetTextSize(0.04);
+  if (isPbPb)
+    lLumi->SetText(0.17,0.83,"L_{int} = 150 #mub^{-1}");
+  else
+    lLumi->SetText(0.17,0.83,"L_{int} = 5.3 pb^{-1}");
+  mframe->addObject(lLumi,"");
+
+  lRap->SetTextSize(0.035);
   if (isPbPb) { 
     if (ymin==0.0)
       sprintf(reduceDS,"%.0f-%.0f%%, |y| < %.1f",cmin,cmax,ymax);
@@ -959,11 +765,9 @@ int main(int argc, char* argv[]) {
     else
       sprintf(reduceDS,"%0.1f < |y| < %.1f",ymin,ymax);
   }
-  // if (zoom)
-  //   t->DrawLatex(0.56,0.70,reduceDS);
-  // else
-  //   t->DrawLatex(0.56,0.50,reduceDS);
-    t->DrawLatex(0.17,0.78,reduceDS);
+  lRap->SetText(0.17,0.78,reduceDS);
+  mframe->addObject(lRap,"");
+
   if (pmin==6.5)
     sprintf(reduceDS,"%.1f < p_{T} < %.0f GeV/c",pmin,pmax);
   else if (pmax==6.5)
@@ -971,62 +775,59 @@ int main(int argc, char* argv[]) {
   else
     sprintf(reduceDS,"%.0f < p_{T} < %.0f GeV/c",pmin,pmax);
   
-  // if (zoom)
-  //   t->DrawLatex(0.56,0.65,reduceDS);
-  // else
-  //   t->DrawLatex(0.56,0.45,reduceDS);
-  t->DrawLatex(0.17,0.73,reduceDS);
-  // sprintf(reduceDS,"%.2f < |#phi_{J/#psi}-#Psi_{RP}| < %.2f",psmin,psmax);
-  // t->DrawLatex(0.17,0.59,reduceDS);
-  // sprintf(reduceDS,"EP: %s",rpmethod.c_str());
-  // t->DrawLatex(0.17,0.54,reduceDS);
-  //  t->SetTextSize(0.04);
+  lPt->SetText(0.17,0.73,reduceDS);
+  mframe->addObject(lPt,"");
 
   if (!isPaper) {
-    sprintf(reduceDS,"Min. NLL = %0.1f",theNLL);
-    t->DrawLatex(0.17,0.68,reduceDS);
+    sprintf(reduceDS,"Min. NLL = %0.2f",theNLL);
+    lNLL->SetText(0.17,0.68,reduceDS);
+    mframe->addObject(lNLL,"");
   }
 
   if (fitSubRange) {
     sprintf(reduceDS,"#chi^{2}/dof (J/#psi) = %0.1f/%d   #chi^{2}/dof (#psi(2S)) = %0.1f/%d",UnNormChi2,Dof,UnNormChi2P,DofP);
-    t->DrawLatex(0.45,0.90,reduceDS);
+    lChi->SetText(0.45,0.90,reduceDS);
   }
   else {
-    sprintf(reduceDS,"#chi^{2}/dof = %0.1f/%d (Test: %0.1f)",UnNormChi2,Dof,chi2FromRoo);
-    if (!isPaper)
-      t->DrawLatex(0.62,0.90,reduceDS);
-    sprintf(reduceDS,"p-value = %0.4f (%0.4f)",TMath::Prob(UnNormChi2,Dof),TMath::Prob(chi2FromRoo,Dof));
-    if (!isPaper)
-      t->DrawLatex(0.62,0.85,reduceDS);
+    if (!isPaper) {
+      sprintf(reduceDS,"#chi^{2}/dof = %0.1f/%d",UnNormChi2,Dof);
+      lChi->SetText(0.62,0.90,reduceDS);
+      mframe->addObject(lChi,"");
+      sprintf(reduceDS,"p-value = %0.4f",TMath::Prob(UnNormChi2,Dof));
+      lPval->SetText(0.62,0.85,reduceDS);
+      mframe->addObject(lPval,"");
+    }
   }
 
   if (ws->var("NJpsi")->hasAsymError() && abs(-1.0*ws->var("NJpsi")->getErrorLo()/ws->var("NJpsi")->getErrorHi() - 1)>0.1)
     sprintf(reduceDS,"N_{J/#psi} = %0.0f^{+%0.0f}_{%0.0f}",ws->var("NJpsi")->getVal(),ws->var("NJpsi")->getErrorHi(),ws->var("NJpsi")->getErrorLo());
   else
     sprintf(reduceDS,"N_{J/#psi} = %0.0f #pm %0.0f",ws->var("NJpsi")->getVal(),ws->var("NJpsi")->getError());
-  t->DrawLatex(0.62,0.80,reduceDS);
-  // sprintf(reduceDS,"N_{#psi(2S)} = %0.0f #pm %0.0f",ws->var("NPsiP")->getVal(),ws->var("NPsiP")->getError());
-  // t->DrawLatex(0.62,0.80,reduceDS);
+  lNJpsi->SetText(0.62,0.80,reduceDS);
+  mframe->addObject(lNJpsi,"");
 
   if (fitRatio) {
     if (ws->var("fracP")->hasAsymError() && abs(-1.0*ws->var("fracP")->getErrorLo()/ws->var("fracP")->getErrorHi() - 1)>0.1)
       sprintf(reduceDS,"R_{#psi(2S)} = %0.3f^{+%0.3f}_{%0.3f}",ws->var("fracP")->getVal(),ws->var("fracP")->getErrorHi(),ws->var("fracP")->getErrorLo());
     else
       sprintf(reduceDS,"R_{#psi(2S)} = %0.3f #pm %0.3f",ws->var("fracP")->getVal(),ws->var("fracP")->getError());
-    t->DrawLatex(0.62,0.75,reduceDS);
+    lRpsi->SetText(0.62,0.75,reduceDS);
+    mframe->addObject(lRpsi,"");
+
     if (ws->var("fracP")->hasAsymError() && abs(-1.0*ws->var("fracP")->getErrorLo()/ws->var("fracP")->getErrorHi() - 1)>0.1)
       sprintf(reduceDS,"N_{#psi(2S)} = %0.1f^{+%0.1f}_{%0.1f}",ws->function("NPsiP")->getVal(),ws->var("fracP")->getErrorHi()*ws->var("NJpsi")->getVal(),ws->var("fracP")->getErrorLo()*ws->var("NJpsi")->getVal());
     else
       sprintf(reduceDS,"N_{#psi(2S)} = %0.1f #pm %0.1f",ws->function("NPsiP")->getVal(),ws->var("fracP")->getError()*ws->var("NJpsi")->getVal());
-    t->DrawLatex(0.62,0.70,reduceDS);
+    lNpsiP->SetText(0.62,0.70,reduceDS);
   }
   else {
     if (ws->var("NPsiP")->hasAsymError() && abs(-1.0*ws->var("NPsiP")->getErrorLo()/ws->var("NPsiP")->getErrorHi() - 1)>0.1)
       sprintf(reduceDS,"N_{#psi(2S)} = %0.0f^{+%0.0f}_{%0.0f}",ws->var("NPsiP")->getVal(),ws->var("NPsiP")->getErrorHi(),ws->var("NPsiP")->getErrorLo());
     else
       sprintf(reduceDS,"N_{#psi(2S)} = %0.1f #pm %0.1f",ws->var("NPsiP")->getVal(),ws->var("NPsiP")->getError());
-    t->DrawLatex(0.62,0.75,reduceDS);
+    lNpsiP->SetText(0.62,0.75,reduceDS);
   }
+  mframe->addObject(lNpsiP,"");
 
   double coeffGaus = ws->var("coeffGaus")->getVal();
   double sigmaSig1 = ws->var("sigmaSig1")->getVal();
@@ -1044,19 +845,20 @@ int main(int argc, char* argv[]) {
       sprintf(reduceDS,"#sigma_{CB} = (%0.0f #pm %0.0f) MeV/c^{2}",sigmaSig1*1000.0,1.0);
     else
       sprintf(reduceDS,"#sigma_{CB} = (%0.0f #pm %0.0f) MeV/c^{2}",sigmaSig1*1000.0,ErrsigmaSig1*1000.0);
-    t->DrawLatex(0.62,0.65,reduceDS);
-    // if (ErrsigmaSig2<0.0005) 
-    //   sprintf(reduceDS,"#sigma_{G} = (%0.0f #pm %0.0f) MeV/c^{2}",sigmaSig2*1000.0,1.0);
-    // else
+    lSigCB->SetText(0.62,0.65,reduceDS);
+
     if  (found!=string::npos) {
       sprintf(reduceDS,"#sigma_{G} = %0.0f MeV/c^{2}",sigmaSig2*1000.0);
-      t->DrawLatex(0.62,0.60,reduceDS);
+      lSigG->SetText(0.62,0.60,reduceDS);
       if (ws->var("wideFactor")->hasAsymError() && abs(-1.0*ws->var("wideFactor")->getErrorLo()/ws->var("wideFactor")->getErrorHi() - 1)>0.1)
 	sprintf(reduceDS,"n_{G} = %0.2f^{+%0.2f}_{%0.2f}",ws->var("wideFactor")->getVal(),ws->var("wideFactor")->getErrorHi(),ws->var("wideFactor")->getErrorLo());
       else
 	sprintf(reduceDS,"n_{G} = %0.2f #pm %0.2f",ws->var("wideFactor")->getVal(),ws->var("wideFactor")->getError());
-      t->DrawLatex(0.62,0.55,reduceDS);
+      lNG->SetText(0.62,0.55,reduceDS);
     }
+    mframe->addObject(lSigCB,"");
+    mframe->addObject(lSigG,"");
+    mframe->addObject(lNG,"");
   }
 
   double resol = sigmaSig1;
@@ -1077,52 +879,53 @@ int main(int argc, char* argv[]) {
       else
 	sprintf(reduceDS,"#sigma_{CB+G} = (%0.0f #pm %0.0f) MeV/c^{2}",resol*1000.0,Errresol*1000.0);
 
-      t->DrawLatex(0.62,0.50,reduceDS);
+      lSigma->SetText(0.62,0.50,reduceDS);
+      mframe->addObject(lSigma,"");
+
       if (ws->var("alpha")->isConstant())
 	sprintf(reduceDS,"#alpha = %0.2f (fixed)",ws->var("alpha")->getVal());
       else if (ws->var("alpha")->hasAsymError() && abs(-1.0*ws->var("alpha")->getErrorLo()/ws->var("alpha")->getErrorHi() - 1)>0.1)
 	sprintf(reduceDS,"#alpha = %0.2f^{+%0.2f}_{%0.2f}",ws->var("alpha")->getVal(),ws->var("alpha")->getErrorHi(),ws->var("alpha")->getErrorLo());
       else
 	sprintf(reduceDS,"#alpha = %0.2f #pm %0.2f",ws->var("alpha")->getVal(),ws->var("alpha")->getError());
-      t->DrawLatex(0.62,0.45,reduceDS);
+      lAlpha->SetText(0.62,0.45,reduceDS);
       if (ws->var("enne")->isConstant())
 	sprintf(reduceDS,"n = %0.2f (fixed)",ws->var("enne")->getVal());
       else if (ws->var("enne")->hasAsymError() && abs(-1.0*ws->var("enne")->getErrorLo()/ws->var("enne")->getErrorHi() - 1)>0.1)
 	sprintf(reduceDS,"n = %0.2f^{+%0.2f}_{%0.2f}",ws->var("enne")->getVal(),ws->var("enne")->getErrorHi(),ws->var("enne")->getErrorLo());
       else
 	sprintf(reduceDS,"n = %0.2f #pm %0.2f",ws->var("enne")->getVal(),ws->var("enne")->getError());
-      t->DrawLatex(0.62,0.40,reduceDS);
+      lN->SetText(0.62,0.40,reduceDS);
       if (ws->var("coeffGaus")->hasAsymError() && abs(-1.0*ws->var("coeffGaus")->getErrorLo()/ws->var("coeffGaus")->getErrorHi() - 1)>0.1)
 	sprintf(reduceDS,"f_{G} = %0.3f^{+%0.3f}_{%0.3f}",ws->var("coeffGaus")->getVal(),ws->var("coeffGaus")->getErrorHi(),ws->var("coeffGaus")->getErrorLo());
       else
 	sprintf(reduceDS,"f_{G} = %0.2f #pm %0.2f",ws->var("coeffGaus")->getVal(),ws->var("coeffGaus")->getError());
-      t->DrawLatex(0.62,0.35,reduceDS);
+      lFG->SetText(0.62,0.35,reduceDS);
+      mframe->addObject(lFG,"");
     }
     else {
       if (ws->var("alpha")->isConstant())
 	sprintf(reduceDS,"#alpha = %0.2f (fixed)",ws->var("alpha")->getVal());
       else
 	sprintf(reduceDS,"#alpha = %0.2f #pm %0.2f",ws->var("alpha")->getVal(),ws->var("alpha")->getError());
-      t->DrawLatex(0.62,0.60,reduceDS);
+      lAlpha->SetText(0.62,0.60,reduceDS);
       if (ws->var("enne")->isConstant())
 	sprintf(reduceDS,"n = %0.2f (fixed)",ws->var("enne")->getVal());
       else
 	sprintf(reduceDS,"n = %0.2f #pm %0.2f",ws->var("enne")->getVal(),ws->var("enne")->getError());
-      t->DrawLatex(0.62,0.55,reduceDS);
+      lN->SetText(0.62,0.55,reduceDS);
     }
+
+    mframe->addObject(lAlpha,"");
+    mframe->addObject(lN,"");
   }
-  //  sprintf(reduceDS,"#sigma = (%0.0f #pm %0.0f) MeV/c^{2}",ws->var("sigmaSig2")->getVal()*1000,ws->var("sigmaSig2")->getError()*1000);
-  // t->DrawLatex(0.62,0.55,reduceDS);
 
   TLegend *leg1;
-  //  if (isPbPb) {
   if (fitSubRange)
     leg1 = new TLegend(0.63,0.53,0.92,0.72,NULL,"brNDC");
   else
     leg1 = new TLegend(0.63,0.53,0.92,0.68,NULL,"brNDC");
-  //  }
-  // else
-  //   leg1 = new TLegend(0.63,0.53,0.92,0.72,NULL,"brNDC");
+
   leg1->SetFillStyle(0); leg1->SetBorderSize(0); leg1->SetShadowColor(0); leg1->SetMargin(0.2);
   leg1->AddEntry(gfake1,"data","p");
   if (fitSubRange) {
@@ -1139,42 +942,20 @@ int main(int argc, char* argv[]) {
   //   leg1->AddEntry(&hfake22,"with R_{#psi(2S)}^{0-20%}(PbPb)","lf");
 
   if (!zoom && isPaper)
-    leg1->Draw("same");
+    mframe->addObject(leg1,"sa,e");
 
-  string yrange_str, prange_str;
-  if (yrange == "0.0-2.4")
-    yrange_str = "0-24";
-  else if (yrange == "0.0-1.2")
-    yrange_str = "0-12";
-  else if (yrange == "0.0-1.6")
-    yrange_str = "0-16";
-  else if (yrange == "1.2-1.6")
-    yrange_str = "12-16";
-  else if (yrange == "1.6-2.4")
-    yrange_str = "16-24";
-  else
-    yrange_str = yrange;
+  mframe->Draw();
 
-  if (prange == "0.0-40.0")
-    prange_str = "0-40";
-  else if (prange == "0.0-30.0")
-    prange_str = "0-30";
-  else if (prange == "3.0-40.0")
-    prange_str = "3-40";
-  else if (prange == "3.0-30.0")
-    prange_str = "3-30";
-  else if (prange == "6.5-40.0")
-    prange_str = "65-40";
-  else if (prange == "6.5-30.0")
-    prange_str = "65-30";
-  else if (prange == "3.0-6.5")
-    prange_str = "3-65";
-  else
-    prange_str = prange;
-
-  titlestr = dirPre + "_" + mBkgFunct + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + "_massfit_wob.pdf";
+  titlestr = dirPre + "_" + mBkgFunct + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + "_massfit.pdf";
   c00.SaveAs(titlestr.c_str());
+  resultF.cd();
+  mframe->Write();
+  mframepull->Write();
 
+  string fname = dirPre + "_" + mBkgFunct + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + "_Workspace.root";
+  ws->writeToFile(fname.c_str(),kTRUE);
+  fname = dirPre + "_" + mBkgFunct + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + "_allVars.txt";
+  ws->allVars().writeToFile(fname.c_str());
 
   Double_t NJpsi_fin = ws->var("NJpsi")->getVal();
   Double_t ErrNJpsi_fin = ws->var("NJpsi")->getError();
@@ -1203,7 +984,7 @@ int main(int argc, char* argv[]) {
   else
     cout << "NPsiP:       Fit: "  << NPsiP_fin << " +/- " << ErrNPsiP_fin << endl;
 
-  titlestr = dirPre + "_" + mBkgFunct + "_rap" + yrange + "_pT" + prange + "_cent" + crange + "_dPhi" + phirange + ".txt";
+  titlestr = dirPre + "_" + mBkgFunct + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + ".txt";
 
   ofstream outputFile(titlestr.c_str());
   if (!outputFile.good()) {cout << "Fail to open result file." << endl; return 1;}
@@ -1270,13 +1051,11 @@ int main(int argc, char* argv[]) {
   outputFile
     << "coeffGaus "    << ws->var("coeffGaus")->getVal()    << " " << ws->var("coeffGaus")->getError() << "\n"
     << "meanSig1 "     << ws->var("meanSig1")->getVal()     << " " << ws->var("meanSig1")->getError() << "\n"
-    //    << "meanSig1P "    << ws->var("meanSig1P")->getVal()     << " " << ws->var("meanSig1P")->getError() << "\n"
     << "sigmaSig1 "    << ws->var("sigmaSig1")->getVal()    << " " << ws->var("sigmaSig1")->getError() << "\n"
     << "wideFactor "   << ws->var("wideFactor")->getVal()   << " " << ws->var("wideFactor")->getError() << "\n"
     << "sigmaSig2 "    << ws->function("sigmaSig2")->getVal() << " " << ws->function("sigmaSig2")->getVal()*ws->var("wideFactor")->getError()/ws->var("wideFactor")->getVal() << "\n"
     << "alpha "        << ws->var("alpha")->getVal()        << " " << ws->var("alpha")->getError() << "\n"
     << "enne "         << ws->var("enne")->getVal()         << " " << ws->var("enne")->getError() << "\n"
-    //    << "enneW "        << ws->var("enneW")->getVal()        << " " << ws->var("enneW")->getError() << "\n"
     << "chi2 "         << UnNormChi2                        << "\n"
     << "DOF "          << Dof                               << "\n"
     << "NLL "          << theNLL                            << endl;
@@ -1332,76 +1111,6 @@ void defineMassBkg(RooWorkspace *ws) {
   return;
 }
 
-/* old
-void defineMassBkg(RooWorkspace *ws) {
-  // 1st order polynomial
-  ws->factory("Chebychev::pol1(Jpsi_Mass,{coeffPol1[0.8,-1.,1.]})");
-  //  ws->factory("Chebychev::pol1(Jpsi_Mass,{coeffPol1[-0.8]})");
-  ws->var("coeffPol1")->setVal(-0.8);
-  ws->var("coeffPol1")->setConstant(false);
-
-  // 2nd order polynomial
-  ws->factory("Chebychev::pol2(Jpsi_Mass,{coeffPol1, coeffPol2[0.00,-1.,1.]})");
-  ws->factory("Chebychev::pol3(Jpsi_Mass,{coeffPol1, coeffPol2, coeffPol3[0.00,-1.,1.]})");
-  //  ws->factory("Chebychev::pol2(Jpsi_Mass,{coeffPol1, coeffPol2[0.00]})");
-  //  ws->var("coeffPol2")->setConstant(false);
-  //  ws->factory("Chebychev::pol5(Jpsi_Mass,{coeffPol1, coeffPol2, coeffPol3[0.00,-15.,15.], coeffPol4[0.00,-15.,15.], coeffPol5[0.00,-15.,15.]})");
-  //  RooFormulaVar coeffPol2("coeffPol2","@0/(-2.0*3.4)",RooArgList(*(ws->var("coeffPol1")))); ws->import(coeffPol2);
-  //  ws->factory("Polynomial::pol2(Jpsi_Mass,{coeffPol1, coeffPol2})");
-  // Exponential
-  //  RooRealVar coeffExp("coeffExp","coeffExp",-0.1,-3.0,1.0);coeffExp.setConstant(false);ws->import("coeffExp");
-  ws->factory("Exponential::expFunct(Jpsi_Mass,coeffExp[-0.1,-3.0,1.0])");
-  ws->factory("Exponential::expFunctP(Jpsi_Mass,coeffExpP[-1.,-3.,0.])");
-  // 2nd Exponential
-  //  RooRealVar coeffExp2("coeffExp2","coeffExp2",-0.2,-3.0,1.0); coeffExp2.setConstant(false);ws->import("coeffExp");
-  ws->factory("Exponential::expFunct2(Jpsi_Mass,coeffExp2[-0.2,-3.0,1.0])");
-  // Sum of two exponentials
-  //  ws->factory("SUM::twoExpFunct(coeffBkg[0.9,0.1,1.0]*expFunct,expFunct2)");
-
-
-  // RooRealVar turnOn("turnOn","turnOn", 6.);
-  // turnOn.setConstant(false);
-  // RooRealVar width("width","width", 1., 0., 20.);
-  // RooRealVar decay("decay","decay", 7.);
-  // decay.setConstant(false);
-  // RooGenericPdf bkgErfExp("bkgErfExp","bkg","exp(-@0/@3)*(TMath::Erf((@0-@1)/@2)+1)", RooArgList(*(ws->var("Jpsi_Mass")), turnOn, width, decay));
-  // ws->import(bkgErfExp);
-  // RooGenericPdf bkgErf("bkgErf","bkgErf","(TMath::Erf((@0-@1)/@2)+1)", RooArgList(*(ws->var("Jpsi_Mass")), turnOn, width));
-  // ws->import(bkgErf);
-
-  RooRealVar cutx("cutx","cutx",3.4,3.2,3.5); cutx.setConstant(false); ws->import(cutx); //Region below than this cut will use cTau1, above than it will use cTau2. determined by free fit.
-
-  RooGenericPdf twoExpFunct("twoExpFunct","twoExpFunct","1.0/abs(@1)*(exp(@0*@1)*(@0<@3)+exp(@0*@2 - @3*(@2-@1) )*(@0>=@3))", RooArgList(*(ws->var("Jpsi_Mass")), *(ws->var("coeffExp")), *(ws->var("coeffExp2")), *(ws->var("cutx"))));
-  ws->import(twoExpFunct);
-  
-  
-  RooRealVar coeffExpPol1("coeffExpPol1","coeffExpPol1",-0.1);coeffExpPol1.setConstant(false);
-  RooRealVar coeffExpPol2("coeffExpPol2","coeffExpPol2",-0.01);coeffExpPol2.setConstant(false); 
-
-  RooGenericPdf expPol2Funct("expPol2Funct","expPol2Funct","exp(@0*@1+pow(@0*@2,2))*(3.5>@0)", RooArgList(*(ws->var("Jpsi_Mass")), coeffExpPol1, coeffExpPol2));
-  ws->import(expPol2Funct);
-
-
-  // RooRealVar cutx("cutx","cutx",4.2,3.3,4.2); cutx.setConstant(true); ws->import(cutx); //Region below than this cut will use cTau1, above than it will use cTau2. determined by free fit.
-  // RooRealVar coeffExp("coeffExp","coeffExp",-0.1,-3.0,1.0); coeffExp.setConstant(true);ws->import(coeffExp);
-  // RooRealVar coeffExp2("coeffExp2","coeffExp2",-0.2,-3.0,1.0); coeffExp2.setConstant(true);ws->import(coeffExp2);
-  // RooExp2 twoExpFunct("twoExpFunct","twoExpFunct",*(ws->var("Jpsi_Mass")),cutx,coeffExp,coeffExp2); ws->import(twoExpFunct);
-
-
-  ws->factory("Gaussian::bkgGaus(Jpsi_Mass,meanBkg[0.0,0.0,10.0],sigmaBkg[1.0,0.5,5.0])");
-  
-
-  // RooRealVar *m_step = new RooRealVar("m_step","m_step",3.4,3.3,3.5); 
-  // //  m_step->setConstant(true);
-  // ws->import(*m_step);
-  // RooStats::Heaviside *step = new RooStats::Heaviside("step","split two expoenentials",*(ws->var("Jpsi_Mass")),*(ws->var("m_step")));  
-  // RooFormulaVar *coeffBkg(
-  // ws->import(*coeffBkg);
-  
-  return;
-}
-*/
-
 void defineMassSig(RooWorkspace *ws) {
   // narrow Gauss
   ws->factory("Gaussian::signalG1(Jpsi_Mass,meanSig1[3.0969,3.05,3.15],sigmaSig1[0.03,0.005,0.080])");
@@ -1435,54 +1144,3 @@ void defineMassSig(RooWorkspace *ws) {
 
   return;
 }
-
-/* old
-void defineMassSig(RooWorkspace *ws) {
-  //////// Candidates for signal
-  // Crystall Ball
-  ws->factory("CBShape::signalCB2(Jpsi_Mass,meanSig1[3.0969,3.05,3.15],sigmaSig2[0.03,0.01,0.060],alpha[1.,0.,3.],enne[5.,1.,30.])");
-  ws->factory("CBShape::signalCB2WN(Jpsi_Mass,meanSig1,sigmaSig2,alpha,enneW[5.,1.,50.])");
-
-  // Normal gaussians
-  //  RooRealVar wideFactor("wideFactor","wideFactor",1.2,1.0,5.0);ws->import(wideFactor);
-  //  RooFormulaVar sigmaSig1("sigmaSig1","@0*@1",RooArgList(*(ws->var("sigmaSig2")),wideFactor));ws->import(sigmaSig1);
-
-  //  ws->factory("Gaussian::signalG1(Jpsi_Mass,meanSig1,sigmaSig1)");
-  ws->factory("Gaussian::signalG1(Jpsi_Mass,meanSig1,sigmaSig1[0.08,0.06,0.2])");
-//  ws->factory("Gaussian::signalG1(Jpsi_Mass,meanSig1[3.0975,3.05,3.15],sigmaSig1[0.1,0.06,0.2])");
-//  ws->factory("Gaussian::signalG2(Jpsi_Mass,meanSig2[3.0975,3.05,3.15],sigmaSig2[0.03,0.008,0.2])");
-//  ws->factory("Gaussian::signalGm1s2(Jpsi_Mass,meanSig1,sigmaSig2)");
-
-  ws->factory("CBShape::signalCB(Jpsi_Mass,meanSig1,sigmaSig1,alpha,enne)");
-  ws->factory("CBShape::signalCBWN(Jpsi_Mass,meanSig1,sigmaSig1,alpha,enneW)");
-
-
-  // Fix Jpsi-psi' mass difference
-  //  RooFormulaVar meanSig1P("meanSig1P","@0+0.58919",RooArgList(*(ws->var("meanSig1")))); ws->import(meanSig1P);
-  // Fix Jpsi-psi' mass ratio
-  RooFormulaVar meanSig1P("meanSig1P","@0*1.19025",RooArgList(*(ws->var("meanSig1")))); ws->import(meanSig1P);
-  // Fix resolution scale: sigma_MJpsi/MJpsi = sigma_Mpsi'/Mpsi'
-  RooFormulaVar sigmaSig1P("sigmaSig1P","@0*1.19025",RooArgList(*(ws->function("sigmaSig1")))); ws->import(sigmaSig1P);
-  RooFormulaVar sigmaSig2P("sigmaSig2P","@0*1.19025",RooArgList(*(ws->var("sigmaSig2")))); ws->import(sigmaSig2P);
-  ws->factory("Gaussian::signalG1P(Jpsi_Mass,meanSig1P,sigmaSig1P)");
-  //  ws->factory("Gaussian::signalG1P(Jpsi_Mass,meanSig1P[3.6861,3.4,4.0],sigmaSig1P)");
-  ws->factory("CBShape::signalCB2WNP(Jpsi_Mass,meanSig1P,sigmaSig2P,alpha,enneW)");
-
-  //////// Sum of signal functions
-  // Sum of gaussian 1 and a crystall ball
-  ws->factory("SUM::sigCBG1(coeffGaus[0.1,0.05,0.93]*signalG1,signalCB)");
-  // Sum of gaussian 1 and crystall ball 2
-  ws->factory("SUM::sigCB2G1(coeffGaus*signalG1,signalCB2)");
-  // Sum of gaussian 1 and crystall ball with wide n
-  ws->factory("SUM::sigCBWNG1(coeffGaus*signalG1,signalCBWN)");
-  // Sum of gaussian 1 and crystall ball 2 with wide n
-  ws->factory("SUM::sigCB2WNG1(coeffGaus*signalG1,signalCB2WN)");
-  ws->factory("SUM::sigCB2WNG1P(coeffGaus*signalG1P,signalCB2WNP)");
-
-  //  ws->factory("SUM::sigCBGJpsiPsiP(fracP[0.1,0.0,1.0]*sigCB2WNG1P,sigCB2WNG1)");
-  //  ws->factory("SUM::sigCBJpsiPsiP(fracP*signalCB2WNP,signalCB2WN)");
-
-  return;
-}
-
-*/
