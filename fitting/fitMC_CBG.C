@@ -1,6 +1,12 @@
 #include <iostream>
+
+//#ifndef __CINT__
+#include "RooGlobalFunc.h"
+//#endif
+
 #include "RooRealVar.h"
 #include "RooAbsPdf.h"
+#include "RooConstVar.h"
 #include "RooGaussian.h"
 #include "RooCBShape.h"
 #include "RooChebychev.h"
@@ -11,11 +17,18 @@
 #include "RooDataHist.h"
 #include "RooFitResult.h"
 
+
+
+#include "RooGenericPdf.h"
+#include "RooChi2Var.h"
+#include "RooMinuit.h"
+
 #include "TCut.h"
 #include "TCanvas.h"
 #include "TString.h"
 #include "TLatex.h"
 #include "TFile.h"
+#include "TAxis.h"
 
 using namespace RooFit;
 
@@ -88,20 +101,21 @@ void fitMC_CBG(bool isHI=false, float ptmin=0.0, float ptmax=30.0, float ymin=0.
   if (isHI) {
     RooFormulaVar wFunc("w","event weight","Gen_Pt>30?0:(Gen_Pt>15.0?(0.00579/166960.0):(Gen_Pt>12?(0.00979/143944.0):(Gen_Pt>9?(0.0379/167336.0):(Gen_Pt>6?(0.178/172176.0):(Gen_Pt>3?(0.915/124802.0):(1.0/117512.0))))))",Gen_Pt);
     RooRealVar *w = (RooRealVar*) data->addColumn(wFunc);
-    data->Print(); 
     //    tmp = (RooDataSet*)data->reduce((ptCut+rapCut).GetTitle());
     tmp = new RooDataSet(data->GetName(),data->GetTitle(),data,*data->get(),(ptCut+rapCut).GetTitle(),w->GetName());
-    RooArgList list(Jpsi_Mass,Gen_Pt,*w);
-    RooDataSet wdata(tmp->GetName(),tmp->GetTitle(),tmp,list,0,w->GetName());
-    redData = (RooDataSet*)&wdata;
+    RooArgList list(Jpsi_Mass,*w);
+    //    RooDataSet wdata(tmp->GetName(),tmp->GetTitle(),tmp,list,0,w->GetName());
+    redData = (RooDataSet*) tmp->reduce(list);//(RooDataSet*)&wdata;
+    redData->SetName("redData");
+    redData->SetTitle("redData");
   }
   else {
-    data->Print(); 
-    redData = (RooDataSet*)data->reduce((ptCut+rapCut).GetTitle());
+    RooArgList list(Jpsi_Mass);
+    redData = (RooDataSet*)data->reduce(list, (ptCut+rapCut).GetTitle());
   }
-  redData->Print(); 
-  //  redData->binnedClone()->Print("v");
-  RooDataHist* binnedData = redData->binnedClone("binnedData","binneData");
+
+  redData->Print("v");
+  RooDataHist* binnedData = redData->binnedClone("binnedData","binnedData");
   binnedData->Print("v");
 
   if (isHI) {
@@ -117,6 +131,8 @@ void fitMC_CBG(bool isHI=false, float ptmin=0.0, float ptmax=30.0, float ymin=0.
   CBalpha = alpha.format(2,"NEA");
   TString *CBn = new TString();
   CBn = n.format(2,"NEA");
+  TString *CBsigma = new TString();
+  CBsigma = sigma1.format(2,"NEA");
   RooFitResult *fitM;
   if (isHI)
     fitM = model_cbg.fitTo(*binnedData,Extended(0),Minos(0),Save(1),SumW2Error(kTRUE),NumCPU(4));
@@ -127,6 +143,10 @@ void fitMC_CBG(bool isHI=false, float ptmin=0.0, float ptmax=30.0, float ymin=0.
   CBGalpha = alpha.format(2,"NEA");
   TString *CBGn = new TString();
   CBGn = n.format(2,"NEA");
+  TString *CBGsigma = new TString();
+  CBGsigma = sigma1.format(2,"NEA");
+  TString *CBGwideFactor = new TString();
+  CBGwideFactor = wideFactor.format(2,"NEA");
 
   RooPlot* xframe = Jpsi_Mass.frame(Title("data"));
   if (isHI)
@@ -144,13 +164,16 @@ void fitMC_CBG(bool isHI=false, float ptmin=0.0, float ptmax=30.0, float ymin=0.
   else
     redData->plotOn(xframe);
 
+  if (isHI)
+    xframe->SetMinimum(1e-6);
+
   //  cbg.Print("t");
   std::cout << "CB only:\t" << *CBalpha << "\t" << *CBn << std::endl;
   std::cout << "CB + Gauss:\t" << *CBGalpha << "\t" << *CBGn << std::endl;
 
   TCanvas *c1 = new TCanvas("c1","c1");
-  if (!isHI)
-    c1->SetLogy();
+  //  if (!isHI)
+  c1->SetLogy();
   xframe->Draw();
 
   TLatex *lcoll = new TLatex(0.5,0.9,"PYTHIA: pp #sqrt{s} = 2.76 TeV");
@@ -182,28 +205,50 @@ void fitMC_CBG(bool isHI=false, float ptmin=0.0, float ptmax=30.0, float ymin=0.
   lrap->Draw();
 
   TLatex *lCB = new TLatex(0.5,0.72,"CB:");
-  TLatex *lCBalpha = new TLatex(0.5,0.67,CBalpha->Data());
-  TLatex *lCBn = new TLatex(0.5,0.62,CBn->Data());
-  TLatex *lCBG = new TLatex(0.5,0.55,"CB + Gauss:");
+  TLatex *lCBalpha = new TLatex(0.5,0.68,CBalpha->Data());
+  TLatex *lCBn = new TLatex(0.5,0.64,CBn->Data());
+  TLatex *lCBsigma = new TLatex(0.5,0.60,CBsigma->Data());
+  lCB->SetTextSize(0.035);
+  lCBalpha->SetTextSize(0.035);
+  lCBn->SetTextSize(0.035);
+  lCBsigma->SetTextSize(0.035);
+
+  TLatex *lCBG = new TLatex(0.5,0.54,"CB + Gauss:");
   TLatex *lCBGalpha = new TLatex(0.5,0.50,CBGalpha->Data());
-  TLatex *lCBGn = new TLatex(0.5,0.45,CBGn->Data());
+  TLatex *lCBGn = new TLatex(0.5,0.46,CBGn->Data());
+  TLatex *lCBGsigma = new TLatex(0.5,0.42,CBGsigma->Data());
+  TLatex *lCBGwideFactor = new TLatex(0.5,0.38,CBGwideFactor->Data());
+  lCBG->SetTextSize(0.035);
+  lCBGalpha->SetTextSize(0.035);
+  lCBGn->SetTextSize(0.035);
+  lCBGsigma->SetTextSize(0.035);
+  lCBGwideFactor->SetTextSize(0.035);
 
   lCB->SetNDC(kTRUE);
   lCBalpha->SetNDC(kTRUE);
   lCBn->SetNDC(kTRUE);
+  lCBsigma->SetNDC(kTRUE);
   lCBG->SetNDC(kTRUE);
   lCBGalpha->SetNDC(kTRUE);
   lCBGn->SetNDC(kTRUE);
+  lCBGsigma->SetNDC(kTRUE);
+  lCBGwideFactor->SetNDC(kTRUE);
 
   lCB->Draw();
   lCBalpha->Draw();
   lCBn->Draw();
+  lCBsigma->Draw();
   lCBG->Draw();
   lCBGalpha->Draw();
   lCBGn->Draw();
+  lCBGsigma->Draw();
+  lCBGwideFactor->Draw();
 
   TString outfname;
-  outfname = Form("Jpsi_pp_MCshape_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f.pdf",ymin,ymax,ptmin,ptmax);
+  if (isHI)
+    outfname = Form("Jpsi_PbPb_MCshape_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f.pdf",ymin,ymax,ptmin,ptmax);
+  else
+    outfname = Form("Jpsi_pp_MCshape_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f.pdf",ymin,ymax,ptmin,ptmax);
 
   std::cout << outfname << std::endl;
   if (savePlot)

@@ -443,24 +443,24 @@ int main(int argc, char* argv[]) {
   if (fixCBtoMC) {
     if (isPbPb) {
       if (prange=="6.5-30.0" && yrange=="0.0-2.4") {
-	ws->var("alpha")->setVal(1.967);
-	ws->var("enne")->setVal(1.380);
+	ws->var("alpha")->setVal(1.740);
+	ws->var("enne")->setVal(1.644);
       }
       else if (prange=="6.5-30.0" && yrange=="0.0-1.6") {
-	ws->var("alpha")->setVal(1.796);
-	ws->var("enne")->setVal(1.479);
+	ws->var("alpha")->setVal(1.718);
+	ws->var("enne")->setVal(1.638);
       }
       else if (prange=="3.0-30.0" && yrange=="1.6-2.4") {
-	ws->var("alpha")->setVal(2.196);
-	ws->var("enne")->setVal(1.280);
+	ws->var("alpha")->setVal(2.120);
+	ws->var("enne")->setVal(1.347);
       }
       else if (prange=="3.0-6.5" && yrange=="1.6-2.4") {
-	ws->var("alpha")->setVal(2.151);
-	ws->var("enne")->setVal(1.380);
+	ws->var("alpha")->setVal(2.061);
+	ws->var("enne")->setVal(1.310);
       }
       else if (prange=="6.5-30.0" && yrange=="1.6-2.4") {
-	ws->var("alpha")->setVal(2.257);
-	ws->var("enne")->setVal(1.170);
+	ws->var("alpha")->setVal(2.154);
+	ws->var("enne")->setVal(1.380);
       }
       else {
 	ws->var("alpha")->setVal(2.0);
@@ -471,24 +471,24 @@ int main(int argc, char* argv[]) {
     }
     else {
       if (prange=="6.5-30.0" && yrange=="0.0-2.4") {
-	ws->var("alpha")->setVal(1.849);
-	ws->var("enne")->setVal(1.405);
+	ws->var("alpha")->setVal(1.740);
+	ws->var("enne")->setVal(1.644);
       }
       else if (prange=="6.5-30.0" && yrange=="0.0-1.6") {
-	ws->var("alpha")->setVal(1.785);
-	ws->var("enne")->setVal(1.482);
+	ws->var("alpha")->setVal(1.718);
+	ws->var("enne")->setVal(1.638);
       }
       else if (prange=="3.0-30.0" && yrange=="1.6-2.4") {
-	ws->var("alpha")->setVal(2.263);
-	ws->var("enne")->setVal(1.018);
+	ws->var("alpha")->setVal(2.120);
+	ws->var("enne")->setVal(1.347);
       }
       else if (prange=="3.0-6.5" && yrange=="1.6-2.4") {
-	ws->var("alpha")->setVal(2.190);
-	ws->var("enne")->setVal(1.019);
+	ws->var("alpha")->setVal(2.061);
+	ws->var("enne")->setVal(1.310);
       }
       else if (prange=="6.5-30.0" && yrange=="1.6-2.4") {
-	ws->var("alpha")->setVal(2.305);
-	ws->var("enne")->setVal(1.02);
+	ws->var("alpha")->setVal(2.154);
+	ws->var("enne")->setVal(1.380);
       }
       else {
 	ws->var("alpha")->setVal(2.0);
