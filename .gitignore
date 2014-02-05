@@ -1,5 +1,7 @@
 *.root
 *.o
+*.so
+*.d
 *.pdf
 *.png
 *.txt
