@@ -16,6 +16,7 @@
 #include "RooDataSet.h"
 #include "RooDataHist.h"
 #include "RooFitResult.h"
+#include "RooBinning.h"
 
 
 
@@ -29,10 +30,12 @@
 #include "TLatex.h"
 #include "TFile.h"
 #include "TAxis.h"
+#include "TH1.h"
+#include "TF1.h"
 
 using namespace RooFit;
 
-void fitMC_CBG(bool isHI=false, float ptmin=0.0, float ptmax=30.0, float ymin=0.0, float ymax=2.4, bool absRapidity=true, bool savePlot=false)
+void fitMC_CBG(bool isHI=false, double ptmin=0.0, double ptmax=30.0, double ymin=0.0, double ymax=2.4, bool absRapidity=true, bool fitChi2=false, bool savePlot=false)
 {
   TCut ptCut = Form("Jpsi_Pt>%3.1f&&Jpsi_Pt<%3.1f",ptmin,ptmax);
   TCut rapCut;
@@ -41,7 +44,7 @@ void fitMC_CBG(bool isHI=false, float ptmin=0.0, float ptmax=30.0, float ymin=0.
   else
     rapCut = Form("Jpsi_Y>%3.1f&&Jpsi_Y<%3.1f",ymin,ymax);
 
-  RooRealVar Jpsi_Mass("Jpsi_Mass","J/#psi mass",2.2,4.2,"GeV/c^{2}");
+  RooRealVar Jpsi_Mass("Jpsi_Mass","J/#psi mass",2.2,3.4,"GeV/c^{2}");
   RooRealVar Jpsi_Pt("Jpsi_Pt","J/#psi pt",0,30,"GeV/c");
   RooRealVar Jpsi_Y("Jpsi_Y","J/#psi y",-2.4,2.4);
   RooRealVar Jpsi_Ct("Jpsi_Ct","J/#psi c#tau",-3.0,3.5,"mm");
@@ -49,7 +52,13 @@ void fitMC_CBG(bool isHI=false, float ptmin=0.0, float ptmax=30.0, float ymin=0.
   RooRealVar Jpsi_CtTrue("Jpsi_CtTrue","J/#psi c#tau true",-3.0,3.5,"mm");
   RooRealVar Gen_Pt("Gen_Pt","Generated J/#psi pt",0,30,"GeV/c");
 
-  Jpsi_Mass.setBins(100);
+  //  Jpsi_Mass.setBins(100); for 2.2--4.2 GeV
+  RooBinning bins(2.2,3.4);
+  bins.addUniform(12,2.2,2.8);
+  bins.addUniform(25,2.8,3.3);
+  bins.addUniform(1,3.3,3.4);
+  Jpsi_Mass.setBinning(bins);
+  //  Jpsi_Mass.setBins(35);
   Jpsi_Pt.setBins(60);
   Jpsi_Y.setBins(1);
   Jpsi_Ct.setBins(1);
@@ -61,12 +70,12 @@ void fitMC_CBG(bool isHI=false, float ptmin=0.0, float ptmax=30.0, float ymin=0.
   RooRealVar sigma1("sigma1","sigma1", 0.03,0.005,0.080);
   RooGaussian gaussS("gaussS","gaussS",Jpsi_Mass,mean,sigma1);
 
-  RooRealVar alpha("alpha","alpha", 1.0,0.0,5.0);
-  RooRealVar n("n","n", 2,1.0,100.0);
+  RooRealVar alpha("alpha","alpha", 1.0,0.0,3.0);
+  RooRealVar n("n","n", 5,1.0,50.0);
   RooCBShape cballS("cballS","cballS",Jpsi_Mass,mean,sigma1,alpha,n);
   RooCBShape cball("cball","cball",Jpsi_Mass,mean,sigma1,alpha,n);
 
-  RooRealVar wideFactor("wideFactor","wideFactor",1.2,1.0,5.0);
+  RooRealVar wideFactor("wideFactor","wideFactor",2.0,1.0,6.0);
   RooFormulaVar sigma2("sigma2","@0*@1",RooArgList(sigma1,wideFactor));
   RooGaussian gauss2("gauss","gauss",Jpsi_Mass,mean,sigma2);
 
@@ -77,20 +86,73 @@ void fitMC_CBG(bool isHI=false, float ptmin=0.0, float ptmax=30.0, float ymin=0.
   RooRealVar a1("a1","a1",0.0,-1.0,1.0);
   RooChebychev bkg("bkg","Background",Jpsi_Mass,RooArgSet(a0));
 
+  RooRealVar Nsignal("Nsignal","Nsginal",10000);
+  RooRealVar Nbackground("Nbackground","Nbackground",100);
+  Nsignal.setConstant(0);
+  Nbackground.setConstant(0);
+
   RooRealVar bkgfrac("bkgfrac","fraction of background",0.001,0.0,1.0);
-  RooAddPdf model_g("model_g","cb+bkg",RooArgList(bkg,gaussS),bkgfrac);
-  RooAddPdf model_cb("model_cb","cb+bkg",RooArgList(bkg,cballS),bkgfrac);
-  RooAddPdf model_cbg("model_cbg","cb+bkg",RooArgList(bkg,cbg),bkgfrac);
+  // RooAddPdf model_g("model_g","cb+bkg",RooArgList(bkg,gaussS),bkgfrac);
+  // RooAddPdf model_cb("model_cb","cb+bkg",RooArgList(bkg,cballS),bkgfrac);
+  // RooAddPdf model_cbg("model_cbg","cb+bkg",RooArgList(bkg,cbg),bkgfrac);
+  // Extended definitions
+  RooAddPdf model_g("model_g","cb+bkg",RooArgList(bkg,gaussS),RooArgList(Nbackground,Nsignal));
+  RooAddPdf model_cb("model_cb","cb+bkg",RooArgList(bkg,cballS),RooArgList(Nbackground,Nsignal));
+  RooAddPdf model_cbg("model_cbg","cb+bkg",RooArgList(bkg,cbg),RooArgList(Nbackground,Nsignal));
+  RooAddPdf model_cbg2("model_cbg2","cb+bkg2",RooArgList(bkg,cbg),RooArgList(Nbackground,Nsignal));
   a0.setVal(0);
+  // if (isHI)
   //  a0.setConstant(1);
   bkgfrac.setVal(0);
   //  bkgfrac.setConstant(1);
 
+  if (isHI && false) {
+    std::cout << ptmin << " " << ptmax << " " << ymin << " " << ymax << std::endl;
+    if (abs(ptmin-6.5)/ptmin<1e-5 && abs(ptmax-30)/ptmax<1e-5 && abs(ymin-0)<1e-5 && abs(ymax-2.4)/ymax<1e-5) {
+      std::cout << "GOOD" << std::endl;
+      alpha.setVal(1.740);
+      n.setVal(1.644);
+      wideFactor.setVal(1.902);
+    }
+    else if (abs(ptmin-6.5)/ptmin<1e-5 && abs(ptmax-30)/ptmax<1e-5 && abs(ymin-0)<1e-5 && abs(ymax-1.6)/ymax<1e-5) {
+      std::cout << "GOOD" << std::endl;
+      alpha.setVal(1.718);
+      n.setVal(1.638);
+      wideFactor.setVal(1.726);
+    }
+    else if (abs(ptmin-3)/ptmin<1e-5 && abs(ptmax-30)/ptmax<1e-5 && abs(ymin-1.6)/ymin<1e-5 && abs(ymax-2.4)/ymax<1e-5) {
+      std::cout << "GOOD" << std::endl;
+      alpha.setVal(2.120);
+      n.setVal(1.347);
+      wideFactor.setVal(1.653);
+    }
+    else if (abs(ptmin-3)/ptmin<1e-5 && abs(ptmax-6.5)/ptmax<1e-5 && abs(ymin-1.6)/ymin<1e-5 && abs(ymax-2.4)/ymax<1e-5) {
+      std::cout << "GOOD" << std::endl;
+      alpha.setVal(2.061);
+      n.setVal(1.310);
+      wideFactor.setVal(1.529);
+    }
+    else if (abs(ptmin-6.5)/ptmin<1e-5 && abs(ptmax-30)/ptmax<1e-5 && abs(ymin-1.6)/ymin<1e-5 && abs(ymax-2.4)/ymax<1e-5) {
+      std::cout << "GOOD" << std::endl;
+      alpha.setVal(2.154);
+      n.setVal(1.380);
+      wideFactor.setVal(1.951);
+    }
+    else {
+      std::cout << "BAD" << std::endl;
+      alpha.setVal(2.0);
+      n.setVal(1.4);
+    }
+    // alpha.setConstant(kTRUE);
+    // n.setConstant(kTRUE);
+    // wideFactor.setConstant(kTRUE);
+  }
+
   string fname;
   if (isHI)
-    fname = "../root_files/PbPbPromptJpsiMC_DblMu0_cent0-100.root";
+    fname = "../root_files/PbPbPromptJpsiMC_DblMu0_cent0-100_M2234.root";
   else
-    fname = "../root_files/ppPromptJpsiMC_DblMu0_cent0-100.root";
+    fname = "../root_files/ppPromptJpsiMC_DblMu0_cent0-100_M2234.root";
 
   TFile *inf = new TFile(fname.c_str());
 
@@ -101,11 +163,9 @@ void fitMC_CBG(bool isHI=false, float ptmin=0.0, float ptmax=30.0, float ymin=0.
   if (isHI) {
     RooFormulaVar wFunc("w","event weight","Gen_Pt>30?0:(Gen_Pt>15.0?(0.00579/166960.0):(Gen_Pt>12?(0.00979/143944.0):(Gen_Pt>9?(0.0379/167336.0):(Gen_Pt>6?(0.178/172176.0):(Gen_Pt>3?(0.915/124802.0):(1.0/117512.0))))))",Gen_Pt);
     RooRealVar *w = (RooRealVar*) data->addColumn(wFunc);
-    //    tmp = (RooDataSet*)data->reduce((ptCut+rapCut).GetTitle());
     tmp = new RooDataSet(data->GetName(),data->GetTitle(),data,*data->get(),(ptCut+rapCut).GetTitle(),w->GetName());
-    RooArgList list(Jpsi_Mass,*w);
-    //    RooDataSet wdata(tmp->GetName(),tmp->GetTitle(),tmp,list,0,w->GetName());
-    redData = (RooDataSet*) tmp->reduce(list);//(RooDataSet*)&wdata;
+    RooArgList list(Jpsi_Mass);
+    redData = (RooDataSet*) tmp->reduce(list);
     redData->SetName("redData");
     redData->SetTitle("redData");
   }
@@ -119,12 +179,12 @@ void fitMC_CBG(bool isHI=false, float ptmin=0.0, float ptmax=30.0, float ymin=0.
   binnedData->Print("v");
 
   if (isHI) {
-    model_g.fitTo(*binnedData,Extended(0),Minos(0),Save(1),SumW2Error(kTRUE),NumCPU(4));
-    model_cb.fitTo(*binnedData,Extended(0),Minos(0),Save(1),SumW2Error(kTRUE),NumCPU(4));
+    model_g.fitTo(*binnedData,Extended(1),Minos(0),Save(1),SumW2Error(kTRUE),NumCPU(4));
+    //   model_cb.fitTo(*binnedData,Extended(1),Minos(0),Save(1),SumW2Error(kTRUE),NumCPU(4));
   }
   else {
-    model_g.fitTo(*redData,Extended(0),Minos(0),Save(1),SumW2Error(kFALSE),NumCPU(4));
-    model_cb.fitTo(*redData,Extended(0),Minos(0),Save(1),SumW2Error(kFALSE),NumCPU(4));
+    model_g.fitTo(*redData,Extended(1),Minos(0),Save(1),SumW2Error(kFALSE),NumCPU(4));
+    //   model_cb.fitTo(*redData,Extended(1),Minos(0),Save(1),SumW2Error(kFALSE),NumCPU(4));
   }
 
   TString *CBalpha = new TString();
@@ -134,10 +194,24 @@ void fitMC_CBG(bool isHI=false, float ptmin=0.0, float ptmax=30.0, float ymin=0.
   TString *CBsigma = new TString();
   CBsigma = sigma1.format(2,"NEA");
   RooFitResult *fitM;
-  if (isHI)
-    fitM = model_cbg.fitTo(*binnedData,Extended(0),Minos(0),Save(1),SumW2Error(kTRUE),NumCPU(4));
-  else
-    fitM = model_cbg.fitTo(*redData,Extended(0),Minos(0),Save(1),SumW2Error(kFALSE),NumCPU(4));
+
+  if (fitChi2) {
+    // chi2 fit
+    RooChi2Var chi2("chi2","chi2",model_cbg,*binnedData);
+    RooMinuit m(chi2);
+    m.migrad();
+    m.hesse();
+    m.hesse();
+    //    m.minos();
+    fitM = m.save();
+  }
+  else {
+    if (isHI)
+      fitM = model_cbg.fitTo(*binnedData,Extended(1),Minos(0),Save(1),SumW2Error(kTRUE),NumCPU(4));
+    else
+      fitM = model_cbg.fitTo(*redData,Extended(1),Minos(0),Save(1),SumW2Error(kFALSE),NumCPU(4));
+  }
+
   fitM->printMultiline(std::cout,1,1,"");
   TString *CBGalpha = new TString();
   CBGalpha = alpha.format(2,"NEA");
@@ -147,25 +221,35 @@ void fitMC_CBG(bool isHI=false, float ptmin=0.0, float ptmax=30.0, float ymin=0.
   CBGsigma = sigma1.format(2,"NEA");
   TString *CBGwideFactor = new TString();
   CBGwideFactor = wideFactor.format(2,"NEA");
+  TString *CBGcoeffGauss = new TString();
+  CBGcoeffGauss = coeffGauss.format(2,"NEA");
 
   RooPlot* xframe = Jpsi_Mass.frame(Title("data"));
   if (isHI)
-    binnedData->plotOn(xframe);
+    binnedData->plotOn(xframe,RooFit::Binning(bins));
   else
-    redData->plotOn(xframe);
+    redData->plotOn(xframe,RooFit::Binning(bins));
 
-  model_g.plotOn(xframe,LineWidth(1),LineColor(kBlack));
-  model_cb.plotOn(xframe,LineWidth(1), LineColor(kBlue));
-  model_cbg.plotOn(xframe, LineColor(kRed));
-  model_cbg.plotOn(xframe, Components(RooArgSet(gauss2)), LineColor(kBlue), LineStyle(kDashed));
-  model_cbg.plotOn(xframe, Components(RooArgSet(cball)), LineColor(kGreen+2), LineStyle(kDashed));
+  //  model_g.plotOn(xframe,LineWidth(1),LineColor(kBlack));
+  //  model_cb.plotOn(xframe,LineWidth(1), LineColor(kBlue));
+
+  model_cbg.plotOn(xframe, LineColor(kBlack));
+  model_cbg.plotOn(xframe, Components(RooArgSet(gauss2)), LineColor(kGreen+2), LineStyle(kDashed));
+  model_cbg.plotOn(xframe, Components(RooArgSet(cball)), LineColor(kRed), LineStyle(kDashed));
+  model_cbg.plotOn(xframe, Components(RooArgSet(bkg)), LineColor(kBlue), LineStyle(kDashed));
+
+
   if (isHI)
-    binnedData->plotOn(xframe);
+    binnedData->plotOn(xframe,RooFit::Binning(bins));
   else
-    redData->plotOn(xframe);
+    redData->plotOn(xframe,RooFit::Binning(bins));
 
   if (isHI)
     xframe->SetMinimum(1e-6);
+  else
+    xframe->SetMinimum(0.1);
+
+  xframe->SetMaximum(20.0*xframe->GetMaximum());
 
   //  cbg.Print("t");
   std::cout << "CB only:\t" << *CBalpha << "\t" << *CBn << std::endl;
@@ -176,27 +260,32 @@ void fitMC_CBG(bool isHI=false, float ptmin=0.0, float ptmax=30.0, float ymin=0.
   c1->SetLogy();
   xframe->Draw();
 
-  TLatex *lcoll = new TLatex(0.5,0.9,"PYTHIA: pp #sqrt{s} = 2.76 TeV");
+  TLatex *lcoll;
+  if (isHI)
+    lcoll = new TLatex(0.15,0.9,"PYTHIA+HYDJET: PbPb #sqrt{s_{NN}} = 2.76 TeV");
+  else
+    lcoll = new TLatex(0.15,0.9,"PYTHIA: pp #sqrt{s} = 2.76 TeV");
+
   lcoll->SetNDC(kTRUE);
   lcoll->Draw();
 
   TLatex *lpt;
   if (ptmin==0.0)
-    lpt = new TLatex(0.5,0.84,Form("p_{T} < %3.1f GeV/c",ptmax));
+    lpt = new TLatex(0.15,0.84,Form("p_{T} < %3.1f GeV/c",ptmax));
   else
-    lpt = new TLatex(0.5,0.84,Form("%3.1f < p_{T} < %3.1f GeV/c",ptmin,ptmax));
+    lpt = new TLatex(0.15,0.84,Form("%3.1f < p_{T} < %3.1f GeV/c",ptmin,ptmax));
   TLatex *lrap;
   if (absRapidity){
     if (ymin==0.0)
-      lrap = new TLatex(0.5,0.79,Form("|y| < %3.1f",ymax));
+      lrap = new TLatex(0.15,0.79,Form("|y| < %3.1f",ymax));
     else
-      lrap = new TLatex(0.5,0.79,Form("%3.1f < |y| < %3.1f",ymin,ymax));
+      lrap = new TLatex(0.15,0.79,Form("%3.1f < |y| < %3.1f",ymin,ymax));
   }
   else {
     if (ymin==0.0)
-      lrap = new TLatex(0.5,0.79,Form("y < %3.1f",ymax));
+      lrap = new TLatex(0.15,0.79,Form("y < %3.1f",ymax));
     else
-      lrap = new TLatex(0.5,0.79,Form("%3.1f < y < %3.1f",ymin,ymax));
+      lrap = new TLatex(0.15,0.79,Form("%3.1f < y < %3.1f",ymin,ymax));
   }
 
   lpt->SetNDC(kTRUE);
@@ -204,25 +293,32 @@ void fitMC_CBG(bool isHI=false, float ptmin=0.0, float ptmax=30.0, float ymin=0.
   lpt->Draw();
   lrap->Draw();
 
-  TLatex *lCB = new TLatex(0.5,0.72,"CB:");
-  TLatex *lCBalpha = new TLatex(0.5,0.68,CBalpha->Data());
-  TLatex *lCBn = new TLatex(0.5,0.64,CBn->Data());
-  TLatex *lCBsigma = new TLatex(0.5,0.60,CBsigma->Data());
+  TLatex *lCB = new TLatex(0.15,0.72,"CB:");
+  TLatex *lCBalpha = new TLatex(0.15,0.68,CBalpha->Data());
+  TLatex *lCBn = new TLatex(0.15,0.64,CBn->Data());
+  TLatex *lCBsigma = new TLatex(0.15,0.60,CBsigma->Data());
   lCB->SetTextSize(0.035);
   lCBalpha->SetTextSize(0.035);
   lCBn->SetTextSize(0.035);
   lCBsigma->SetTextSize(0.035);
 
-  TLatex *lCBG = new TLatex(0.5,0.54,"CB + Gauss:");
-  TLatex *lCBGalpha = new TLatex(0.5,0.50,CBGalpha->Data());
-  TLatex *lCBGn = new TLatex(0.5,0.46,CBGn->Data());
-  TLatex *lCBGsigma = new TLatex(0.5,0.42,CBGsigma->Data());
-  TLatex *lCBGwideFactor = new TLatex(0.5,0.38,CBGwideFactor->Data());
+  // TLatex *lCBG = new TLatex(0.15,0.54,"CB + Gauss:");
+  // TLatex *lCBGalpha = new TLatex(0.15,0.50,CBGalpha->Data());
+  // TLatex *lCBGn = new TLatex(0.15,0.46,CBGn->Data());
+  // TLatex *lCBGsigma = new TLatex(0.15,0.42,CBGsigma->Data());
+  // TLatex *lCBGwideFactor = new TLatex(0.15,0.38,CBGwideFactor->Data());
+  TLatex *lCBG = new TLatex(0.15,0.72,"CB + Gauss:");
+  TLatex *lCBGalpha = new TLatex(0.15,0.68,CBGalpha->Data());
+  TLatex *lCBGn = new TLatex(0.15,0.64,CBGn->Data());
+  TLatex *lCBGsigma = new TLatex(0.15,0.60,CBGsigma->Data());
+  TLatex *lCBGwideFactor = new TLatex(0.15,0.56,CBGwideFactor->Data());
+  TLatex *lCBGcoeffGauss = new TLatex(0.15,0.52,CBGcoeffGauss->Data());
   lCBG->SetTextSize(0.035);
   lCBGalpha->SetTextSize(0.035);
   lCBGn->SetTextSize(0.035);
   lCBGsigma->SetTextSize(0.035);
   lCBGwideFactor->SetTextSize(0.035);
+  lCBGcoeffGauss->SetTextSize(0.035);
 
   lCB->SetNDC(kTRUE);
   lCBalpha->SetNDC(kTRUE);
@@ -233,26 +329,50 @@ void fitMC_CBG(bool isHI=false, float ptmin=0.0, float ptmax=30.0, float ymin=0.
   lCBGn->SetNDC(kTRUE);
   lCBGsigma->SetNDC(kTRUE);
   lCBGwideFactor->SetNDC(kTRUE);
+  lCBGcoeffGauss->SetNDC(kTRUE);
 
-  lCB->Draw();
-  lCBalpha->Draw();
-  lCBn->Draw();
-  lCBsigma->Draw();
+  // lCB->Draw();
+  // lCBalpha->Draw();
+  // lCBn->Draw();
+  // lCBsigma->Draw();
   lCBG->Draw();
   lCBGalpha->Draw();
   lCBGn->Draw();
   lCBGsigma->Draw();
   lCBGwideFactor->Draw();
+  lCBGcoeffGauss->Draw();
+
+  // TCanvas *c2 = new TCanvas("c2","c2");
+  // c2->SetLogy();
+  // RooArgList parameters(mean, sigma1, alpha, n, wideFactor, coeffGauss, a0, Nsignal, Nbackground);
+  // TH1 *h1 = (TH1*) redData->createHistogram("Jpsi_Mass")->Clone("h1");
+  // TF1 *f1 = (TF1*) model_cbg.asTF(RooArgList(Jpsi_Mass), parameters)->Clone("f1");
+  // h1->Scale(50.0/h1->GetEntries());
+  // h1->Draw();
+  // //f1->SetParameter(7,f1->GetParameter(7)*1e4);
+  // h1->Fit(f1,"RMEI");
+  // //  f1->SetParameters(3.0968,2.9504e-02,1.7104,1.3338e+01,2.1972,1.0422e-01,0,9.9117e-03);
+  // f1->Draw("same");
 
   TString outfname;
-  if (isHI)
-    outfname = Form("Jpsi_PbPb_MCshape_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f.pdf",ymin,ymax,ptmin,ptmax);
-  else
-    outfname = Form("Jpsi_pp_MCshape_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f.pdf",ymin,ymax,ptmin,ptmax);
+  if (fitChi2) {
+    if (isHI)
+      outfname = Form("Jpsi_PbPb_MCshape_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f_M2234_chi2.pdf",ymin,ymax,ptmin,ptmax);
+    else
+      outfname = Form("Jpsi_pp_MCshape_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f_M2234_chi2.pdf",ymin,ymax,ptmin,ptmax);
+  }
+  else {
+    if (isHI)
+      outfname = Form("Jpsi_PbPb_MCshape_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f_M2234.pdf",ymin,ymax,ptmin,ptmax);
+    else
+      outfname = Form("Jpsi_pp_MCshape_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f_M2234.pdf",ymin,ymax,ptmin,ptmax);
+  }
 
   std::cout << outfname << std::endl;
   if (savePlot)
     c1->SaveAs(outfname);
+
+
 
   /*
     TCanvas *c2 = new TCanvas("c2","c2");

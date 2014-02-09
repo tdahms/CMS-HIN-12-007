@@ -238,8 +238,24 @@ int main(int argc, char* argv[]) {
   // Draw data
   string titlestr;
 
+  // Binning for invariant mass distribution
+  RooBinning rbm(2.2,4.2);
   int nbins = 100;
-  ws->var("Jpsi_Mass")->setBins(nbins);
+  bool highStats=false;
+  if (highStats)
+    rbm.addUniform(nbins,2.2,4.2);
+  else {
+    // rbm.addUniform(14,2.2,2.760);
+    // rbm.addUniform(24,2.760,3.240);
+    // rbm.addUniform(24,3.240,4.2);
+    rbm.addUniform(11,2.2,2.860);
+    rbm.addUniform(19,2.860,3.240);
+    rbm.addUniform(6,3.240,3.600);
+    rbm.addUniform(6,3.600,3.720);
+    rbm.addUniform(8,3.720,4.2);
+  }
+
+  ws->var("Jpsi_Mass")->setBinning(rbm);
 
   // Additional cuts on data and get sub-datasets/histograms
   RooDataSet *redDataCut;
@@ -281,10 +297,6 @@ int main(int argc, char* argv[]) {
   if (isGG == 0) { partTit = "glb-glb"; partFile = "GG"; }
   else if (isGG == 1) { partTit = "glb-trk"; partFile = "GT"; }
   else { partTit = "all"; partFile = "ALL"; }
-
-  // Binning for invariant mass distribution
-  RooBinning rbm(2.2,4.2);
-  rbm.addUniform(nbins,2.2,4.2);
 
   // Global TLatex, TH1, TGraph objects for drawing
   TLatex *lCMS = new TLatex();
@@ -520,7 +532,7 @@ int main(int argc, char* argv[]) {
       if (found!=string::npos) {
 	dirPrePp.replace(found,strPbPb.length(),"ppFrac");
 	//	cout << "pp string: " << dirPrePp << endl; 
-	inputFNcb =  dirPrePp + "_" + mBkgFunct + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + "_allVars.txt";
+	inputFNcb =  dirPrePp + "_" + mBkgFunct + "_rap" + yrange_str + "_pT" + prange_str + "_cent0-100_allVars.txt";
 	cout << "pp file name: " << inputFNcb << endl;
 	RooArgSet *ppSet = ws->pdf("sigMassPDF")->getParameters(*(ws->var("Jpsi_Mass")));
 	//	ppSet->Print("v");
@@ -529,6 +541,7 @@ int main(int argc, char* argv[]) {
 	//	ppSet->Print("v");
 	cout << "setting wideFactor to " << ppSet->getRealValue("wideFactor",0.0,kFALSE) << " from pp."<< endl;
 	ws->var("wideFactor")->setVal(ppSet->getRealValue("wideFactor",0.0,kFALSE));
+	ws->var("wideFactor")->setConstant(kTRUE);
       }
       else
 	cout << "String " << strPbPb << "not found in " << dirPre << endl;
@@ -799,6 +812,13 @@ int main(int argc, char* argv[]) {
       mframe->SetMaximum(max*0.15);
   }
 
+  if (!highStats) {
+    max = mframe->GetMaximum();
+    min = mframe->GetMinimum();
+    mframe->SetMaximum(2.0*max);
+    mframe->SetMinimum(2.0*min);
+  }
+
   lCMS->SetTextSize(0.05);
   if (isPbPb)
     lCMS->SetText(0.17,0.90,"CMS PbPb #sqrt{s_{NN}} = 2.76 TeV");
@@ -806,7 +826,7 @@ int main(int argc, char* argv[]) {
     lCMS->SetText(0.17,0.90,"CMS pp #sqrt{s} = 2.76 TeV");
   mframe->addObject(lCMS,"");
 
-  lLumi->SetTextSize(0.04);
+  lLumi->SetTextSize(0.035);
   if (isPbPb)
     lLumi->SetText(0.17,0.83,"L_{int} = 150 #mub^{-1}");
   else
@@ -829,6 +849,7 @@ int main(int argc, char* argv[]) {
   lRap->SetText(0.17,0.78,reduceDS);
   mframe->addObject(lRap,"");
 
+  lPt->SetTextSize(0.035);
   if (pmin==6.5)
     sprintf(reduceDS,"%.1f < p_{T} < %.0f GeV/c",pmin,pmax);
   else if (pmax==6.5)
@@ -839,6 +860,7 @@ int main(int argc, char* argv[]) {
   lPt->SetText(0.17,0.73,reduceDS);
   mframe->addObject(lPt,"");
 
+  lNLL->SetTextSize(0.035);
   if (!isPaper) {
     sprintf(reduceDS,"Min. NLL = %0.2f",theNLL);
     lNLL->SetText(0.17,0.68,reduceDS);
@@ -911,7 +933,9 @@ int main(int argc, char* argv[]) {
     if  (found!=string::npos) {
       sprintf(reduceDS,"#sigma_{G} = %0.0f MeV/c^{2}",sigmaSig2*1000.0);
       lSigG->SetText(0.62,0.60,reduceDS);
-      if (ws->var("wideFactor")->hasAsymError() && abs(-1.0*ws->var("wideFactor")->getErrorLo()/ws->var("wideFactor")->getErrorHi() - 1)>0.1)
+      if (ws->var("wideFactor")->isConstant())
+	sprintf(reduceDS,"n_{G} = %0.2f (fixed)",ws->var("wideFactor")->getVal());
+      else if (ws->var("wideFactor")->hasAsymError() && abs(-1.0*ws->var("wideFactor")->getErrorLo()/ws->var("wideFactor")->getErrorHi() - 1)>0.1)
 	sprintf(reduceDS,"n_{G} = %0.2f^{+%0.2f}_{%0.2f}",ws->var("wideFactor")->getVal(),ws->var("wideFactor")->getErrorHi(),ws->var("wideFactor")->getErrorLo());
       else
 	sprintf(reduceDS,"n_{G} = %0.2f #pm %0.2f",ws->var("wideFactor")->getVal(),ws->var("wideFactor")->getError());

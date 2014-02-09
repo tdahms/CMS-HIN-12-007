@@ -2,7 +2,7 @@
 TODAY=`date +%Y%m%d`
 echo "Today is ${TODAY}"
 
-SUFFIX="M2242_FixCBtail_NoSumw2_DblMu0_NoMinos_newCBtailFits"
+SUFFIX="M2242_FixCBtail_NoSumw2_DblMu0_NoMinos_newCBtailFits_fixWideFactorPbPb_varBins"
 
 DIRECTORY="${TODAY}_${SUFFIX}"
 
