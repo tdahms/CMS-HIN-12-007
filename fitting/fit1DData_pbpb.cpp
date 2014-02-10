@@ -57,13 +57,8 @@ int main(int argc, char* argv[]) {
   string FileName, FileNameMC1, FileNameMC2;
   string mBkgFunct, mJpsiFunct, mPsiPFunct;
   bool prefitMass = false;
-  bool prefitSignalCTau = false;
-  bool prefitBkg = false;
   int  isGG = 0;
-  bool fracfix = true;
   int isMB = false;
-  int isMBCtau = false;
-  bool isPT = false;
   string prange, lrange, yrange, crange;
   string dirPre;
   string rpmethod = "etHF";
@@ -145,7 +140,7 @@ int main(int argc, char* argv[]) {
  
   string mBkgFunctP = mBkgFunct + "P";
 
-  float pmin=0, pmax=0, ymin=0, ymax=0, cmin=0, cmax=0, psmax=0, psmin=0;
+  float pmin=0, pmax=0, ymin=0, ymax=0, cmin=0, cmax=0;
   getOptRange(prange,&pmin,&pmax);
   getOptRange(crange,&cmin,&cmax);
   getOptRange(yrange,&ymin,&ymax);
@@ -241,7 +236,7 @@ int main(int argc, char* argv[]) {
   // Binning for invariant mass distribution
   RooBinning rbm(2.2,4.2);
   int nbins = 100;
-  bool highStats=false;
+  bool highStats=true;
   if (highStats)
     rbm.addUniform(nbins,2.2,4.2);
   else {
@@ -279,8 +274,8 @@ int main(int argc, char* argv[]) {
   } else {
    redDataSB = (RooDataSet*) redDataCut->reduce("Jpsi_Mass<2.9 || Jpsi_Mass>3.3");
   }
-  RooDataHist *binDataSB = new RooDataHist("binDataSB","Data distribution for background",RooArgSet( *(ws->var("Jpsi_Mass")) ),*redDataSB);
-  RooDataSet *redDataSIG = (RooDataSet*)redDataCut->reduce("Jpsi_Mass > 2.9 && Jpsi_Mass < 3.3");
+  //  RooDataHist *binDataSB = new RooDataHist("binDataSB","Data distribution for background",RooArgSet( *(ws->var("Jpsi_Mass")) ),*redDataSB);
+  //  RooDataSet *redDataSIG = (RooDataSet*)redDataCut->reduce("Jpsi_Mass > 2.9 && Jpsi_Mass < 3.3");
 
   // *** Define PDFs with parameters (mass and ctau)
   // Just so RooFit does not crash on Ubuntu
@@ -350,34 +345,8 @@ int main(int argc, char* argv[]) {
 
 
   RooFitResult *fitM;
-  RooFitResult *fitM_pre;
-  RooFitResult *fitP;
-  struct PARAM {
-    double fracP; double fracPErr;
-    double coeffExp;  double coeffExpErr;
-    double coeffExp2;  double coeffExp2Err;
-    double cutx;  double cutxErr;
-    double bkgMean; double bkgMeanErr;
-    double bkgSigma; double bkgSigmaErr;
-    double coeffPol1; double coeffPol1Err;
-    double coeffPol2; double coeffPol2Err;
-    double coeffPol3; double coeffPol3Err;
-    double coeffPol4; double coeffPol4Err;
-    double coeffPol5; double coeffPol5Err;
-    double coeffGaus; double coeffGausErr;
-    double meanSig1;  double meanSig1Err;
-    double sigmaSig1; double sigmaSig1Err;
-    double sigmaSig2; double sigmaSig2Err;
-    double wideFactor; double wideFactorErr;
-    double alpha;     double alphaErr;
-    double enne;      double enneErr;
-  };
+  RooFitResult *fitP = NULL;
 
-  PARAM inputCB;
-  PARAM inputCBG;
-
-  bool centConst = false;  //False: fit w/o any constrained parameters (centrality dep.)
-  double inputN[4] = {0};  //Number of Jpsi, psiP, fracP, and background in the 0-1.571 rad bin
   if (isMB != 0) {
     if (isMB != 4 && (mJpsiFunct.compare("sigCB2WNG1") || mBkgFunct.compare("expFunct"))) {
       cout << "For fit systematics:\n";
@@ -453,62 +422,32 @@ int main(int argc, char* argv[]) {
 
   // fix CB parameters to MC
   if (fixCBtoMC) {
-    if (isPbPb) {
-      if (prange=="6.5-30.0" && yrange=="0.0-2.4") {
-	ws->var("alpha")->setVal(1.740);
-	ws->var("enne")->setVal(1.644);
-      }
-      else if (prange=="6.5-30.0" && yrange=="0.0-1.6") {
-	ws->var("alpha")->setVal(1.718);
-	ws->var("enne")->setVal(1.638);
-      }
-      else if (prange=="3.0-30.0" && yrange=="1.6-2.4") {
-	ws->var("alpha")->setVal(2.120);
-	ws->var("enne")->setVal(1.347);
-      }
-      else if (prange=="3.0-6.5" && yrange=="1.6-2.4") {
-	ws->var("alpha")->setVal(2.061);
-	ws->var("enne")->setVal(1.310);
-      }
-      else if (prange=="6.5-30.0" && yrange=="1.6-2.4") {
-	ws->var("alpha")->setVal(2.154);
-	ws->var("enne")->setVal(1.380);
-      }
-      else {
-	ws->var("alpha")->setVal(2.0);
-	ws->var("enne")->setVal(1.4);
-      }
-      ws->var("alpha")->setConstant(kTRUE);
-      ws->var("enne")->setConstant(kTRUE);
+    if (prange=="6.5-30.0" && yrange=="0.0-2.4") {
+      ws->var("alpha")->setVal(1.818);
+      ws->var("enne")->setVal(1.588);
+    }
+    else if (prange=="6.5-30.0" && yrange=="0.0-1.6") {
+      ws->var("alpha")->setVal(1.735);
+      ws->var("enne")->setVal(1.628);
+    }
+    else if (prange=="3.0-30.0" && yrange=="1.6-2.4") {
+      ws->var("alpha")->setVal(2.136);
+      ws->var("enne")->setVal(1.320);
+    }
+    else if (prange=="3.0-6.5" && yrange=="1.6-2.4") {
+      ws->var("alpha")->setVal(2.091);
+      ws->var("enne")->setVal(1.270);
+    }
+    else if (prange=="6.5-30.0" && yrange=="1.6-2.4") {
+      ws->var("alpha")->setVal(2.161);
+      ws->var("enne")->setVal(1.370);
     }
     else {
-      if (prange=="6.5-30.0" && yrange=="0.0-2.4") {
-	ws->var("alpha")->setVal(1.740);
-	ws->var("enne")->setVal(1.644);
-      }
-      else if (prange=="6.5-30.0" && yrange=="0.0-1.6") {
-	ws->var("alpha")->setVal(1.718);
-	ws->var("enne")->setVal(1.638);
-      }
-      else if (prange=="3.0-30.0" && yrange=="1.6-2.4") {
-	ws->var("alpha")->setVal(2.120);
-	ws->var("enne")->setVal(1.347);
-      }
-      else if (prange=="3.0-6.5" && yrange=="1.6-2.4") {
-	ws->var("alpha")->setVal(2.061);
-	ws->var("enne")->setVal(1.310);
-      }
-      else if (prange=="6.5-30.0" && yrange=="1.6-2.4") {
-	ws->var("alpha")->setVal(2.154);
-	ws->var("enne")->setVal(1.380);
-      }
-      else {
-	ws->var("alpha")->setVal(2.0);
-	ws->var("enne")->setVal(1.4);
-      }
-      ws->var("alpha")->setConstant(kTRUE);
-      ws->var("enne")->setConstant(kTRUE);
+      ws->var("alpha")->setVal(2.0);
+      ws->var("enne")->setVal(1.4);
     }
+    ws->var("alpha")->setConstant(kTRUE);
+    ws->var("enne")->setConstant(kTRUE);
   }
 
   // 20140128: seed with CB fit parameters
@@ -566,7 +505,7 @@ int main(int argc, char* argv[]) {
     cout << "CB_" << mBkgFunct << "_rap" << yrange_str << "_pT" << prange_str << "_cent" << crange << endl;
 
   cout << "---FIT result summary: " << edmStatus << covStatus << fitStatus;
-  for (int i=0; i<fitM->numStatusHistory(); ++i) {
+  for (unsigned int i=0; i<fitM->numStatusHistory(); ++i) {
     cout << fitM->statusCodeHistory(i);
   }
   cout << " ---" << endl;
@@ -589,7 +528,6 @@ int main(int argc, char* argv[]) {
   RooHist *hpull_jpsi;
   RooHist *hpull_psip;
   RooHist *hpull; 
-  double chi2FromRoo = 0.0;
 
   if (fitSubRange) {
     ws->pdf("jpsiMassPDF")->plotOn(mframe,DrawOption("F"),FillColor(kBlack),FillStyle(3354));
@@ -919,9 +857,9 @@ int main(int argc, char* argv[]) {
   double ErrsigmaSig1 = ws->var("sigmaSig1")->getError();
   double ErrsigmaSig2 = sigmaSig1*ws->var("wideFactor")->getError();
 
-  if (ErrcoeffGaus == 0.0) ErrcoeffGaus = inputCBG.coeffGausErr;
-  if (ErrsigmaSig1 == 0.0) ErrsigmaSig1 = inputCBG.sigmaSig1Err;
-  if (ErrsigmaSig2 == 0.0) ErrsigmaSig2 = inputCBG.sigmaSig2Err;
+  // if (ErrcoeffGaus == 0.0) ErrcoeffGaus = inputCBG.coeffGausErr;
+  // if (ErrsigmaSig1 == 0.0) ErrsigmaSig1 = inputCBG.sigmaSig1Err;
+  // if (ErrsigmaSig2 == 0.0) ErrsigmaSig2 = inputCBG.sigmaSig2Err;
 
   if (!isPaper) {
     if (ErrsigmaSig1<0.0005) 
