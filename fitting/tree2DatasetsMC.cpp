@@ -92,7 +92,7 @@ double CorrectMass(const TLorentzVector* mu1,const TLorentzVector* mu2, int mode
 int main(int argc, char* argv[]) {
 
   const double Jpsi_MassMin=2.2;
-  const double Jpsi_MassMax=3.6;
+  const double Jpsi_MassMax=3.4;
   const double Jpsi_PtMin=0;
   const double Jpsi_PtMax=50;
   const double Jpsi_YMin=0;
@@ -467,11 +467,11 @@ int main(int argc, char* argv[]) {
   if (isHI) {
     for (unsigned int j = 0; j <= centRegions; j++) {
       if (j==centRegions) {
-	sprintf(namefile,"%s/PbPbPromptJpsiMC_DblMu0_cent%d-%d_M2236.root",argv[2],
+	sprintf(namefile,"%s/PbPbPromptJpsiMC_DblMu0_cent%d-%d_M2234.root",argv[2],
 		int(centLimits[0]*2.5),int(centLimits[j]*2.5));
       }
       else {
-	sprintf(namefile,"%s/PbPbPromptJpsiMC_DblMu0_cent%d-%d_M2236.root",argv[2],
+	sprintf(namefile,"%s/PbPbPromptJpsiMC_DblMu0_cent%d-%d_M2234.root",argv[2],
 		int(centLimits[j]*2.5),int(centLimits[j+1]*2.5));
       }
       Out[j] = new TFile(namefile,"RECREATE");
@@ -515,7 +515,7 @@ int main(int argc, char* argv[]) {
   }
   else {
     unsigned int j=0;
-    sprintf(namefile,"%s/ppPromptJpsiMC_DblMu0_cent%d-%d_M2236.root",argv[2],0,100);
+    sprintf(namefile,"%s/ppPromptJpsiMC_DblMu0_cent%d-%d_M2234.root",argv[2],0,100);
     Out[j] = new TFile(namefile,"RECREATE");
     Out[j]->cd();
     dataJpsi[j]->Write();

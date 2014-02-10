@@ -18,8 +18,6 @@
 #include "RooFitResult.h"
 #include "RooBinning.h"
 
-
-
 #include "RooGenericPdf.h"
 #include "RooChi2Var.h"
 #include "RooMinuit.h"
@@ -54,7 +52,9 @@ void fitMC_CBG(bool isHI=false, double ptmin=0.0, double ptmax=30.0, double ymin
 
   //  Jpsi_Mass.setBins(100); for 2.2--4.2 GeV
   RooBinning bins(2.2,3.4);
+  //  bins.addUniform(14,2.2,2.9);
   bins.addUniform(12,2.2,2.8);
+  //  bins.addUniform(20,2.9,3.3);
   bins.addUniform(25,2.8,3.3);
   bins.addUniform(1,3.3,3.4);
   Jpsi_Mass.setBinning(bins);
@@ -87,9 +87,12 @@ void fitMC_CBG(bool isHI=false, double ptmin=0.0, double ptmax=30.0, double ymin
   RooChebychev bkg("bkg","Background",Jpsi_Mass,RooArgSet(a0));
 
   RooRealVar Nsignal("Nsignal","Nsginal",10000);
-  RooRealVar Nbackground("Nbackground","Nbackground",100);
+  RooRealVar Nbackground("Nbackground","Nbackground",100,0,1e6);
   Nsignal.setConstant(0);
-  Nbackground.setConstant(0);
+  if (!isHI) {
+    Nbackground.setVal(0);
+    Nbackground.setConstant(1);
+  }
 
   RooRealVar bkgfrac("bkgfrac","fraction of background",0.001,0.0,1.0);
   // RooAddPdf model_g("model_g","cb+bkg",RooArgList(bkg,gaussS),bkgfrac);
@@ -101,54 +104,56 @@ void fitMC_CBG(bool isHI=false, double ptmin=0.0, double ptmax=30.0, double ymin
   RooAddPdf model_cbg("model_cbg","cb+bkg",RooArgList(bkg,cbg),RooArgList(Nbackground,Nsignal));
   RooAddPdf model_cbg2("model_cbg2","cb+bkg2",RooArgList(bkg,cbg),RooArgList(Nbackground,Nsignal));
   a0.setVal(0);
-  // if (isHI)
-  //  a0.setConstant(1);
+  //  if (!isHI)
+    a0.setConstant(1);
   bkgfrac.setVal(0);
   //  bkgfrac.setConstant(1);
 
-  if (isHI && false) {
+  if (isHI) {
     std::cout << ptmin << " " << ptmax << " " << ymin << " " << ymax << std::endl;
-    if (abs(ptmin-6.5)/ptmin<1e-5 && abs(ptmax-30)/ptmax<1e-5 && abs(ymin-0)<1e-5 && abs(ymax-2.4)/ymax<1e-5) {
+    if (fabs(ptmin-6.5)/ptmin<1e-5 && fabs(ptmax-30)/ptmax<1e-5 && fabs(ymin-0)<1e-5 && fabs(ymax-2.4)/ymax<1e-5) {
       std::cout << "GOOD" << std::endl;
-      alpha.setVal(1.740);
-      n.setVal(1.644);
-      wideFactor.setVal(1.902);
-    }
-    else if (abs(ptmin-6.5)/ptmin<1e-5 && abs(ptmax-30)/ptmax<1e-5 && abs(ymin-0)<1e-5 && abs(ymax-1.6)/ymax<1e-5) {
-      std::cout << "GOOD" << std::endl;
-      alpha.setVal(1.718);
-      n.setVal(1.638);
-      wideFactor.setVal(1.726);
-    }
-    else if (abs(ptmin-3)/ptmin<1e-5 && abs(ptmax-30)/ptmax<1e-5 && abs(ymin-1.6)/ymin<1e-5 && abs(ymax-2.4)/ymax<1e-5) {
-      std::cout << "GOOD" << std::endl;
-      alpha.setVal(2.120);
-      n.setVal(1.347);
-      wideFactor.setVal(1.653);
-    }
-    else if (abs(ptmin-3)/ptmin<1e-5 && abs(ptmax-6.5)/ptmax<1e-5 && abs(ymin-1.6)/ymin<1e-5 && abs(ymax-2.4)/ymax<1e-5) {
-      std::cout << "GOOD" << std::endl;
-      alpha.setVal(2.061);
-      n.setVal(1.310);
-      wideFactor.setVal(1.529);
-    }
-    else if (abs(ptmin-6.5)/ptmin<1e-5 && abs(ptmax-30)/ptmax<1e-5 && abs(ymin-1.6)/ymin<1e-5 && abs(ymax-2.4)/ymax<1e-5) {
-      std::cout << "GOOD" << std::endl;
-      alpha.setVal(2.154);
-      n.setVal(1.380);
+      alpha.setVal(1.818);
+      n.setVal(1.588);
       wideFactor.setVal(1.951);
+    }
+    else if (fabs(ptmin-6.5)/ptmin<1e-5 && fabs(ptmax-30)/ptmax<1e-5 && fabs(ymin-0)<1e-5 && fabs(ymax-1.6)/ymax<1e-5) {
+      std::cout << "GOOD" << std::endl;
+      alpha.setVal(1.735);
+      n.setVal(1.628);
+      wideFactor.setVal(1.734);
+    }
+    else if (fabs(ptmin-3)/ptmin<1e-5 && fabs(ptmax-30)/ptmax<1e-5 && fabs(ymin-1.6)/ymin<1e-5 && fabs(ymax-2.4)/ymax<1e-5) {
+      std::cout << "GOOD" << std::endl;
+      alpha.setVal(2.136);
+      n.setVal(1.320);
+      //      alpha.setVal(2.120);
+      //      n.setVal(1.347);
+      wideFactor.setVal(1.681);
+    }
+    else if (fabs(ptmin-3)/ptmin<1e-5 && fabs(ptmax-6.5)/ptmax<1e-5 && fabs(ymin-1.6)/ymin<1e-5 && fabs(ymax-2.4)/ymax<1e-5) {
+      std::cout << "GOOD" << std::endl;
+      alpha.setVal(2.091);
+      n.setVal(1.270);
+      wideFactor.setVal(1.546);
+    }
+    else if (fabs(ptmin-6.5)/ptmin<1e-5 && fabs(ptmax-30)/ptmax<1e-5 && fabs(ymin-1.6)/ymin<1e-5 && fabs(ymax-2.4)/ymax<1e-5) {
+      std::cout << "GOOD" << std::endl;
+      alpha.setVal(2.161);
+      n.setVal(1.370);
+      wideFactor.setVal(1.970);
     }
     else {
       std::cout << "BAD" << std::endl;
       alpha.setVal(2.0);
       n.setVal(1.4);
     }
-    // alpha.setConstant(kTRUE);
-    // n.setConstant(kTRUE);
+    alpha.setConstant(kTRUE);
+    n.setConstant(kTRUE);
     // wideFactor.setConstant(kTRUE);
   }
 
-  string fname;
+  std::string fname;
   if (isHI)
     fname = "../root_files/PbPbPromptJpsiMC_DblMu0_cent0-100_M2234.root";
   else
@@ -357,21 +362,21 @@ void fitMC_CBG(bool isHI=false, double ptmin=0.0, double ptmax=30.0, double ymin
   TString outfname;
   if (fitChi2) {
     if (isHI)
-      outfname = Form("Jpsi_PbPb_MCshape_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f_M2234_chi2.pdf",ymin,ymax,ptmin,ptmax);
+      outfname = Form("MC_plots/Jpsi_PbPb_MCshape_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f_M2234_chi2.pdf",ymin,ymax,ptmin,ptmax);
     else
-      outfname = Form("Jpsi_pp_MCshape_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f_M2234_chi2.pdf",ymin,ymax,ptmin,ptmax);
+      outfname = Form("MC_plots/Jpsi_pp_MCshape_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f_M2234_chi2.pdf",ymin,ymax,ptmin,ptmax);
   }
   else {
     if (isHI)
-      outfname = Form("Jpsi_PbPb_MCshape_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f_M2234.pdf",ymin,ymax,ptmin,ptmax);
+      outfname = Form("MC_plots/Jpsi_PbPb_MCshape_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f_M2234.pdf",ymin,ymax,ptmin,ptmax);
     else
-      outfname = Form("Jpsi_pp_MCshape_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f_M2234.pdf",ymin,ymax,ptmin,ptmax);
+      outfname = Form("MC_plots/Jpsi_pp_MCshape_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f_M2234.pdf",ymin,ymax,ptmin,ptmax);
   }
 
-  std::cout << outfname << std::endl;
-  if (savePlot)
+  if (savePlot) {
+    std::cout << outfname << std::endl;
     c1->SaveAs(outfname);
-
+  }
 
 
   /*
