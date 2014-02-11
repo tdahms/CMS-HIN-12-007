@@ -210,7 +210,7 @@ int main(int argc, char* argv[]) {
   }
   else if (cutNonPrompt && isPbPb) {
     if (prange=="6.5-30.0" && yrange=="0.0-2.4")
-      sprintf(reduceDS,"Jpsi_Pt>%.2f && Jpsi_Pt<%.2f && abs(Jpsi_Y)>%.2f && abs(Jpsi_Y)<%.2f && Jpsi_Ct<0.04",pmin,pmax,ymin,ymax);
+      sprintf(reduceDS,"Jpsi_Pt>%.2f && Jpsi_Pt<%.2f && abs(Jpsi_Y)>%.2f && abs(Jpsi_Y)<%.2f && Jpsi_Ct<0.05",pmin,pmax,ymin,ymax);
     else if (prange=="6.5-30.0" && yrange=="0.0-1.6")
       sprintf(reduceDS,"Jpsi_Pt>%.2f && Jpsi_Pt<%.2f && abs(Jpsi_Y)>%.2f && abs(Jpsi_Y)<%.2f && Jpsi_Ct<0.04",pmin,pmax,ymin,ymax);
     else if (prange=="3.0-30.0" && yrange=="1.6-2.4")
@@ -243,11 +243,11 @@ int main(int argc, char* argv[]) {
     // rbm.addUniform(14,2.2,2.760);
     // rbm.addUniform(24,2.760,3.240);
     // rbm.addUniform(24,3.240,4.2);
-    rbm.addUniform(11,2.2,2.860);
-    rbm.addUniform(19,2.860,3.240);
-    rbm.addUniform(6,3.240,3.600);
-    rbm.addUniform(6,3.600,3.720);
-    rbm.addUniform(8,3.720,4.2);
+    rbm.addUniform(11,2.2,2.860); // 60 MeV
+    rbm.addUniform(19,2.860,3.240); // 20 MeV
+    rbm.addUniform(6,3.240,3.600); // 60 MeV
+    rbm.addUniform(4,3.600,3.720); // 30 MeV
+    rbm.addUniform(8,3.720,4.2); // 60 MeV
   }
 
   ws->var("Jpsi_Mass")->setBinning(rbm);
@@ -422,32 +422,68 @@ int main(int argc, char* argv[]) {
 
   // fix CB parameters to MC
   if (fixCBtoMC) {
-    if (prange=="6.5-30.0" && yrange=="0.0-2.4") {
-      ws->var("alpha")->setVal(1.818);
-      ws->var("enne")->setVal(1.588);
-    }
-    else if (prange=="6.5-30.0" && yrange=="0.0-1.6") {
-      ws->var("alpha")->setVal(1.735);
-      ws->var("enne")->setVal(1.628);
-    }
-    else if (prange=="3.0-30.0" && yrange=="1.6-2.4") {
-      ws->var("alpha")->setVal(2.136);
-      ws->var("enne")->setVal(1.320);
-    }
-    else if (prange=="3.0-6.5" && yrange=="1.6-2.4") {
-      ws->var("alpha")->setVal(2.091);
-      ws->var("enne")->setVal(1.270);
-    }
-    else if (prange=="6.5-30.0" && yrange=="1.6-2.4") {
-      ws->var("alpha")->setVal(2.161);
-      ws->var("enne")->setVal(1.370);
+    if (isPbPb) {
+      if (prange=="6.5-30.0" && yrange=="0.0-2.4") {
+	ws->var("alpha")->setVal(1.489);
+	ws->var("enne")->setVal(1.730);
+	ws->var("wideFactor")->setVal(1.901);
+      }
+      else if (prange=="6.5-30.0" && yrange=="0.0-1.6") {
+	ws->var("alpha")->setVal(1.516);
+	ws->var("wideFactor")->setVal(1.699);
+	ws->var("enne")->setVal(1.683);
+      }
+      else if (prange=="3.0-30.0" && yrange=="1.6-2.4") {
+	ws->var("alpha")->setVal(1.880);
+	ws->var("enne")->setVal(1.430);
+	ws->var("wideFactor")->setVal(1.503);
+      }
+      else if (prange=="3.0-6.5" && yrange=="1.6-2.4") {
+	ws->var("alpha")->setVal(1.860);
+	ws->var("enne")->setVal(1.330);
+	ws->var("wideFactor")->setVal(1.540);
+      }
+      else if (prange=="6.5-30.0" && yrange=="1.6-2.4") {
+	ws->var("alpha")->setVal(2.187);
+	ws->var("enne")->setVal(1.295);
+	ws->var("wideFactor")->setVal(1.830);
+      }
+      else {
+	ws->var("alpha")->setVal(2.0);
+	ws->var("enne")->setVal(1.4);
+	ws->var("wideFactor")->setVal(2.0);
+      }
     }
     else {
-      ws->var("alpha")->setVal(2.0);
-      ws->var("enne")->setVal(1.4);
+      if (prange=="6.5-30.0" && yrange=="0.0-2.4") {
+	ws->var("alpha")->setVal(1.693);
+	ws->var("enne")->setVal(1.709);
+      }
+      else if (prange=="6.5-30.0" && yrange=="0.0-1.6") {
+	ws->var("alpha")->setVal(1.710);
+	ws->var("enne")->setVal(1.646);
+      }
+      else if (prange=="3.0-30.0" && yrange=="1.6-2.4") {
+	ws->var("alpha")->setVal(2.079);
+	ws->var("enne")->setVal(1.390);
+      }
+      else if (prange=="3.0-6.5" && yrange=="1.6-2.4") {
+	ws->var("alpha")->setVal(2.000);
+	ws->var("enne")->setVal(1.350);
+      }
+      else if (prange=="6.5-30.0" && yrange=="1.6-2.4") {
+	ws->var("alpha")->setVal(2.161);
+	ws->var("enne")->setVal(1.370);
+      }
+      else {
+	ws->var("alpha")->setVal(2.0);
+	ws->var("enne")->setVal(1.4);
+      }
     }
     ws->var("alpha")->setConstant(kTRUE);
     ws->var("enne")->setConstant(kTRUE);
+    if (isPbPb)
+      ws->var("wideFactor")->setConstant(kTRUE);
   }
 
   // 20140128: seed with CB fit parameters
@@ -463,28 +499,30 @@ int main(int argc, char* argv[]) {
     // set->Print("v");
     // ws->Print("v");
 
+    /* set it to MC instead
     // try to set wideFactor to the result from the pp fit.
-    if (isPbPb) {
+      if (isPbPb) {
       string dirPrePp = dirPre;
       string strPbPb = "frac";
       size_t found = dirPre.find(strPbPb);
       if (found!=string::npos) {
-	dirPrePp.replace(found,strPbPb.length(),"ppFrac");
-	//	cout << "pp string: " << dirPrePp << endl; 
-	inputFNcb =  dirPrePp + "_" + mBkgFunct + "_rap" + yrange_str + "_pT" + prange_str + "_cent0-100_allVars.txt";
-	cout << "pp file name: " << inputFNcb << endl;
-	RooArgSet *ppSet = ws->pdf("sigMassPDF")->getParameters(*(ws->var("Jpsi_Mass")));
-	//	ppSet->Print("v");
-	//	cout << "read from file: " << ppSet->readFromFile(inputFNcb.c_str(),"","",1) << endl;
-	ppSet->readFromFile(inputFNcb.c_str());
-	//	ppSet->Print("v");
-	cout << "setting wideFactor to " << ppSet->getRealValue("wideFactor",0.0,kFALSE) << " from pp."<< endl;
-	ws->var("wideFactor")->setVal(ppSet->getRealValue("wideFactor",0.0,kFALSE));
-	ws->var("wideFactor")->setConstant(kTRUE);
+      dirPrePp.replace(found,strPbPb.length(),"ppFrac");
+      //	cout << "pp string: " << dirPrePp << endl; 
+      inputFNcb =  dirPrePp + "_" + mBkgFunct + "_rap" + yrange_str + "_pT" + prange_str + "_cent0-100_allVars.txt";
+      cout << "pp file name: " << inputFNcb << endl;
+      RooArgSet *ppSet = ws->pdf("sigMassPDF")->getParameters(*(ws->var("Jpsi_Mass")));
+      //	ppSet->Print("v");
+      //	cout << "read from file: " << ppSet->readFromFile(inputFNcb.c_str(),"","",1) << endl;
+      ppSet->readFromFile(inputFNcb.c_str());
+      //	ppSet->Print("v");
+      cout << "setting wideFactor to " << ppSet->getRealValue("wideFactor",0.0,kFALSE) << " from pp."<< endl;
+      ws->var("wideFactor")->setVal(ppSet->getRealValue("wideFactor",0.0,kFALSE));
+      //	ws->var("wideFactor")->setConstant(kTRUE);
       }
       else
-	cout << "String " << strPbPb << "not found in " << dirPre << endl;
-    }
+      cout << "String " << strPbPb << "not found in " << dirPre << endl;
+      }
+    */
   }
 
   fitM = ws->pdf("sigMassPDF")->fitTo(*redDataCut,Extended(1),Hesse(1),Minos(0),Save(1),SumW2Error(0),NumCPU(8),PrintEvalErrors(0),Verbose(0));
@@ -835,10 +873,19 @@ int main(int argc, char* argv[]) {
     lRpsi->SetText(0.62,0.75,reduceDS);
     mframe->addObject(lRpsi,"");
 
-    if (ws->var("fracP")->hasAsymError() && abs(-1.0*ws->var("fracP")->getErrorLo()/ws->var("fracP")->getErrorHi() - 1)>0.1)
-      sprintf(reduceDS,"N_{#psi(2S)} = %0.1f^{+%0.1f}_{%0.1f}",ws->function("NPsiP")->getVal(),ws->var("fracP")->getErrorHi()*ws->var("NJpsi")->getVal(),ws->var("fracP")->getErrorLo()*ws->var("NJpsi")->getVal());
-    else
-      sprintf(reduceDS,"N_{#psi(2S)} = %0.1f #pm %0.1f",ws->function("NPsiP")->getVal(),ws->var("fracP")->getError()*ws->var("NJpsi")->getVal());
+    double NJpsi = ws->var("NJpsi")->getVal();
+    double fracP = ws->var("fracP")->getVal();
+    double errNJpsi = ws->var("NJpsi")->getError();
+    double errFracP = ws->var("fracP")->getError();
+    double corr = fitM->correlation( *ws->var("NJpsi") , *ws->var("fracP") );
+    std::cout << "Correlation between NJpsi and fracP: " << corr << std::endl;
+    double Npsi2S = ws->function("NPsiP")->getVal();
+    double errNpsi2S = sqrt( pow(errNJpsi/NJpsi,2) + pow(errFracP/fracP,2) + 2*errNJpsi*errFracP*corr/Npsi2S )*Npsi2S;
+
+    // if (ws->var("fracP")->hasAsymError() && abs(-1.0*ws->var("fracP")->getErrorLo()/ws->var("fracP")->getErrorHi() - 1)>0.1)
+    //   sprintf(reduceDS,"N_{#psi(2S)} = %0.1f^{+%0.1f}_{%0.1f}",ws->function("NPsiP")->getVal(),ws->var("fracP")->getErrorHi()*ws->var("NJpsi")->getVal(),ws->var("fracP")->getErrorLo()*ws->var("NJpsi")->getVal());
+    // else
+    sprintf(reduceDS,"N_{#psi(2S)} = %0.1f #pm %0.1f",Npsi2S,errNpsi2S);
     lNpsiP->SetText(0.62,0.70,reduceDS);
   }
   else {

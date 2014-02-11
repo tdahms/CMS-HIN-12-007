@@ -89,10 +89,10 @@ void fitMC_CBG(bool isHI=false, double ptmin=0.0, double ptmax=30.0, double ymin
   RooRealVar Nsignal("Nsignal","Nsginal",10000);
   RooRealVar Nbackground("Nbackground","Nbackground",100,0,1e6);
   Nsignal.setConstant(0);
-  if (!isHI) {
-    Nbackground.setVal(0);
-    Nbackground.setConstant(1);
-  }
+  //  if (!isHI) {
+  // Nbackground.setVal(0);
+  // Nbackground.setConstant(1);
+  //  }
 
   RooRealVar bkgfrac("bkgfrac","fraction of background",0.001,0.0,1.0);
   // RooAddPdf model_g("model_g","cb+bkg",RooArgList(bkg,gaussS),bkgfrac);
@@ -105,11 +105,11 @@ void fitMC_CBG(bool isHI=false, double ptmin=0.0, double ptmax=30.0, double ymin
   RooAddPdf model_cbg2("model_cbg2","cb+bkg2",RooArgList(bkg,cbg),RooArgList(Nbackground,Nsignal));
   a0.setVal(0);
   //  if (!isHI)
-    a0.setConstant(1);
+  a0.setConstant(1);
   bkgfrac.setVal(0);
   //  bkgfrac.setConstant(1);
 
-  if (isHI) {
+  if (isHI && false) {
     std::cout << ptmin << " " << ptmax << " " << ymin << " " << ymax << std::endl;
     if (fabs(ptmin-6.5)/ptmin<1e-5 && fabs(ptmax-30)/ptmax<1e-5 && fabs(ymin-0)<1e-5 && fabs(ymax-2.4)/ymax<1e-5) {
       std::cout << "GOOD" << std::endl;
@@ -148,8 +148,8 @@ void fitMC_CBG(bool isHI=false, double ptmin=0.0, double ptmax=30.0, double ymin
       alpha.setVal(2.0);
       n.setVal(1.4);
     }
-    alpha.setConstant(kTRUE);
-    n.setConstant(kTRUE);
+    // alpha.setConstant(kTRUE);
+    // n.setConstant(kTRUE);
     // wideFactor.setConstant(kTRUE);
   }
 

@@ -39,12 +39,12 @@ void tune_lJpsi_cut(bool isHI=false, float ptmin=0.0, float ptmax=30.0, float ym
   TString outfname;
   if (isHI) {
     //    fname = "PbPb_eff_" + efficiency + "_Rap_" + ymin + "-" + ymax + "_Pt_" + ptmin + "-" + ptmax + ".pdf";
-    fname = Form("20140115/Jpsi_PbPb_eff_%3.1f_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f_Cent_%d-%d.pdf",efficiency,ymin,ymax,ptmin,ptmax,int(centmin*2.5),int(centmax*2.5));
-    outfname = Form("20140115/Jpsi_PbPb_eff_%3.1f_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f_Cent_%d-%d.root",efficiency,ymin,ymax,ptmin,ptmax,int(centmin*2.5),int(centmax*2.5));
+    fname = Form("20140210/Jpsi_PbPb_eff_%3.1f_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f_Cent_%d-%d.pdf",efficiency,ymin,ymax,ptmin,ptmax,int(centmin*2.5),int(centmax*2.5));
+    outfname = Form("20140210/Jpsi_PbPb_eff_%3.1f_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f_Cent_%d-%d.root",efficiency,ymin,ymax,ptmin,ptmax,int(centmin*2.5),int(centmax*2.5));
   } 
   else {
-    fname = Form("20140115/Jpsi_pp_eff_%3.1f_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f.pdf",efficiency,ymin,ymax,ptmin,ptmax);
-    outfname = Form("20140115/Jpsi_pp_eff_%3.1f_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f.root",efficiency,ymin,ymax,ptmin,ptmax);
+    fname = Form("20140210/Jpsi_pp_eff_%3.1f_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f.pdf",efficiency,ymin,ymax,ptmin,ptmax);
+    outfname = Form("20140210/Jpsi_pp_eff_%3.1f_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f.root",efficiency,ymin,ymax,ptmin,ptmax);
   }
   std::cout << fname << std::endl;
 
@@ -77,7 +77,7 @@ void tune_lJpsi_cut(bool isHI=false, float ptmin=0.0, float ptmax=30.0, float ym
   lrap->SetNDC(kTRUE);
 
 
-  TLatex *lcent;
+  TLatex *lcent = NULL;
   if (isHI) {
     lcent = new TLatex(0.5,0.75,Form("Cent. %d-%d%%",int(centmin*2.5),int(centmax*2.5)));
     lcent->SetNDC(kTRUE);
@@ -94,12 +94,12 @@ void tune_lJpsi_cut(bool isHI=false, float ptmin=0.0, float ptmax=30.0, float ym
 
   TChain *NPTree = new TChain("myTree");
   if (isHI) {
-    NPTree->Add("/data/CMS/MC/PbPb/bJpsiMuMu_JpsiPt03_Histos_cmssw445p1_RegIt.root");
-    NPTree->Add("/data/CMS/MC/PbPb/bJpsiMuMu_JpsiPt36_Histos_cmssw445p1_RegIt.root");
-    NPTree->Add("/data/CMS/MC/PbPb/bJpsiMuMu_JpsiPt69_Histos_cmssw445p1_RegIt.root");
-    NPTree->Add("/data/CMS/MC/PbPb/bJpsiMuMu_JpsiPt912_Histos_cmssw445p1_RegIt.root");
-    NPTree->Add("/data/CMS/MC/PbPb/bJpsiMuMu_JpsiPt1215_Histos_cmssw445p1_RegIt.root");
-    NPTree->Add("/data/CMS/MC/PbPb/bJpsiMuMu_JpsiPt1530_Histos_cmssw445p1_RegIt.root");
+    NPTree->Add("/data/CMS/MC/PbPb/bJpsiMuMu_JpsiPt03_Histos_cmssw445p5_RegIt.root");
+    NPTree->Add("/data/CMS/MC/PbPb/bJpsiMuMu_JpsiPt36_Histos_cmssw445p5_RegIt.root");
+    NPTree->Add("/data/CMS/MC/PbPb/bJpsiMuMu_JpsiPt69_Histos_cmssw445p5_RegIt.root");
+    NPTree->Add("/data/CMS/MC/PbPb/bJpsiMuMu_JpsiPt912_Histos_cmssw445p5_RegIt.root");
+    NPTree->Add("/data/CMS/MC/PbPb/bJpsiMuMu_JpsiPt1215_Histos_cmssw445p5_RegIt.root");
+    NPTree->Add("/data/CMS/MC/PbPb/bJpsiMuMu_JpsiPt1530_Histos_cmssw445p5_RegIt.root");
   }
   else
     // PV includes the muons
@@ -129,12 +129,12 @@ void tune_lJpsi_cut(bool isHI=false, float ptmin=0.0, float ptmax=30.0, float ym
 
   TChain *PRTree = new TChain("myTree");
   if (isHI) {
-    PRTree->Add("/data/CMS/MC/PbPb/jpsiMuMu_JpsiPt03_Histos_cmssw445p1_RegIt.root");
-    PRTree->Add("/data/CMS/MC/PbPb/jpsiMuMu_JpsiPt36_Histos_cmssw445p1_RegIt.root");
-    PRTree->Add("/data/CMS/MC/PbPb/jpsiMuMu_JpsiPt69_Histos_cmssw445p1_RegIt.root");
-    PRTree->Add("/data/CMS/MC/PbPb/jpsiMuMu_JpsiPt912_Histos_cmssw445p1_RegIt.root");
-    PRTree->Add("/data/CMS/MC/PbPb/jpsiMuMu_JpsiPt1215_Histos_cmssw445p1_RegIt.root");
-    PRTree->Add("/data/CMS/MC/PbPb/jpsiMuMu_JpsiPt1530_Histos_cmssw445p1_RegIt.root");
+    PRTree->Add("/data/CMS/MC/PbPb/jpsiMuMu_JpsiPt03_Histos_cmssw445p5_RegIt.root");
+    PRTree->Add("/data/CMS/MC/PbPb/jpsiMuMu_JpsiPt36_Histos_cmssw445p5_RegIt.root");
+    PRTree->Add("/data/CMS/MC/PbPb/jpsiMuMu_JpsiPt69_Histos_cmssw445p5_RegIt.root");
+    PRTree->Add("/data/CMS/MC/PbPb/jpsiMuMu_JpsiPt912_Histos_cmssw445p5_RegIt.root");
+    PRTree->Add("/data/CMS/MC/PbPb/jpsiMuMu_JpsiPt1215_Histos_cmssw445p5_RegIt.root");
+    PRTree->Add("/data/CMS/MC/PbPb/jpsiMuMu_JpsiPt1530_Histos_cmssw445p5_RegIt.root");
   }
   else
     // PV includes the muons
