@@ -100,7 +100,7 @@ int main(int argc, char* argv[]) {
   const double Jpsi_CtMin = -3.0;
   const double Jpsi_CtMax = 3.5;
 
-  const bool isHI = false;
+  const bool isHI = true;
 
   char fileName[100];
   if ( argc != 5 && argc != 3 ){
