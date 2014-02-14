@@ -1047,21 +1047,21 @@ int main(int argc, char* argv[]) {
 
   // prepare models for CLs calculations
   RooStats::ModelConfig *model = new RooStats::ModelConfig("model");
-  model->SetWorkSpace(ws);
+  model->SetWorkspace(*ws);
   model->SetPdf("sigMassPDF");
   model->SetObservables(RooArgSet("Jpsi_Mass"));
   RooArgSet *pars = ws->pdf("sigMassPDF")->getParameters(redData);
   //  pars.assignFast(pars);
   pars->Print("v");
-  RooArgSet *nuisances = RooARgSet(pars);
-  nuisances->remove(ws->var("fracP"));
+  RooArgSet nuisances = RooArgSet(*pars);
+  nuisances.remove(*ws->var("fracP"));
   model->SetNuisanceParameters(nuisances);
-  RooArgSet poi = RooArgSet(ws->var("fracP"));
+  RooArgSet poi = RooArgSet(*ws->var("fracP"));
   model->SetParametersOfInterest(poi);
-  model->SetSnapshot(pars);
+  model->SetSnapshot(*pars);
 
   // prepare models for CLs calculations
-  RooStats::ModelConfig *model_null = (RooStats::ModelConfig*)model->Clone();
+  RooStats::ModelConfig *model_null = (RooStats::ModelConfig*)model->Clone("modell_null");
   //  model_null->SetWorkSpace(ws);
   //  model_null->SetPdf("sigMassPDF");
   //  model_null->SetObservables(RooArgSet("Jpsi_Mass"));
@@ -1071,12 +1071,13 @@ int main(int argc, char* argv[]) {
   //  RooArgSet *nuisances = RooARgSet(pars);
   //  nuisances->remove(ws->var("fracP"));
   //  model->SetNuisanceParameters(nuisances);
-  RooArgSet poiNew = RooArgSet(ws->var("fracP"));
+  RooArgSet poiNew = RooArgSet(*ws->var("fracP"));
   double oldVal = ws->var("fracP")->getVal();
   ws->var("fracP")->setVal(0.0);
   model_null->SetSnapshot(poiNew);
   ws->var("fracP")->setVal(oldVal);
-  // to be continued...
+  ws->import(*model);
+  ws->import(*model_null);
 
   string fname = dirPre + "_" + mBkgFunct + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str + "Workspace.root";
   ws->writeToFile(fname.c_str(),kTRUE);

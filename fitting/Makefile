@@ -44,7 +44,7 @@ endif
 CXXFLAGS      += $(ROOTCFLAGS)
 
 NGLIBS		= $(ROOTGLIBS)
-NGLIBS		+= -lMathMore -lMinuit -lRooFit -lRooFitCore -lFoam 
+NGLIBS		+= -lMathMore -lMinuit -lRooFit -lRooFitCore -lRooStats -lFoam 
 GLIBS		= $(filter-out -lNew, $(NGLIBS))
 
 INCLUDEDIR	= ./
