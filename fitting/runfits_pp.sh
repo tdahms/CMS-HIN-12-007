@@ -16,7 +16,7 @@ else
 fi
 
 #bkgfunctions=(pol1 pol2 pol3 pol4 pol5 pol6)
-bkgfunctions=(expFunct bkgGaus)
+bkgfunctions=(expFunct gausBkg)
 ptbins=(6.5-30.0 3.0-30.0 3.0-6.5)
 rapbins=(0.0-2.4 0.0-1.6 1.6-2.4)
 centbins=(0-100)

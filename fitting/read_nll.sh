@@ -4,7 +4,7 @@ ptbins=(65-30 3-30 3-65)
 rapbins=(0-24 0-16 16-24)
 centbins=(0-100 0-20 20-40 40-100)
 
-DIRECTORY="20140210_M2242_FixCBtail_NoSumw2_DblMu0_NoMinos_finalCBtailFits_fixWideFactorPbPbMC_corrPsi2SError/"
+DIRECTORY="20140210_M2242_FixCBtail_NoSumw2_DblMu0_NoMinos_finalCBtailFits_fixWideFactorPbPbMC_corrPsi2SError_bkgStudy/"
 echo "pp"
 for pt in "${ptbins[@]}";
 do
@@ -17,7 +17,7 @@ do
 	for cent in "${centbins[0]}";
 	do
 	echo "rap${rap}_pT${pt}_cent${cent}"
-	grep NLL ${DIRECTORY}ppFracLogCBG_pol*_rap${rap}_pT${pt}_cent${cent}.txt | awk '{print $2}'
+	grep NLL ${DIRECTORY}ppFracLogCBG_*_rap${rap}_pT${pt}_cent${cent}.txt | awk '{print $2}'
 	echo $'\n\n'
 	done;
     done;
@@ -43,7 +43,7 @@ do
 		continue;
 	    fi;
 	    echo "rap${rap}_pT${pt}_cent${cent}"
-	    grep NLL ${DIRECTORY}fracLogCBG_pol*_rap${rap}_pT${pt}_cent${cent}.txt | awk '{print $2}'
+	    grep NLL ${DIRECTORY}fracLogCBG_*_rap${rap}_pT${pt}_cent${cent}.txt | awk '{print $2}'
 	    echo $'\n\n'
 	done;
     done;

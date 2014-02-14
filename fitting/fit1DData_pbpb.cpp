@@ -1106,7 +1106,7 @@ int main(int argc, char* argv[]) {
       << "coeffExp2 "     << ws->var("coeffExp2")->getVal()     << " " << ws->var("coeffExp2")->getError() << "\n"
       << "cutx "          << ws->var("cutx")->getVal()          << " " << ws->var("cutx")->getError() << "\n";
   }
-  if (!mBkgFunct.compare("bkgGaus")) {
+  if (!mBkgFunct.compare("gausBkg")) {
     outputFile
       << "meanBkg "      << ws->var("meanBkg")->getVal()      << " " << ws->var("meanBkg")->getError() << "\n"
       << "sigmaBkg "     << ws->var("sigmaBkg")->getVal()     << " " << ws->var("sigmaBkg")->getError() << "\n";
@@ -1201,7 +1201,7 @@ void defineMassBkg(RooWorkspace *ws) {
   ws->factory("Exponential::expFunct(Jpsi_Mass,coeffExp[-0.1,-3.0,1.0])");
 
   // gauss
-  ws->factory("Gaussian::bkgGaus(Jpsi_Mass,meanBkg[0.0,0.0,10.0],sigmaBkg[1.0,0.5,5.0])");
+  ws->factory("Gaussian::gausBkg(Jpsi_Mass,meanBkg[0.0,0.0,10.0],sigmaBkg[1.0,0.5,5.0])");
 
   return;
 }
