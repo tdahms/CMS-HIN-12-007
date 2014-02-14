@@ -4,7 +4,7 @@ ptbins=(65-30 3-30 3-65)
 rapbins=(0-24 0-16 16-24)
 centbins=(0-100 0-20 20-40 40-100)
 
-DIRECTORY="20140210_M2242_FixCBtail_NoSumw2_DblMu0_NoMinos_finalCBtailFits_fixWideFactorPbPbMC_corrPsi2SError_bkgStudy/"
+DIRECTORY="20140214_M2242_FixCBtail_NoSumw2_DblMu0_NoMinos_finalCBtailFits_fixWideFactorPbPbMC_corrPsi2SError/"
 echo "pp"
 for pt in "${ptbins[@]}";
 do

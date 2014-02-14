@@ -37,6 +37,8 @@
 #include <RooPlot.h>
 #include <RooChebychev.h>
 
+#include <RooStats/ModelConfig.h>
+
 using namespace RooFit;
 using namespace std;
 
@@ -58,7 +60,6 @@ int main(int argc, char* argv[]) {
   string mBkgFunct, mJpsiFunct, mPsiPFunct;
   bool prefitMass = false;
   int  isGG = 0;
-  int isMB = false;
   string prange, lrange, yrange, crange;
   string dirPre;
   string rpmethod = "etHF";
@@ -70,6 +71,9 @@ int main(int argc, char* argv[]) {
   bool isPaper = false;
   bool fixCBtoMC=true;
   bool cutNonPrompt=false;
+  bool fixAlpha = true;
+  bool fixN = true;
+  bool fixGwidth = true; // only used in PbPb
 
   // *** Check options
   for (int i=1; i<argc; ++i) {
@@ -109,10 +113,6 @@ int main(int argc, char* argv[]) {
 	crange = argv[i+1];
 	cout << "Centrality range: " << crange << " %" << endl;
 	break;
-      case 'x':
-	isMB = atoi(argv[i+1]);
-	cout << "Inclusive fit option: " << isMB << endl;
-	break;
       case 'r':
 	fitRatio = atoi(argv[i+1]);
 	cout << "Fit ratio (instead of 2S yield): " << fitRatio << endl;
@@ -125,9 +125,21 @@ int main(int argc, char* argv[]) {
 	fitSubRange = atoi(argv[i+1]);
 	cout << "fit sub ranges: " << fitSubRange << endl;
 	break;
-      case 'n':
+      case 'b':
 	cutNonPrompt = atoi(argv[i+1]);
 	cout << "remove non-prompt J/psi: " << cutNonPrompt << endl;
+	break;
+      case 'a':
+	fixAlpha = false;
+	cout << "fix CB alpha: " << fixAlpha << endl;
+	break;
+      case 'n':
+	fixN = false;
+	cout << "fix CB n: " << fixN << endl;
+	break;
+      case 'g':
+	fixGwidth = false;
+	cout << "fix wideFactor: " << fixGwidth << endl;
 	break;
       case 'z':
 	isPaper = atoi(argv[i+1]);
@@ -176,9 +188,19 @@ int main(int argc, char* argv[]) {
   else
     prange_str = prange;
 
+  string fix_str="";
+  if (!fixAlpha)
+    fix_str+="_freeAlpha";
+  if (!fixN)
+    fix_str+="_freeN";
+  if (!fixGwidth)
+    fix_str+="_freeGwidth";
+  if (fix_str != "")
+    fix_str+="_";
+
   // *** TFile for saving fitting results
   string resultFN;
-  resultFN = dirPre + "_" + mBkgFunct + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + "_fitResult.root";
+  resultFN = dirPre + "_" + mBkgFunct + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + fix_str + "fitResult.root";
   TFile resultF(resultFN.c_str(),"RECREATE");
 
   // *** Read Data files
@@ -252,30 +274,18 @@ int main(int argc, char* argv[]) {
 
   ws->var("Jpsi_Mass")->setBinning(rbm);
 
-  // Additional cuts on data and get sub-datasets/histograms
-  RooDataSet *redDataCut;
-  string reduceDSstr;
-  if (isGG == 0) {
-    redDataCut = (RooDataSet*)redData->reduce("Jpsi_Type == Jpsi_Type::GG");
-  } else if (isGG == 1) {
-    redDataCut = (RooDataSet*)redData->reduce("Jpsi_Type == Jpsi_Type::GT || Jpsi_Type == Jpsi_Type::GG");
-  } else {
-    redDataCut = (RooDataSet*)redData->reduce("Jpsi_Ct < 600000.");
-  }
-  redDataCut->SetName("redDataCut");
-
-  RooDataHist *binData = new RooDataHist("binData","binData",RooArgSet( *(ws->var("Jpsi_Mass")) ), *redDataCut);
+  RooDataHist *binData = new RooDataHist("binData","binData",RooArgSet( *(ws->var("Jpsi_Mass")) ), *redData);
   cout << "DATA :: N events to fit: " << binData->sumEntries() << endl;
 
   // SYSTEMATICS 1 (very sidebands)
   RooDataSet *redDataSB;
   if (narrowSideband) {
-   redDataSB = (RooDataSet*) redDataCut->reduce("Jpsi_Mass<2.8 || Jpsi_Mass>3.4");
+   redDataSB = (RooDataSet*) redData->reduce("Jpsi_Mass<2.8 || Jpsi_Mass>3.4");
   } else {
-   redDataSB = (RooDataSet*) redDataCut->reduce("Jpsi_Mass<2.9 || Jpsi_Mass>3.3");
+   redDataSB = (RooDataSet*) redData->reduce("Jpsi_Mass<2.9 || Jpsi_Mass>3.3");
   }
   //  RooDataHist *binDataSB = new RooDataHist("binDataSB","Data distribution for background",RooArgSet( *(ws->var("Jpsi_Mass")) ),*redDataSB);
-  //  RooDataSet *redDataSIG = (RooDataSet*)redDataCut->reduce("Jpsi_Mass > 2.9 && Jpsi_Mass < 3.3");
+  //  RooDataSet *redDataSIG = (RooDataSet*)redData->reduce("Jpsi_Mass > 2.9 && Jpsi_Mass < 3.3");
 
   // *** Define PDFs with parameters (mass and ctau)
   // Just so RooFit does not crash on Ubuntu
@@ -346,16 +356,6 @@ int main(int argc, char* argv[]) {
 
   RooFitResult *fitM;
   RooFitResult *fitP = NULL;
-
-  if (isMB != 0) {
-    if (isMB != 4 && (mJpsiFunct.compare("sigCB2WNG1") || mBkgFunct.compare("expFunct"))) {
-      cout << "For fit systematics:\n";
-      cout << "1) Signal shape check: should use default runOpt (4)\n";
-      cout << "2) Background shape check: should use defatul runOpt (4)\n";
-      cout << "3) Constrain fit: should use sigCB2WNG1 for signal shape, expFunct for bkg shape with runOpt (3)\n";
-      return -1;
-    }
-  } //End of isMB != 0
 
   RooRealVar *NJpsi  = new RooRealVar("NJpsi","J/psi yield",0.5*binData->sumEntries(),0.0,2.0*binData->sumEntries());  ws->import(*NJpsi);
   RooRealVar *NBkg  = new RooRealVar("NBkg","Brackground yield", 0.5*binData->sumEntries(),0.0,2.0*binData->sumEntries());   ws->import(*NBkg);
@@ -480,16 +480,18 @@ int main(int argc, char* argv[]) {
 	ws->var("enne")->setVal(1.4);
       }
     }
-    ws->var("alpha")->setConstant(kTRUE);
-    ws->var("enne")->setConstant(kTRUE);
-    if (isPbPb)
+    if (fixAlpha)
+      ws->var("alpha")->setConstant(kTRUE);
+    if (fixN)
+      ws->var("enne")->setConstant(kTRUE);
+    if (isPbPb && fixGwidth)
       ws->var("wideFactor")->setConstant(kTRUE);
   }
 
   // 20140128: seed with CB fit parameters
   if ( found!=string::npos ) {
     string inputFNcb;
-    inputFNcb =  dirPre2 + "_" + mBkgFunct + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + "_allVars.txt";
+    inputFNcb =  dirPre2 + "_" + mBkgFunct + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + fix_str + "allVars.txt";
     RooArgSet *set = ws->pdf("sigMassPDF")->getParameters(*(ws->var("Jpsi_Mass")));
     //    set->Print("v");
     set->readFromFile(inputFNcb.c_str());
@@ -525,7 +527,7 @@ int main(int argc, char* argv[]) {
     */
   }
 
-  fitM = ws->pdf("sigMassPDF")->fitTo(*redDataCut,Extended(1),Hesse(1),Minos(0),Save(1),SumW2Error(0),NumCPU(8),PrintEvalErrors(0),Verbose(0));
+  fitM = ws->pdf("sigMassPDF")->fitTo(*redData,Extended(1),Hesse(1),Minos(0),Save(1),SumW2Error(0),NumCPU(8),PrintEvalErrors(0),Verbose(0));
   fitM->printMultiline(cout,1,1,"");
 
   int edmStatus = 1;
@@ -538,9 +540,9 @@ int main(int argc, char* argv[]) {
 
   int fitStatus = fitM->status();
   if (found!=string::npos)
-    cout << "CBG_" << mBkgFunct << "_rap" << yrange_str << "_pT" << prange_str << "_cent" << crange << endl;
+    cout << "CBG_" << mBkgFunct << "_rap" << yrange_str << "_pT" << prange_str << "_cent" << crange << fix_str << endl;
   else
-    cout << "CB_" << mBkgFunct << "_rap" << yrange_str << "_pT" << prange_str << "_cent" << crange << endl;
+    cout << "CB_" << mBkgFunct << "_rap" << yrange_str << "_pT" << prange_str << "_cent" << crange << fix_str << endl;
 
   cout << "---FIT result summary: " << edmStatus << covStatus << fitStatus;
   for (unsigned int i=0; i<fitM->numStatusHistory(); ++i) {
@@ -555,7 +557,7 @@ int main(int argc, char* argv[]) {
 
   // *** Draw mass plot
   RooPlot *mframe = ws->var("Jpsi_Mass")->frame();
-  redDataCut->plotOn(mframe,DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(rbm));
+  redData->plotOn(mframe,DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(rbm));
   titlestr = "2D fit for" + partTit + "muons (mass projection), p_{T} = " + prange + " GeV/c and |y| = " + yrange;
   mframe->GetXaxis()->SetTitle("m_{#mu^{+}#mu^{-}} (GeV/c^{2})");
   mframe->GetXaxis()->CenterTitle(1);
@@ -581,13 +583,13 @@ int main(int argc, char* argv[]) {
     hpull_psip->SetMarkerColor(kGreen+2);
   }
   else {
-    ws->pdf("sigMassPDF")->plotOn(mframe,VisualizeError(*fitM,1,kFALSE),FillColor(kGray),Normalization(redDataCut->sumEntries(),RooAbsReal::NumEvent));
-    ws->pdf("sigMassPDF")->plotOn(mframe,LineColor(kBlack),LineWidth(2),Normalization(redDataCut->sumEntries(),RooAbsReal::NumEvent));
+    ws->pdf("sigMassPDF")->plotOn(mframe,VisualizeError(*fitM,1,kFALSE),FillColor(kGray),Normalization(redData->sumEntries(),RooAbsReal::NumEvent));
+    ws->pdf("sigMassPDF")->plotOn(mframe,LineColor(kBlack),LineWidth(2),Normalization(redData->sumEntries(),RooAbsReal::NumEvent));
 
     hpull = mframe->pullHist(0,0,true); hpull->SetName("hpullhist");
     
-    ws->pdf("sigMassPDF")->plotOn(mframe,Components(mBkgFunct.c_str()),VisualizeError(*fitM,1,kFALSE),FillColor(kCyan),Normalization(redDataCut->sumEntries(),RooAbsReal::NumEvent));
-    ws->pdf("sigMassPDF")->plotOn(mframe,Components(mBkgFunct.c_str()),LineColor(kBlue),LineStyle(kDashed),LineWidth(2),Normalization(redDataCut->sumEntries(),RooAbsReal::NumEvent));
+    ws->pdf("sigMassPDF")->plotOn(mframe,Components(mBkgFunct.c_str()),VisualizeError(*fitM,1,kFALSE),FillColor(kCyan),Normalization(redData->sumEntries(),RooAbsReal::NumEvent));
+    ws->pdf("sigMassPDF")->plotOn(mframe,Components(mBkgFunct.c_str()),LineColor(kBlue),LineStyle(kDashed),LineWidth(2),Normalization(redData->sumEntries(),RooAbsReal::NumEvent));
 
     if (!isPaper && found!=string::npos) { 
       ws->pdf("sigMassPDF")->plotOn(mframe,VisualizeError(*fitM,1,kFALSE),FillColor(kRed-9),Components((mBkgFunct+",signalCB1,signalCB1P").c_str()));
@@ -596,9 +598,9 @@ int main(int argc, char* argv[]) {
       ws->pdf("sigMassPDF")->plotOn(mframe,Components((mBkgFunct+",signalG2,signalG2P").c_str()),LineColor(kGreen+2),LineStyle(kDashed),LineWidth(2));
     }
   }
-  redDataCut->plotOn(mframe,DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(rbm));
+  redData->plotOn(mframe,DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(rbm));
 
-  TH1 *hdata = redDataCut->createHistogram("hdata",*ws->var("Jpsi_Mass"),Binning(rbm));
+  TH1 *hdata = redData->createHistogram("hdata",*ws->var("Jpsi_Mass"),Binning(rbm));
 
   // *** Calculate chi2/nDof for mass fitting
   unsigned int nBins = hdata->GetNbinsX();
@@ -728,7 +730,7 @@ int main(int argc, char* argv[]) {
   }
 
   // if (!isPbPb)
-  //   ws->pdf("sigMassPDF_mix")->plotOn(mframe,LineColor(kRed),LineStyle(2),LineWidth(4),Normalization(redDataCut->sumEntries(),RooAbsReal::NumEvent));
+  //   ws->pdf("sigMassPDF_mix")->plotOn(mframe,LineColor(kRed),LineStyle(2),LineWidth(4),Normalization(redData->sumEntries(),RooAbsReal::NumEvent));
 
   if (logScale) {
     if (isPaper)
@@ -1036,16 +1038,49 @@ int main(int argc, char* argv[]) {
     st->SetTextFont(42);
   }
 
-  titlestr = dirPre + "_" + mBkgFunct + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + "_massfit.pdf";
+  titlestr = dirPre + "_" + mBkgFunct + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str +  "massfit.pdf";
   c00.SaveAs(titlestr.c_str());
   resultF.cd();
   mframe->Write();
   mframepull->Write();
   hpull_proj->Write();
 
-  string fname = dirPre + "_" + mBkgFunct + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + "_Workspace.root";
+  // prepare models for CLs calculations
+  RooStats::ModelConfig *model = new RooStats::ModelConfig("model");
+  model->SetWorkSpace(ws);
+  model->SetPdf("sigMassPDF");
+  model->SetObservables(RooArgSet("Jpsi_Mass"));
+  RooArgSet *pars = ws->pdf("sigMassPDF")->getParameters(redData);
+  //  pars.assignFast(pars);
+  pars->Print("v");
+  RooArgSet *nuisances = RooARgSet(pars);
+  nuisances->remove(ws->var("fracP"));
+  model->SetNuisanceParameters(nuisances);
+  RooArgSet poi = RooArgSet(ws->var("fracP"));
+  model->SetParametersOfInterest(poi);
+  model->SetSnapshot(pars);
+
+  // prepare models for CLs calculations
+  RooStats::ModelConfig *model_null = (RooStats::ModelConfig*)model->Clone();
+  //  model_null->SetWorkSpace(ws);
+  //  model_null->SetPdf("sigMassPDF");
+  //  model_null->SetObservables(RooArgSet("Jpsi_Mass"));
+  //  RooArgSet *pars = ws->pdf("sigMassPDF")->getParameters(redData);
+  //  pars.assignFast(pars);
+  //  pars->Print("v");
+  //  RooArgSet *nuisances = RooARgSet(pars);
+  //  nuisances->remove(ws->var("fracP"));
+  //  model->SetNuisanceParameters(nuisances);
+  RooArgSet poiNew = RooArgSet(ws->var("fracP"));
+  double oldVal = ws->var("fracP")->getVal();
+  ws->var("fracP")->setVal(0.0);
+  model_null->SetSnapshot(poiNew);
+  ws->var("fracP")->setVal(oldVal);
+  // to be continued...
+
+  string fname = dirPre + "_" + mBkgFunct + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str + "Workspace.root";
   ws->writeToFile(fname.c_str(),kTRUE);
-  fname = dirPre + "_" + mBkgFunct + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + "_allVars.txt";
+  fname = dirPre + "_" + mBkgFunct + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str + "allVars.txt";
   ws->allVars().writeToFile(fname.c_str());
 
   Double_t NJpsi_fin = ws->var("NJpsi")->getVal();
@@ -1075,7 +1110,7 @@ int main(int argc, char* argv[]) {
   else
     cout << "NPsiP:       Fit: "  << NPsiP_fin << " +/- " << ErrNPsiP_fin << endl;
 
-  titlestr = dirPre + "_" + mBkgFunct + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + ".txt";
+  titlestr = dirPre + "_" + mBkgFunct + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + fix_str + "_fitResult.txt";
 
   ofstream outputFile(titlestr.c_str());
   if (!outputFile.good()) {cout << "Fail to open result file." << endl; return 1;}
