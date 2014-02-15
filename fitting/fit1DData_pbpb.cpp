@@ -188,15 +188,13 @@ int main(int argc, char* argv[]) {
   else
     prange_str = prange;
 
-  string fix_str="";
+  string fix_str="_";
   if (!fixAlpha)
-    fix_str+="_freeAlpha";
+    fix_str+="freeAlpha_";
   if (!fixN)
-    fix_str+="_freeN";
+    fix_str+="freeN_";
   if (!fixGwidth)
-    fix_str+="_freeGwidth";
-  if (fix_str != "")
-    fix_str+="_";
+    fix_str+="freeGwidth_";
 
   // *** TFile for saving fitting results
   string resultFN;
@@ -491,12 +489,16 @@ int main(int argc, char* argv[]) {
   // 20140128: seed with CB fit parameters
   if ( found!=string::npos ) {
     string inputFNcb;
-    inputFNcb =  dirPre2 + "_" + mBkgFunct + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + fix_str + "allVars.txt";
+    if ( !fixAlpha || !fixN || !fixGwidth) // read for free alpha, n, or wideFactor from the default CBG fit
+      inputFNcb =  dirPre + "_" + mBkgFunct + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + "_allVars.txt";
+    else // read results from CB fit
+      inputFNcb =  dirPre2 + "_" + mBkgFunct + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + "_allVars.txt";
+
     RooArgSet *set = ws->pdf("sigMassPDF")->getParameters(*(ws->var("Jpsi_Mass")));
     //    set->Print("v");
     set->readFromFile(inputFNcb.c_str());
     //    cout << set->getRealValue("sigmaSig1",0,1) << endl;
-    cout << "Import variable values from CB fit: " << inputFNcb << endl;
+    cout << "Import variable values from: " << inputFNcb << endl;
     ws->import(*set);
     // set->Print("v");
     // ws->Print("v");
@@ -1111,7 +1113,7 @@ int main(int argc, char* argv[]) {
   else
     cout << "NPsiP:       Fit: "  << NPsiP_fin << " +/- " << ErrNPsiP_fin << endl;
 
-  titlestr = dirPre + "_" + mBkgFunct + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + fix_str + "_fitResult.txt";
+  titlestr = dirPre + "_" + mBkgFunct + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + fix_str + "fitResult.txt";
 
   ofstream outputFile(titlestr.c_str());
   if (!outputFile.good()) {cout << "Fail to open result file." << endl; return 1;}
