@@ -1048,20 +1048,26 @@ int main(int argc, char* argv[]) {
   hpull_proj->Write();
 
   // prepare models for CLs calculations
-  RooStats::ModelConfig *model = new RooStats::ModelConfig("model");
-  model->SetWorkspace(*ws);
-  model->SetPdf("sigMassPDF");
-  model->SetObservables(RooArgSet("Jpsi_Mass"));
+  RooStats::ModelConfig *model = new RooStats::ModelConfig("model",ws);
+  //  model->SetWorkspace(*ws);
+  model->SetPdf(*ws->pdf("sigMassPDF"));
+  model->SetParametersOfInterest(*ws->var("fracP"));
+  model->SetObservables(*ws->var("Jpsi_Mass"));
+
   RooArgSet *pars = ws->pdf("sigMassPDF")->getParameters(redData);
   //  pars.assignFast(pars);
-  pars->Print("v");
+  //  pars->Print("v");
   RooArgSet nuisances = RooArgSet(*pars);
   nuisances.remove(*ws->var("fracP"));
-  model->SetNuisanceParameters(nuisances);
-  RooArgSet poi = RooArgSet(*ws->var("fracP"));
-  model->SetParametersOfInterest(poi);
-  model->SetSnapshot(*pars);
+  // nuisances.remove(*ws->var("coeffGaus"));
+  // nuisances.remove(*ws->var("meanSig1"));
+  // nuisances.remove(*ws->var("wideFactor"));
+  //  nuisances.Print("v");
+  ws->defineSet("nuisParameters",nuisances);
+  model->SetNuisanceParameters(*ws->set("nuisParameters"));
 
+  /*
+  model->SetSnapshot(*pars);
   // prepare models for CLs calculations
   RooStats::ModelConfig *model_null = (RooStats::ModelConfig*)model->Clone("modell_null");
   //  model_null->SetWorkSpace(ws);
@@ -1070,7 +1076,7 @@ int main(int argc, char* argv[]) {
   //  RooArgSet *pars = ws->pdf("sigMassPDF")->getParameters(redData);
   //  pars.assignFast(pars);
   //  pars->Print("v");
-  //  RooArgSet *nuisances = RooARgSet(pars);
+  //  RooArgSet *nuisances = RooArgSet(pars);
   //  nuisances->remove(ws->var("fracP"));
   //  model->SetNuisanceParameters(nuisances);
   RooArgSet poiNew = RooArgSet(*ws->var("fracP"));
@@ -1078,8 +1084,9 @@ int main(int argc, char* argv[]) {
   ws->var("fracP")->setVal(0.0);
   model_null->SetSnapshot(poiNew);
   ws->var("fracP")->setVal(oldVal);
-  ws->import(*model);
   ws->import(*model_null);
+  */
+  ws->import(*model);
 
   string fname = dirPre + "_" + mBkgFunct + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str + "Workspace.root";
   ws->writeToFile(fname.c_str(),kTRUE);
