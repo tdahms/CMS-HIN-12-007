@@ -30,8 +30,8 @@ void tnp_trig_eff_correction()
   grEffRD->SetPointError(7,1.910281,3.089719,0.0295633,0.01524883);
 
 
-  TFile *tnpRD = new TFile("MC/Jpsi_RD_2012_Trg_L1_Eff_cbExpo.root","READ");
-  axis = (TGraphAsymmErrors*) Trg_pt_All->Clone("axis");
+  // TFile *tnpRD = new TFile("MC/Jpsi_RD_2012_Trg_L1_Eff_cbExpo.root","READ");
+  // axis = (TGraphAsymmErrors*) Trg_pt_All->Clone("axis");
   // tnpRD->Close();
   grEffRD->SetMarkerColor(kBlue);
   grEffRD->SetMarkerStyle(21);
@@ -85,6 +85,7 @@ void tnp_trig_eff_correction()
 
 
   TGraphAsymmErrors *grEffRatio = (TGraphAsymmErrors*) grEffMC->Clone("grEffRatio");
+  grEffRatio->GetFunction("f1")->Delete();
 
   double xMC = 0;
   double yMC = 0;
