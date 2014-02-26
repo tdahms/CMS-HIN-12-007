@@ -23,193 +23,48 @@ void plot_double_ratio(bool isPaper=false, bool allRapidity=false, bool plotGlob
 {
   gStyle->SetOptFit(0);
   gStyle->SetOptStat(0);
-  /*
-  // 20120418
-  // CBG              CB
-  fwd_pt3065
-  0-100%
-  5.473   3.506       5.538   1.908
-  0-20%
-  7.427   3.761       8.292   3.438
-  20-40%
-  3.266   10.984      3.294   2.069
-  40-100%
-  2.342   1.805       2.484   1.628
-
-  fwd_pt3040
-  0-100%
-  3.602   1.175       3.808   1.427
-  0-20%
-  4.836   1.681       5.152   1.959
-  20-40%
-  2.548   3.171       2.650   1.195
-  40-100%
-  1.510   1.054       1.535   0.841
-
-  fwd_pt6540
-  0-100%
-  1.498   0.674       1.518   0.662
-  0-20%
-  1.697   0.805       1.771   0.878
-  20-40%
-  1.642   0.820       1.679   0.841
-  40-100%
-  0.420   0.396       0.416   0.490
-
-  all_pt6540
-  0-100%
-  0.634   0.171       0.618   0.146
-  0-20%
-  0.769   0.154       0.774   0.209
-  20-40%
-  0.532   0.178       0.530   0.182
-  40-100%
-  0.361   0.157       0.367   0.158
-
-  // CB
-  double ratio_fwd_pt3065[3] = {8.292, 3.294, 2.069};
-  double ratio_fwd_pt3065_err[3] = {3.438, 2.069, 1.628};
-
-  double ratio_fwd_pt3040[3] = {5.152, 2.650, 1.535};
-  double ratio_fwd_pt3040_err[3] = {1.959, 1.195, 0.841};
-
-  double ratio_fwd_pt6540[3] = {1.771, 1.679, 0.416};
-  double ratio_fwd_pt6540_err[3] = {0.878, 0.841, 0.490};
-
-  double ratio_all_pt6540[3] = {0.774, 0.530, 0.367};
-  double ratio_all_pt6540_err[3] = {0.209, 0.182, 0.158};
-  
-  // CBG
-  double ratio_fwd_pt3065[3] = {7.427, 3.266, 2.342};
-  double ratio_fwd_pt3065_err[3] = {3.761, 10.984, 1.805};
-
-  double ratio_fwd_pt3040[3] = {4.836, 2.548, 1.510};
-  double ratio_fwd_pt3040_err[3] = {1.681, 3.171, 1.054};
-
-  double ratio_fwd_pt6540[3] = {1.697, 1.642, 0.420};
-  double ratio_fwd_pt6540_err[3] = {0.805, 0.820, 0.396};
-
-  double ratio_all_pt6540[3] = {0.769, 0.532, 0.361};
-  double ratio_all_pt6540_err[3] = {0.154, 0.178, 0.157};
-  
-
-  // 20120425
-  // CBG              CB
-  fwd_pt3065
-  0-100%
-  5.995   4.367       6.071   4.468
-  0-20%
-  7.834   4.479       8.501   3.698
-  20-40%
-  3.763   2.419       3.800   1.932
-  40-100%
-  3.395   2.100       3.601   2.446
-
-  fwd_pt330
-  0-100%
-  4.1695  1.695       4.461   1.908
-  0-20%
-  5.521   1.566       5.769   1.755
-  20-40%
-  2.841   1.373       3.012   1.405
-  40-100%
-  2.535   1.102       2.636   1.371
-
-  fwd_pt6530
-  0-100%
-  1.735   0.259       1.815   0.964
-  0-20%
-  1.845   0.974       1.971   1.097
-  20-40%
-  1.725   1.011       1.841   1.092
-  40-100%
-  1.300   0.883       1.324   0.893
-
-  all_pt6530
-  0-100%
-  0.612   0.181       0.595   0.162
-  0-20%
-  0.721   0.279       0.724   0.227
-  20-40%
-  0.560   0.194       0.563   0.214
-  40-100%
-  0.372   0.140       0.358   0.188
-  */
-
 
   // 0-20%, 20-40%, 40-100%
   double Npart[3] = {308.3853, 158.5653, 32.7694};
   double Npart2[3] = {318.3853, 158.5653, 22.7694};
   double Npart_err[3] = {0,0,0};
   double Npart_sys[3] = {10,10,10};
-  // CBG
-  double ratio_fwd_pt3065[3] = {10.131, 5.652, 5.949};
-  double ratio_fwd_pt3065_err[3] = {1.802, 1.726, 1.644};
-  //  double ratio_fwd_pt3065_sys[3] = {1.784, 0.773, 0.382};
-  double ratio_fwd_pt3065_sys[3] = {2.773, 2.594, 2.915};
-  double ratio_fwd_pt3065_glb[3] = {6.698, 3.737, 3.933};
-  
-  // double ratio_fwd_pt3030[3] = {6.420, 3.222, 2.573};
-  // double ratio_fwd_pt3030_err[3] = {1.025, 0.970, 0.858};
-  // //  double ratio_fwd_pt3030_sys[3] = {1.239, 0.553, 0.102};
-  // double ratio_fwd_pt3030_sys[3] = {1.085, 0.508, 0.407};
-  // double ratio_fwd_pt3030_glb[3] = {3.159, 1.585, 1.266};
 
-  // Abdulla 20130814
-  double ratio_fwd_pt3030[3] = {2.00, 1.03, 0.79};
-  double ratio_fwd_pt3030_err[3] = {0.46, 0.44, 0.38};
-  //  double ratio_fwd_pt3030_sys[3] = {1.239, 0.553, 0.102};
-  double ratio_fwd_pt3030_sys[3] = {0.188, 0.208, 0.128};
-  double ratio_fwd_pt3030_glb[3] = {0.126, 0.064, 0.050};
-  
-  double ratio_fwd_pt6530[3] = {1.803, 1.773, 1.241 };
-  double ratio_fwd_pt6530_err[3] = {0.598, 0.649, 0.611};
-  //  double ratio_fwd_pt6530_sys[3] = {0.290, 0.220, 0.208};
-  double ratio_fwd_pt6530_sys[3] = {0.479, 0.313, 0.302};
-  double ratio_fwd_pt6530_glb[3] = {0.957, 0.941, 0.659};
 
-  // CBG
-  // double ratio_mid_pt6530[3] = {0.531, 0.374, 0.208};
-  // double ratio_mid_pt6530_err[3] = {0.158, 0.154, 0.146};
-  // //  double ratio_mid_pt6530_sys[3] = {0.010, 0.026, 0.228};
-  // double ratio_mid_pt6530_sys[3] = {0.078, 0.061, 0.192};
-  // double ratio_mid_pt6530_glb[3] = {0.110, 0.078, 0.043};
-  // CB
+  // 20140225
+  double ratio_fwd_pt3065[1] = {10.131};
+  double ratio_fwd_pt3065_err[1] = {1.802};
+  double ratio_fwd_pt3065_sys[1] = {2.773};
+  double ratio_fwd_pt3065_glb[1] = {6.698};
+    
+  double ratio_fwd_pt6530[1] = {1.803};
+  double ratio_fwd_pt6530_err[1] = {0.598};
+  double ratio_fwd_pt6530_sys[1] = {0.479};
+  double ratio_fwd_pt6530_glb[1] = {0.957};
 
-  // Abdulla 20130814
-  double ratio_mid_pt6530[3] = {0.81, 0.67, 0.29};
-  double ratio_mid_pt6530_err[3] = {0.17, 0.17, 0.17};
-  //  double ratio_mid_pt6530_sys[3] = {0.010, 0.026, 0.228};
-  double ratio_mid_pt6530_sys[3] = {0.106, 0.024, 0.108};
-  double ratio_mid_pt6530_glb[3] = {0.042, 0.035, 0.015};
-  
-  // double ratio_all_pt6530[3] = {0.674, 0.534, 0.305};
-  // double ratio_all_pt6530_err[3] = {0.173, 0.172, 0.166};
-  // //  double ratio_all_pt6530_sys[3] = {0.031, 0.024, 0.251};
-  // double ratio_all_pt6530_sys[3] = {0.138, 0.029, 0.087};
-  // double ratio_all_pt6530_glb[3] = {0.131, 0.104, 0.059};
+  double ratio_fwd_pt3030[3] = {2.231860, 0.851082, 0.833084};
+  double ratio_fwd_pt3030_err[3] = {0.501988, 0.441254, 0.368925};
+  double ratio_fwd_pt3030_sys[3] = {0.559082, 0.821231, 0.362263};
+  double ratio_fwd_pt3030_sysHi[3] = {0.559082, 0.000000, 0.362263};
+  double ratio_fwd_pt3030_sysLo[3] = {0.312271, 0.821231, 0.030393};
+  double ratio_fwd_pt3030_glb[3] = {0.212159, 0.080903, 0.079192};
+  double ratio_fwd_pt3030_glbHi[3] = {0.213386, 0.081371, 0.079650};
+  double ratio_fwd_pt3030_glbLo[3] = {0.399951, 0.152515, 0.149289};
+
+  double ratio_mid_pt6530[3] = {0.430459, 0.684042, 0.00};
+  double ratio_mid_pt6530_err[3] = {0.203423, 0.201516, 0.161972};
+  double ratio_mid_pt6530_sys[3] = {0.168448, 0.052673, 0.036599};
+  double ratio_mid_pt6530_sysHi[3] = {0.002913, 0.052673, 0.036599};
+  double ratio_mid_pt6530_sysLo[3] = {0.168448, 0.006997, 0.027120};
+  double ratio_mid_pt6530_glb[3] = {0.029885, 0.047490, 0.000631};
+  double ratio_mid_pt6530_glbHi[3] = {0.030242, 0.048058, 0.000638};
+  double ratio_mid_pt6530_glbLo[3] = {0.025392, 0.040350, 0.000536};
+
   double ratio_all_pt6530[3] = {0.751, 0.525, 0.344};
   double ratio_all_pt6530_err[3] = {0.177, 0.172, 0.162};
   //  double ratio_all_pt6530_sys[3] = {0.031, 0.024, 0.251};
   double ratio_all_pt6530_sys[3] = {0.068, 0.044, 0.050};
   double ratio_all_pt6530_glb[3] = {0.145, 0.101, 0.066};
-
-
-  
-  /*
-  // CBG
-  double ratio_fwd_pt3065[3] = {7.427, 3.266, 2.342};
-  double ratio_fwd_pt3065_err[3] = {3.761, 10.984, 1.805};
-
-  double ratio_fwd_pt3040[3] = {4.836, 2.548, 1.510};
-  double ratio_fwd_pt3040_err[3] = {1.681, 3.171, 1.054};
-
-  double ratio_fwd_pt6540[3] = {1.697, 1.642, 0.420};
-  double ratio_fwd_pt6540_err[3] = {0.805, 0.820, 0.396};
-
-  double ratio_all_pt6540[3] = {0.769, 0.532, 0.361};
-  double ratio_all_pt6540_err[3] = {0.154, 0.178, 0.157};
-  */
   
   TGraphErrors *gr_fwd_pt3065 = new TGraphErrors(3,Npart, ratio_fwd_pt3065, Npart_err, ratio_fwd_pt3065_err);
   TGraphErrors *gr_fwd_pt3065_sys = new TGraphErrors(3,Npart, ratio_fwd_pt3065, Npart_sys, ratio_fwd_pt3065_sys);
@@ -221,8 +76,10 @@ void plot_double_ratio(bool isPaper=false, bool allRapidity=false, bool plotGlob
   gr_fwd_pt3065P->SetName("gr_fwd_pt3065P");
 									               
   TGraphErrors *gr_fwd_pt3030 = new TGraphErrors(3,Npart, ratio_fwd_pt3030, Npart_err, ratio_fwd_pt3030_err);
-  TGraphErrors *gr_fwd_pt3030_sys = new TGraphErrors(3,Npart, ratio_fwd_pt3030, Npart_sys, ratio_fwd_pt3030_sys);
-  TGraphErrors *gr_fwd_pt3030_glb = new TGraphErrors(3,Npart2, ratio_fwd_pt3030, Npart_sys, ratio_fwd_pt3030_glb);
+  // TGraphErrors *gr_fwd_pt3030_sys = new TGraphErrors(3,Npart, ratio_fwd_pt3030, Npart_sys, ratio_fwd_pt3030_sys);
+  // TGraphErrors *gr_fwd_pt3030_glb = new TGraphErrors(3,Npart2, ratio_fwd_pt3030, Npart_sys, ratio_fwd_pt3030_glb);
+  TGraphAsymmErrors *gr_fwd_pt3030_sys = new TGraphAsymmErrors(3,Npart, ratio_fwd_pt3030, Npart_sys, Npart_sys, ratio_fwd_pt3030_sysLo, ratio_fwd_pt3030_sysHi);
+  TGraphAsymmErrors *gr_fwd_pt3030_glb = new TGraphAsymmErrors(3,Npart2, ratio_fwd_pt3030, Npart_sys, Npart_sys, ratio_fwd_pt3030_glbLo, ratio_fwd_pt3030_glbHi);
   TGraphErrors *gr_fwd_pt3030P = new TGraphErrors(3,Npart, ratio_fwd_pt3030, Npart_err, Npart_err);
   gr_fwd_pt3030->SetName("gr_fwd_pt3030");
   gr_fwd_pt3030_sys->SetName("gr_fwd_pt3030_sys");
@@ -239,8 +96,10 @@ void plot_double_ratio(bool isPaper=false, bool allRapidity=false, bool plotGlob
   gr_fwd_pt6530P->SetName("gr_fwd_pt6530P");
 									               
   TGraphErrors *gr_mid_pt6530 = new TGraphErrors(3,Npart, ratio_mid_pt6530, Npart_err, ratio_mid_pt6530_err);
-  TGraphErrors *gr_mid_pt6530_sys = new TGraphErrors(3,Npart, ratio_mid_pt6530, Npart_sys, ratio_mid_pt6530_sys);
-  TGraphErrors *gr_mid_pt6530_glb = new TGraphErrors(3,Npart2, ratio_mid_pt6530, Npart_sys, ratio_mid_pt6530_glb);
+  // TGraphErrors *gr_mid_pt6530_sys = new TGraphErrors(3,Npart, ratio_mid_pt6530, Npart_sys, ratio_mid_pt6530_sys);
+  // TGraphErrors *gr_mid_pt6530_glb = new TGraphErrors(3,Npart2, ratio_mid_pt6530, Npart_sys, ratio_mid_pt6530_glb);
+  TGraphAsymmErrors *gr_mid_pt6530_sys = new TGraphAsymmErrors(3,Npart, ratio_mid_pt6530, Npart_sys, Npart_sys, ratio_mid_pt6530_sysLo, ratio_mid_pt6530_sysHi);
+  TGraphAsymmErrors *gr_mid_pt6530_glb = new TGraphAsymmErrors(3,Npart2, ratio_mid_pt6530, Npart_sys, Npart_sys, ratio_mid_pt6530_glbLo, ratio_mid_pt6530_glbHi);
   TGraphErrors *gr_mid_pt6530P = new TGraphErrors(3,Npart, ratio_mid_pt6530, Npart_err, Npart_err);
   gr_mid_pt6530->SetName("gr_mid_pt6530");
   gr_mid_pt6530_sys->SetName("gr_mid_pt6530_sys");
@@ -549,30 +408,30 @@ void plot_double_ratio(bool isPaper=false, bool allRapidity=false, bool plotGlob
   TF1 *f3 = new TF1("f3","1",0,400);
   f3->SetLineWidth(1);
   f3->GetXaxis()->SetTitle("N_{part}");
-  f3->GetYaxis()->SetTitle("[#psi(2S) #/J/#psi]_{PbPb} #/[#psi(2S) #/J/#psi]_{pp}");
+  f3->GetYaxis()->SetTitle("[ #psi (2S) #/J/#psi ]_{PbPb} #/[ #psi (2S) #/J/#psi ]_{pp}");
   f3->GetYaxis()->SetTitleOffset(1.1);
-  f3->GetYaxis()->SetRangeUser(0.0,10.0);
+  f3->GetYaxis()->SetRangeUser(0.0,3.0);
   f3->GetXaxis()->CenterTitle(kTRUE);
 
   TF1 *f3a = new TF1("f3a","1",0,400);
   f3a->SetLineWidth(1);
   f3a->GetXaxis()->SetTitle("N_{part}");
-  //  f3a->GetYaxis()->SetTitle("[#psi(2S) #/J/#psi]_{PbPb} #/[#psi(2S) #/J/#psi]_{pp}");
+  f3a->GetYaxis()->SetTitle("[ #psi (2S) #/J/#psi ]_{PbPb} #/[ #psi (2S) #/J/#psi ]_{pp}");
   f3a->GetYaxis()->SetTitleOffset(1.1);
-  f3a->GetYaxis()->SetRangeUser(0.0,1.4);
+  f3a->GetYaxis()->SetRangeUser(0.0,3);
   f3a->GetXaxis()->CenterTitle(kTRUE);
 
   //  TCanvas *c3 = new TCanvas("c3","c3",600,800);
-  TCanvas *c3 = new TCanvas("c3","c3",1000,600);
-  c3->Divide(1,2);
+  TCanvas *c3 = new TCanvas("c3","c3");//,1000,600);
+  //  c3->Divide(1,2);
 
   // c3->GetPad(1)->SetPad(0.0,0.5,1.0,1.0);
   // c3->GetPad(2)->SetPad(0.0,0.0,1.0,0.5);
   // c3->GetPad(1)->SetBottomMargin(0.0);
   // c3->GetPad(2)->SetTopMargin(0.0);
 
-  c3->GetPad(1)->SetPad(0.0,0.0,0.5,1.0);
-  c3->GetPad(2)->SetPad(0.5,0.0,1.0,1.0);
+  // c3->GetPad(1)->SetPad(0.0,0.0,0.5,1.0);
+  // c3->GetPad(2)->SetPad(0.5,0.0,1.0,1.0);
   c3->cd(1);
   //  c3->SetLogy();
   f3->Draw();
@@ -615,14 +474,15 @@ void plot_double_ratio(bool isPaper=false, bool allRapidity=false, bool plotGlob
   //  pre->Draw();
 
   TLine *l1 = new TLine(400,1.0,490,7.1);
-  l1->Draw("same");
+  //  l1->Draw("same");
   TLine *l2 = new TLine(400,0.0,490.0,0.0);
-  l2->Draw("same");
+  //  l2->Draw("same");
 
   gPad->RedrawAxis();
 
 
-  c3->cd(2);
+  TCanvas *c4 = new TCanvas("c4","c4");//,1000,600);
+  //  c3->cd(2);
   f3a->Draw();
   if (plotGlobalPP)
     pp_mid_pt6530->Draw();
@@ -661,55 +521,21 @@ void plot_double_ratio(bool isPaper=false, bool allRapidity=false, bool plotGlob
   //  pre3->Draw();
 
   TLine *l1a = new TLine(-90,0.15,0.0,1.0);
-  l1a->Draw("same");
+  //  l1a->Draw("same");
 
   TLine *l2a = new TLine(-90,0.0,-18.0,0.0);
-  l2a->Draw("same");
+  //  l2a->Draw("same");
 
 
   gPad->RedrawAxis();
 
   if (savePlots) {
-    c3->SaveAs("double_ratio_ppGlobal_midpt_pp2013_PbPbRegit.pdf");
-    c3->SaveAs("double_ratio_ppGlobal_midpt_pp2013_PbPbRegit.png");
+    c3->SaveAs("double_ratio_ppGlobal_fwd_pp2013_PbPbRegit_Asym.pdf");
+    c3->SaveAs("double_ratio_ppGlobal_fwd_pp2013_PbPbRegit_Asym.png");
+    c4->SaveAs("double_ratio_ppGlobal_mid_pp2013_PbPbRegit_Asym.pdf");
+    c4->SaveAs("double_ratio_ppGlobal_mid_pp2013_PbPbRegit_Asym.png");
   }
 
 
   return;
-  /*
-  double ptbins[] = {4.75, 10};
-  double ptbins_err[] = {1.25, 3.5};
-  double ptSystX[] = {0.75, 0.75};
-
-  // CBG
-  double ratio_fwd[3] = {7.488, 1.806};
-  double ratio_fwd_err[3] = {1.118, 0.424};
-  double ratio_fwd_sys[3] = {1.311, 0.175};
-
-
-  // CBG
-  // double ratio_fwd[3] = {5.473, 1.498};
-  // double ratio_fwd_err[3] = {3.506, 0.674};
-
-  TGraphErrors *gr_fwd_pt = new TGraphErrors(2, ptbins, ratio_fwd, ptbins_err, ratio_fwd_err);
-  TGraphErrors *gr_fwd_pt_sys = new TGraphErrors(2, ptbins, ratio_fwd, ptSystX, ratio_fwd_sys);
-  gr_fwd_pt->SetName("gr_fwd_pt");
-  gr_fwd_pt_sys->SetName("gr_fwd_pt_sys");
-  gr_fwd_pt_sys->SetFillColor(kGray-2);
-
-  TF1 *f2 = new TF1("f2","1",0,20);
-  f2->SetLineWidth(1);
-  f2->GetXaxis()->SetTitle("p_{T}");
-  f2->GetYaxis()->SetTitle("R_{AA}(#psi(2S))/R_{AA}(J/#psi)");
-  f2->GetYaxis()->SetRangeUser(0.0,10.0);
-  f2->GetXaxis()->CenterTitle(kTRUE);
-
-  TCanvas *c2 = new TCanvas("c2","c2");
-  f2->Draw();
-  gr_fwd_pt_sys->Draw("2");
-  gr_fwd_pt->Draw("P");
-
-  return;
-
-  */
 }
