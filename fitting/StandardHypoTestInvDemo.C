@@ -75,7 +75,7 @@ double maxPOI = -1;                      // max value used of POI (in case of au
 //bool useProof = false;                    // use Proof Light when using toys (for freq or hybrid)
 bool useProof = true;                    // use Proof Light when using toys (for freq or hybrid)
 //int nworkers = 4;                        // number of worker for Proof
-int nworkers = 8;                        // number of worker for Proof
+int nworkers = 7;                        // number of worker for Proof
 bool rebuild = false;                    // re-do extra toys for computing expected limits and rebuild test stat
                                          // distributions (N.B this requires much more CPU (factor is equivalent to nToyToRebuild)
 int nToyToRebuild = 100;                 // number of toys used to rebuild 

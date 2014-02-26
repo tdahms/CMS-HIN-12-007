@@ -52,7 +52,18 @@ do
 		       ]];
 		then
 		    echo "Running C&F scan for ${pt} ${rap} ${cent} ${bkg}";
-		    root -b -q StandardHypoTestInvDemo.C+\(\"${DIRECTORY}/fracLogCBG_${bkg}_rap${rap}_pT${pt}_cent${cent}_Workspace.root\",\"workspace\",\"model\",\"\",\"data\",0,2,false,30,0,0.15,10000,false\)
+		    nsteps=20
+		    rmax=0.1
+		    if [[ (${pt} == "3-30") || (${pt} == "3-65") ]];
+		    then
+			nsteps=30
+			rmax=0.15
+		    elif [[ (${rap} == "0-24") || (${rap} == "0-16") ]];
+		    then
+			nsteps=10
+			rmax=0.05
+		    fi;
+		    root -b -q StandardHypoTestInvDemo.C+\(\"${DIRECTORY}/fracLogCBG_${bkg}_rap${rap}_pT${pt}_cent${cent}_Workspace.root\",\"workspace\",\"model\",\"\",\"data\",0,2,false,${nsteps},0,${rmax},1000,false\)
 		fi;
 	    done;
 	done;
