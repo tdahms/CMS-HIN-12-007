@@ -148,7 +148,6 @@ int main(int argc, char* argv[]) {
  
   float pmin=0, pmax=0, ymin=0, ymax=0, cmin=0, cmax=0;
   getOptRange(prange,&pmin,&pmax);
-  getOptRange(crange,&cmin,&cmax);
   getOptRange(yrange,&ymin,&ymax);
 
   string yrange_str, prange_str;
@@ -195,7 +194,7 @@ int main(int argc, char* argv[]) {
 
   // *** TFile for saving fitting results
   string resultFN;
-  resultFN = dirPre + "_PbPb" + mBkgFunct[0] + mBkgFunct[1] + mBkgFunct[2] + "_pp" + mBkgFunct[3] + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + fix_str + "fitResult.root";
+  resultFN = dirPre + "_PbPb" + mBkgFunct[0] + "_" + mBkgFunct[1] + "_" + mBkgFunct[2] + "_pp" + mBkgFunct[3] + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + fix_str + "fitResult.root";
   TFile resultF(resultFN.c_str(),"RECREATE");
 
   // *** Read Data files
@@ -521,9 +520,9 @@ int main(int argc, char* argv[]) {
   if ( found!=string::npos ) {
     string inputFNcb;
     if ( !fixAlpha || !fixN || !fixGwidth) // read for free alpha, n, or wideFactor from the default CBG fit
-      inputFNcb =  dirPre + "_PbPb" + mBkgFunct[0] + mBkgFunct[1] + mBkgFunct[2] + "_pp" + mBkgFunct[3] + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + "_allVars.txt";
+      inputFNcb =  dirPre + "_PbPb" + mBkgFunct[0] + "_" + mBkgFunct[1] + "_" + mBkgFunct[2] + "_pp" + mBkgFunct[3] + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + "_allVars.txt";
     else // read results from CB fit
-      inputFNcb =  dirPre2 + "_PbPb" + mBkgFunct[0] + mBkgFunct[1] + mBkgFunct[2] + "_pp" + mBkgFunct[3] + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + "_allVars.txt";
+      inputFNcb =  dirPre2 + "_PbPb" + mBkgFunct[0] + "_" + mBkgFunct[1] + "_" + mBkgFunct[2] + "_pp" + mBkgFunct[3] + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + "_allVars.txt";
 
     RooArgSet *set = ws->pdf("sigMassPDFSim")->getParameters(*(ws->var("Jpsi_Mass")));
     //    set->Print("v");
@@ -548,9 +547,9 @@ int main(int argc, char* argv[]) {
 
   int fitStatus = fitM->status();
   if (found!=string::npos)
-    cout << "CBG_PbPb" << mBkgFunct[0] << mBkgFunct[1] << mBkgFunct[2] << "_pp" << mBkgFunct[3] << "_rap" << yrange_str << "_pT" << prange_str << "_cent" << crange << fix_str << endl;
+    cout << "CBG_PbPb" << mBkgFunct[0] << "_" << mBkgFunct[1] << "_" << mBkgFunct[2] << "_pp" << mBkgFunct[3] << "_rap" << yrange_str << "_pT" << prange_str << "_cent" << crange << fix_str << endl;
   else
-    cout << "CB_PbPb" <<mBkgFunct[0] << mBkgFunct[1] << mBkgFunct[2] << "_pp" << mBkgFunct[3] << "_rap" << yrange_str << "_pT" << prange_str << "_cent" << crange << fix_str << endl;
+    cout << "CB_PbPb" <<mBkgFunct[0] << "_" << mBkgFunct[1] << "_" << mBkgFunct[2] << "_pp" << mBkgFunct[3] << "_rap" << yrange_str << "_pT" << prange_str << "_cent" << crange << fix_str << endl;
 
   cout << "---FIT result summary: " << edmStatus << covStatus << fitStatus;
   for (unsigned int j=0; j<fitM->numStatusHistory(); ++j) {
@@ -562,6 +561,7 @@ int main(int argc, char* argv[]) {
   resultF.cd();
   fitM->Write();
   cout << "fitM->Write() into: " << resultFN << endl;
+  resultF.Close();
 
   // *** Draw mass plot
   RooPlot *mframe[nFiles];
@@ -570,15 +570,45 @@ int main(int argc, char* argv[]) {
   TH1 *hdata[nFiles];
   TH1F *hpull_proj[nFiles];
 
-  for (int i=0; i<nFiles; i++) {
-    if (i<nFiles-1) 
+  // *** TFile for saving plots
+  string plotFN;
+  plotFN = dirPre + "_PbPb" + mBkgFunct[0] + "_" + mBkgFunct[1] + "_" + mBkgFunct[2] + "_pp" + mBkgFunct[3] + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + fix_str + "plots.root";
+  TFile plotF(plotFN.c_str(),"RECREATE");
+  //    plotF.cd();
+  TDirectory *dir[nFiles];
+
+  for (int i=0; i<nFiles; ++i) {
+    if (i<nFiles-1)
       isPbPb = true;
     else
       isPbPb = false;
 
+    string crange_tmp = crange;
+    switch (i) {
+    case 0:
+      crange = "0-20";
+      break;
+    case 1:
+      crange = "20-40";
+      break;
+    case 2:
+      crange = "40-100";
+      break;
+    case 3:
+      crange = "pp";
+      break;
+    default:
+      crange = "0-100";
+      break;
+    }
+
+    if (isPbPb)
+      getOptRange(crange,&cmin,&cmax);
+
     //    char name[100] = {0};
     mframe[i] = ws->var("Jpsi_Mass")->frame();
     mframe[i]->SetName(("frame_"+varSuffix.at(i)).c_str());
+    mframe[i]->SetTitle(("A RooPlot of \"J/#psi mass\" in "+varSuffix.at(i)).c_str());
 
     redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(rbm));
     titlestr = "2D fit for" + partTit + "muons (mass projection), p_{T} = " + prange + " GeV/c and |y| = " + yrange;
@@ -594,7 +624,9 @@ int main(int argc, char* argv[]) {
     ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],VisualizeError(*fitM,1,kFALSE),FillColor(kGray),LineWidth(2),Normalization(redData[i]->sumEntries(),RooAbsReal::NumEvent));
     ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],LineColor(kBlack),LineWidth(2),Normalization(redData[i]->sumEntries(),RooAbsReal::NumEvent));
 
-    hpull[i] = mframe[i]->pullHist(0,0,true); hpull[i]->SetName(("hpullhist_"+varSuffix.at(i)).c_str());
+    hpull[i] = mframe[i]->pullHist(0,0,true);
+    hpull[i]->SetName(("hpullhist_"+varSuffix.at(i)).c_str());
+    hpull[i]->SetTitle(("hpullhist_"+varSuffix.at(i)).c_str());
     
     ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],Components(mBkgFunct[i].c_str()),VisualizeError(*fitM,1,kFALSE),FillColor(kCyan),Normalization(redData[i]->sumEntries(),RooAbsReal::NumEvent));
     ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],Components(mBkgFunct[i].c_str()),LineColor(kBlue),LineStyle(kDashed),LineWidth(2),Normalization(redData[i]->sumEntries(),RooAbsReal::NumEvent));
@@ -616,11 +648,11 @@ int main(int argc, char* argv[]) {
     }
 
     if (i==nFiles-1) {
-      ws->pdf(("sigMassPDF_mix_"+varSuffix.at(i-1)).c_str())->plotOn(mframe[i],VisualizeError(*fitM,1,kFALSE),FillColor(kOrange-9));
-      ws->pdf(("sigMassPDF_mix_"+varSuffix.at(i-1)).c_str())->plotOn(mframe[i],LineColor(kOrange+2),LineWidth(2));
+      ws->pdf(("sigMassPDF_mix_"+varSuffix.at(0)).c_str())->plotOn(mframe[i],VisualizeError(*fitM,1,kFALSE),FillColor(kOrange-9));
+      redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerStyle(20),MarkerSize(0.8),Binning(rbm));
+      ws->pdf(("sigMassPDF_mix_"+varSuffix.at(0)).c_str())->plotOn(mframe[i],LineColor(kOrange+2),LineWidth(2));
     }
 
-    //    redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerStyle(24),MarkerSize(0.8),Binning(rbm));
 
     hdata[i] = redData[i]->createHistogram(("hdata"+varSuffix.at(i)).c_str(),*ws->var("Jpsi_Mass"),Binning(rbm));
 
@@ -635,6 +667,7 @@ int main(int argc, char* argv[]) {
     // Make a histogram with the pull distribution
     hpull_proj[i] = new TH1F("hpull_proj","hpull_proj;Pull;Events",100,-10,10);
     hpull_proj[i]->SetName(("hpull_proj_"+varSuffix.at(i)).c_str());
+    hpull_proj[i]->SetTitle(("hpull_proj_"+varSuffix.at(i)).c_str());
 
     for (unsigned int j=0; j < nBins; ++j) {
       hpull_proj[i]->Fill(ypull[j]);
@@ -656,7 +689,7 @@ int main(int argc, char* argv[]) {
     double theNLL=0;
     theNLL = fitM->minNll();
     
-    mframepull[i] =  ws->var("Jpsi_Mass")->frame(Title("Pull")) ;
+    mframepull[i] =  ws->var("Jpsi_Mass")->frame(Title(("Pull of "+varSuffix.at(i)).c_str()));
     mframepull[i]->SetName(("pull_frame_"+varSuffix.at(i)).c_str());
     mframepull[i]->GetYaxis()->SetTitle("Pull");
     mframepull[i]->SetLabelSize(0.08,"XYZ");
@@ -1034,13 +1067,32 @@ int main(int argc, char* argv[]) {
       st->SetTextFont(42);
     }
  
-    titlestr = dirPre + "_PbPb" + mBkgFunct[0] + mBkgFunct[1] + mBkgFunct[2] + "_pp" + mBkgFunct[3] + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str +  "massfit_" + varSuffix.at(i) + ".pdf";
+    titlestr = dirPre + "_" + mBkgFunct[i] + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str +  "massfit" + ".pdf";
     c00.SaveAs(titlestr.c_str());
-    resultF.cd();
+
+
+    ws->import(*mframe[i]);
+    ws->import(*mframepull[i]);
+    ws->import(*hpull[i]);
+    ws->import(*hpull_proj[i]);
+
+    dir[i] = plotF.mkdir(varSuffix.at(i).c_str());
+    dir[i]->cd();
+
+    cout << "Address: " << mframe[i] << " name: " << mframe[i]->GetName() << " title: " << mframe[i]->GetTitle() << endl;
+    // if (i==0) {
     mframe[i]->Write();
     mframepull[i]->Write();
+    hpull[i]->Write();
     hpull_proj[i]->Write();
+       //    }
+    plotF.cd();
+
+    crange = crange_tmp; // set back to orignal crange
   }
+  cout << "HELLO" << endl;
+  plotF.Close();
+  cout << "HELLO" << endl;
 
   // prepare models for CLs calculations
   RooStats::ModelConfig *model = new RooStats::ModelConfig("model",ws);
@@ -1084,9 +1136,9 @@ int main(int argc, char* argv[]) {
   */
   ws->import(*model);
 
-  string fname = dirPre + "_PbPb" + mBkgFunct[0] + mBkgFunct[1] + mBkgFunct[2] + "_pp" + mBkgFunct[3] + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str + "Workspace.root";
+  string fname = dirPre + "_PbPb" + mBkgFunct[0] + "_" + mBkgFunct[1] + "_" + mBkgFunct[2] + "_pp" + mBkgFunct[3] + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str + "Workspace.root";
   ws->writeToFile(fname.c_str(),kTRUE);
-  fname = dirPre + "_PbPb" + mBkgFunct[0] + mBkgFunct[1] + mBkgFunct[2] + "_pp" + mBkgFunct[3] + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str + "allVars.txt";
+  fname = dirPre + "_PbPb" + mBkgFunct[0] + "_" + mBkgFunct[1] + "_" + mBkgFunct[2] + "_pp" + mBkgFunct[3] + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str + "allVars.txt";
   ws->allVars().writeToFile(fname.c_str());
 
   double NJpsi_fin[2] = {0,0};
@@ -1111,14 +1163,14 @@ int main(int argc, char* argv[]) {
     ErrNBkg_fin[i] = ws->var(name.c_str())->getError();
 
     if (i<nFiles-1) {
-      name = "doubleRatio"+varSuffix.at(i);
+      name = "doubleRatio_"+varSuffix.at(i);
       DoubleRatio_fin = ws->var(name.c_str())->getVal();
       ErrDoubleRatio_fin = ws->var(name.c_str())->getError();
       name = "fracP_"+varSuffix.at(i);
 
       double fracP_pp = ws->var("fracP_pp")->getVal();
       double errFracP_pp = ws->var("fracP_pp")->getError();
-      double corr = fitM->correlation( *ws->var(("doubleRatio"+varSuffix.at(i)).c_str()) , *ws->var("fracP_pp") );
+      double corr = fitM->correlation( *ws->var(("doubleRatio_"+varSuffix.at(i)).c_str()) , *ws->var("fracP_pp") );
       fracP_fin[i] = ws->function(("fracP_"+varSuffix.at(i)).c_str())->getVal();
       ErrFracP_fin[i] = sqrt( pow(ErrDoubleRatio_fin/DoubleRatio_fin,2) + pow(errFracP_pp/fracP_pp,2) + 2*ErrDoubleRatio_fin*errFracP_pp*corr/fracP_fin[i] )*fracP_fin[i];
     }
@@ -1138,7 +1190,7 @@ int main(int argc, char* argv[]) {
   }
   cout << "Double Ratio: " << DoubleRatio_fin << " +/- " << ErrDoubleRatio_fin << endl;
  
-  titlestr = dirPre + "_PbPb" + mBkgFunct[0] + mBkgFunct[1] + mBkgFunct[2] + "_pp" + mBkgFunct[3] + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + fix_str + "fitResult.txt";
+  titlestr = dirPre + "_PbPb" + mBkgFunct[0] + "_" + mBkgFunct[1] + "_" + mBkgFunct[2] + "_pp" + mBkgFunct[3] + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + fix_str + "fitResult.txt";
 
   /*
   ofstream outputFile(titlestr.c_str());
@@ -1262,11 +1314,10 @@ int main(int argc, char* argv[]) {
     << "enne "         << ws->var("enne")->getVal()         << " " << ws->var("enne")->getError() << endl;
   */
 
+
   for (int i=0; i<nFiles; i++) {
     fInData[i]->Close();
   }
-  resultF.Close();
-  //  outputFile.close();
 
   return 0;
 }
