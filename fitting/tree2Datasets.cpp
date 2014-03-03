@@ -37,7 +37,10 @@ bool isAccept(const TLorentzVector* aMuon) {
   */
   // *REMOVE* muon kinematical cuts (eta dependent momentum / pT cuts )
   // by just returning TRUE
-  return true;
+  if (aMuon->Pt()>0)
+    return true;
+  else
+    return true;
 }
 
 double CorrectMass(const TLorentzVector* mu1,const TLorentzVector* mu2, int mode){  
@@ -91,21 +94,18 @@ double CorrectMass(const TLorentzVector* mu1,const TLorentzVector* mu2, int mode
 
 int main(int argc, char* argv[]) {
 
-  const int RPNUM = 21;
   const double Jpsi_MassMin=2.2;
   const double Jpsi_MassMax=4.2;
   const double Jpsi_PtMin=0;
   const double Jpsi_PtMax=50;
-  const double Jpsi_YMin=0;
+  const double Jpsi_YMin=-2.4;
   const double Jpsi_YMax=2.4;
   const double Jpsi_CtMin = -3.0;
   const double Jpsi_CtMax = 3.5;
   const double Jpsi_PhiMin=-3.14;
   const double Jpsi_PhiMax=3.14;
-  const double Jpsi_dPhiMin=-6.28;
-  const double Jpsi_dPhiMax=6.28;
 
-  const bool isHI = false;
+  const bool isHI = true;
 
   char fileName[100];
   if ( argc != 5 && argc != 3 ){
@@ -173,29 +173,11 @@ int main(int argc, char* argv[]) {
   TLorentzVector* m2P= new TLorentzVector;
 
   double vprob, theCt, theCtErr;//, theCtTrue;
-  int HLTriggers, trig[8],theCat,Jq;//,genType;
+  int HLTriggers, theCat,Jq;//,genType;
 
   static const unsigned int centRegions = 3;
   //  int centLimits[centRegions+1] = {0, 8, 16, 24, 40}; // 0 20 40 60 100
   int centLimits[centRegions+1] = {0, 8, 16, 40}; // 0 20 40 100
-  //  int centLimits[centRegions+1] = {0, 4, 8, 20, 40}; // 0 10 20 50 100
-  //  int centLimits[centRegions+1] = {0, 8, 20, 40}; // 0 20 50 100
-  //  int centLimits[centRegions+1] = {0, 4, 12, 24, 40};  //0 10 30 60 100
-  //  int centLimits[centRegions+1] = {0, 2, 4, 12, 24, 40};  //0 5 10 30 60 100
-  //  int centLimits[centRegions+1] = {0, 4, 40};  //0 10
-  //  int centLimits[centRegions+1] = {4, 24};  //10 60
-  //  int centLimits[centRegions+1] = {0, 2, 4};  //0 5 10
-  // static const unsigned int dPhiRegions = 1;
-  // float dPhiLimits[dPhiRegions+1] = {0.0, TMath::PiOver2()/4*4};
-  //  float dphiLimits[dphiRegions+1] = {0.0, 0.4, 0.79, 1.18, 1.57};
-  //  float dphiLimits[dphiRegions+1] = {-1.57, -1.18, -0.79, -0.4, 0.0, 0.4, 0.79, 1.18, 1.57};
-  //  float dphiLimits[dphiRegions+1] = {-1.57, -1.413, -1.256, -1.099, -0.942, -0.785, -0.628, -0.471, -0.314, -1.57, -1.413, -1.256, -1.099, -0.942, -0.785, -0.628, -0.471, -0.314};
-
-  //  static const unsigned int rapRegions = 3;
-  //  float rapLimits[rapRegions+1] = {Jpsi_YMin, Jpsi_YMax};
-  //  float rapLimits[rapRegions+1] = {Jpsi_YMin,1.2,1.6,Jpsi_YMax};
-  //   static const unsigned int rapRegions = 1;
-  //   float rapLimits[rapRegions+1] = {Jpsi_YMin,Jpsi_YMax};
 
   TH1D *hSig[centRegions+1];
   TH1D *hBkg[centRegions+1];
@@ -210,7 +192,6 @@ int main(int argc, char* argv[]) {
   //  RooRealVar* Jpsi_CtTrue;
   RooRealVar* Jpsi_Y;
   RooRealVar* Jpsi_Phi;
-  RooRealVar* Jpsi_dPhi;
   RooCategory* Jpsi_Type;
   RooCategory* Jpsi_Sign;
   //  RooCategory* MCType;
@@ -218,9 +199,8 @@ int main(int argc, char* argv[]) {
   Jpsi_Mass = new RooRealVar("Jpsi_Mass","J/#psi mass",Jpsi_MassMin,Jpsi_MassMax,"GeV/c^{2}");
   Psip_Mass = new RooRealVar("Psip_Mass","#psi' mass",3.3,Jpsi_MassMax,"GeV/c^{2}");
   Jpsi_Pt = new RooRealVar("Jpsi_Pt","J/#psi pt",Jpsi_PtMin,Jpsi_PtMax,"GeV/c");
-  Jpsi_Y = new RooRealVar("Jpsi_Y","J/#psi y",-Jpsi_YMax,Jpsi_YMax);
-  Jpsi_Phi = new RooRealVar("Jpsi_Phi","J/#psi phi",-Jpsi_PhiMax,Jpsi_PhiMax);
-  //  Jpsi_dPhi = new RooRealVar("Jpsi_dPhi","J/#psi phi - rpAng",-Jpsi_dPhiMax,Jpsi_dPhiMax);
+  Jpsi_Y = new RooRealVar("Jpsi_Y","J/#psi y",Jpsi_YMin,Jpsi_YMax);
+  Jpsi_Phi = new RooRealVar("Jpsi_Phi","J/#psi phi",Jpsi_PhiMin,Jpsi_PhiMax);
   Jpsi_Type = new RooCategory("Jpsi_Type","Category of Jpsi_");
   Jpsi_Sign = new RooCategory("Jpsi_Sign","Charge combination of Jpsi_");
   //  MCType = new RooCategory("MCType","Type of generated Jpsi_");
@@ -278,7 +258,6 @@ int main(int argc, char* argv[]) {
   */
   if (isHI) {
     for (unsigned int j = 0; j <= centRegions; j++) {
-      //    for (unsigned int k = 0; k <= dPhiRegions; k++) {
       char namefile[200] = {0};
       if (j==centRegions) {
 	sprintf(namefile,"cent%d-%d",
@@ -329,8 +308,6 @@ int main(int argc, char* argv[]) {
     Tree->GetEntry(ev);
 
     int theCentrality=Centrality;
-    //    float theRPAng = rpAng[RPNUM];
-
     // MC
     //    if (!goodEvent) continue;
 
@@ -350,25 +327,10 @@ int main(int argc, char* argv[]) {
       double theMass =JP->M();
       double theRapidity=JP->Rapidity();
       double thePt=JP->Pt();
-      // double thedPhi = 0.0;
-      // if(theRPAng > -9){
-      //   thedPhi=JP->Phi()-theRPAng;
-      //   if(thedPhi < -TMath::Pi()) thedPhi += 2.*TMath::Pi();
-      //   if(thedPhi > TMath::Pi()) thedPhi -= 2.*TMath::Pi();
-      //   if(thedPhi < -TMath::Pi()/2) thedPhi +=TMath::Pi();
-      //   if(thedPhi > TMath::Pi()/2) thedPhi -=TMath::Pi();
-      // }
-      // thedPhi = TMath::Abs(thedPhi);
 
       bool ok1=isAccept(m1P);
       bool ok2=isAccept(m2P);
 
-      double dPhi2mu = m1P->Phi() - m2P->Phi();
-      while (dPhi2mu > TMath::Pi()) dPhi2mu -= 2*TMath::Pi();
-      while (dPhi2mu <= -TMath::Pi()) dPhi2mu += 2*TMath::Pi();
-      bool isCowboy = false;
-      if(dPhi2mu>0) isCowboy=true;
-      //      if (!isCowboy) continue;
      
       if (theMass>3.350) {
 	theCt*=3.686109/3.096916; // use proper mass for l_psi(2S)
@@ -398,7 +360,6 @@ int main(int argc, char* argv[]) {
         Psip_Mass->setVal(theMass);
         Jpsi_Ct->setVal(theCt);
         Jpsi_CtErr->setVal(theCtErr);
-	//        Jpsi_dPhi->setVal(thedPhi);
 	//        Jpsi_CtTrue->setVal(theCtTrue);
         Jpsi_Type->setIndex(theCat,kTRUE);
         if (Jq == 0){ Jpsi_Sign->setIndex(Jq,kTRUE); }
@@ -414,7 +375,6 @@ int main(int argc, char* argv[]) {
 	  for (unsigned int j = 0; j <= centRegions; j++) {
 	    if ( (j==centRegions && theCentrality < centLimits[j] && theCentrality >= centLimits[0]) ||
 		 (theCentrality < centLimits[j+1] && theCentrality >= centLimits[j]) ) {
-	      //            for(unsigned int i = 0; i <= dPhiRegions; i++){
 	      if (Jq == 0) {
 		if (theMass < 4.5) {
 		  dataJpsi[j]->add(varlist_tmp);
@@ -481,11 +441,11 @@ int main(int argc, char* argv[]) {
   if (isHI) {
     for (unsigned int j = 0; j <= centRegions; j++) {
       if (j==centRegions) {
-	sprintf(namefile,"%s/PbPbData2011_DblMu0_cent%d-%d.root",argv[2],
+	sprintf(namefile,"%s/PbPbData2011_DblMu0_cent%d-%d_M22-42.root",argv[2],
 		int(centLimits[0]*2.5),int(centLimits[j]*2.5));
       }
       else {
-	sprintf(namefile,"%s/PbPbData2011_DblMu0_cent%d-%d.root",argv[2],
+	sprintf(namefile,"%s/PbPbData2011_DblMu0_cent%d-%d_M22-42.root",argv[2],
 		int(centLimits[j]*2.5),int(centLimits[j+1]*2.5));
       }
       Out[j] = new TFile(namefile,"RECREATE");
@@ -529,7 +489,7 @@ int main(int argc, char* argv[]) {
   }
   else {
     unsigned int j=0;
-    sprintf(namefile,"%s/ppData2013_DblMu0_cent%d-%d.root",argv[2],0,100);
+    sprintf(namefile,"%s/ppData2013_DblMu0_cent%d-%d_M22-42.root",argv[2],0,100);
     Out[j] = new TFile(namefile,"RECREATE");
     Out[j]->cd();
     dataJpsi[j]->Write();
