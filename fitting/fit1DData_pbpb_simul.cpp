@@ -85,25 +85,29 @@ int main(int argc, char* argv[]) {
       case 'f':
 	FileName.push_back(argv[i+1]);
 	FileName.push_back(argv[i+2]);
-	if ( argv[i+3][0] != '-' ) 
+	if ( argv[i+3][0] != '-' ) {
 	  FileName.push_back(argv[i+3]);
-	if ( argv[i+4][0] != '-' ) 
-	  FileName.push_back(argv[i+4]);
+	  if ( argv[i+4][0] != '-' ) 
+	    FileName.push_back(argv[i+4]);
+	}
 	cout << "Fitted PbPb data file: " << FileName.front() << endl;
 	cout << "Fitted pp data file: " << FileName.back() << endl;
 	break;
       case 'v':
 	mJpsiFunct = argv[i+1];
 	mPsiPFunct = argv[i+2];
-	if ( argv[i+3][0] != '-' ) 
+	if ( argv[i+3][0] != '-' ) {
 	  mBkgFunct.push_back(argv[i+3]);
-	if ( argv[i+4][0] != '-' ) 
-	  mBkgFunct.push_back(argv[i+4]);
-	if ( argv[i+5][0] != '-' ) 
-	  mBkgFunct.push_back(argv[i+5]);
-	if ( argv[i+6][0] != '-' ) 
-	  mBkgFunct.push_back(argv[i+6]);
-	cout << "Mass J/psi function: " << mJpsiFunct << endl;
+	  if ( argv[i+4][0] != '-' ) {
+	    mBkgFunct.push_back(argv[i+4]);
+	    if ( argv[i+5][0] != '-' ) {
+	      mBkgFunct.push_back(argv[i+5]);
+	      if ( argv[i+6][0] != '-' ) 
+		mBkgFunct.push_back(argv[i+6]);
+	    }
+	  }
+	}
+       	cout << "Mass J/psi function: " << mJpsiFunct << endl;
 	cout << "Mass psi(2S) function: " << mPsiPFunct << endl;
 	cout << "Mass PbPb background function: " << mBkgFunct.front();
 	for (unsigned int i=1;i<mBkgFunct.size()-1; ++i) {cout << " " << mBkgFunct.at(i);}
@@ -465,6 +469,7 @@ int main(int argc, char* argv[]) {
     if (i == (int)nFiles-1) {
       fracP_pp = new RooRealVar(("fracP_"+varSuffix.at(i)).c_str(),("psi(2S) fraction in "+varSuffix.at(i)).c_str(),0.01);
       fracP_pp->setConstant(false); ws->import(*fracP_pp);
+      NPsiP[i] = new RooFormulaVar(("NPsiP_"+varSuffix.at(i)).c_str(), "@0*@1", RooArgList(*(ws->var(("NJpsi_"+varSuffix.at(i)).c_str())),*(ws->var(("fracP_"+varSuffix.at(i)).c_str()))));  ws->import(*NPsiP[i]);
     }
     else {
       doubleRatio[i] = new RooRealVar(("doubleRatio_"+varSuffix.at(i)).c_str(),("psi(2S) double ratio in "+varSuffix.at(i)).c_str(),1.0);
@@ -472,10 +477,11 @@ int main(int argc, char* argv[]) {
 
       fracP_HI[i] = new RooFormulaVar(("fracP_"+varSuffix.at(i)).c_str(), "@0*@1", RooArgList(*(ws->var(("doubleRatio_"+varSuffix.at(i)).c_str())),*(ws->var("fracP_pp")))); ws->import(*fracP_HI[i]);
 
+      NPsiP[i] = new RooFormulaVar(("NPsiP_"+varSuffix.at(i)).c_str(), "@0*@1", RooArgList(*(ws->var(("NJpsi_"+varSuffix.at(i)).c_str())),*(ws->function(("fracP_"+varSuffix.at(i)).c_str()))));  ws->import(*NPsiP[i]);
+
       NPsiP_mix[i]  = new RooFormulaVar(("NPsiP_mix_"+varSuffix.at(i)).c_str(),"@0*@1",RooArgList(*(ws->var(("NJpsi_"+varSuffix.at(nFiles-1)).c_str())),*(ws->function(("fracP_"+varSuffix.at(i)).c_str()))));   ws->import(*NPsiP_mix[i]);
     }
 
-    NPsiP[i] = new RooFormulaVar(("NPsiP_"+varSuffix.at(i)).c_str(), "@0*@1", RooArgList(*(ws->var(("NJpsi_"+varSuffix.at(i)).c_str())),*(ws->var(("fracP_"+varSuffix.at(i)).c_str()))));  ws->import(*NPsiP[i]);
     
     sprintf(funct,"SUM::sigMassPDF_%s(NJpsi_%s*%s,NPsiP_%s*%s,NBkg_%s*%s)",varSuffix.at(i).c_str(),varSuffix.at(i).c_str(),mJpsiFunct.c_str(),varSuffix.at(i).c_str(),mPsiPFunct.c_str(),varSuffix.at(i).c_str(),mBkgFunct[i].c_str());
 
@@ -489,7 +495,22 @@ int main(int argc, char* argv[]) {
     }
   }
   
-  ws->factory("SIMUL::sigMassPDFSim(sample,HI020=sigMassPDF_HI020,HI2040=sigMassPDF_HI2040,HI40100=sigMassPDF_HI40100,pp=sigMassPDF_pp)");
+  if (nFiles==2) {
+    ws->factory("SIMUL::sigMassPDFSim(sample,HI=sigMassPDF_HI,pp=sigMassPDF_pp)");
+  }
+  else if (nFiles==4) {
+    ws->factory("SIMUL::sigMassPDFSim(sample,HI020=sigMassPDF_HI020,HI2040=sigMassPDF_HI2040,HI40100=sigMassPDF_HI40100,pp=sigMassPDF_pp)");
+  }
+  else {
+    index = "SIMUL::sigMassPDFSim(sample";
+    char substr[5];
+    for (unsigned int i=0;i<nFiles;++i) {
+      sprintf(substr,",%u=sigMassPDF_%u",i,i);
+      index += substr;
+    }
+    index += ")";
+    ws->factory(index.c_str());
+  }
 
   string str("CBG");
   string dirPre2 = dirPre;
@@ -567,10 +588,20 @@ int main(int argc, char* argv[]) {
   // 20140128: seed with CB fit parameters
   if ( found!=string::npos ) {
     string inputFNcb;
-    if ( !fixAlpha || !fixN || !fixGwidth) // read for free alpha, n, or wideFactor from the default CBG fit
-      inputFNcb =  dirPre + "_PbPb" + mBkgFunct[0] + "_" + mBkgFunct[1] + "_" + mBkgFunct[2] + "_pp" + mBkgFunct[3] + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + "_allVars.txt";
-    else // read results from CB fit
-      inputFNcb =  dirPre2 + "_PbPb" + mBkgFunct[0] + "_" + mBkgFunct[1] + "_" + mBkgFunct[2] + "_pp" + mBkgFunct[3] + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + "_allVars.txt";
+    if ( !fixAlpha || !fixN || !fixGwidth) {// read for free alpha, n, or wideFactor from the default CBG fit
+      inputFNcb =  dirPre + "_PbPb" + mBkgFunct[0];
+      for (unsigned int i=1; i<nFiles-1; ++i) {
+	inputFNcb += "_" + mBkgFunct[i];
+      }
+      inputFNcb += "_pp" + mBkgFunct[nFiles-1] + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + "_allVars.txt";
+    }
+    else { // read results from CB fit
+      inputFNcb =  dirPre2 + "_PbPb" + mBkgFunct[0];
+      for (unsigned int i=1; i<nFiles-1; ++i) {
+	inputFNcb += "_" + mBkgFunct[i];
+      }
+      inputFNcb += "_pp" + mBkgFunct[nFiles-1] + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + "_allVars.txt";
+    }
 
     RooArgSet *set = ws->pdf("sigMassPDFSim")->getParameters(*(ws->var("Jpsi_Mass")));
     set->readFromFile(inputFNcb.c_str());
@@ -591,9 +622,14 @@ int main(int argc, char* argv[]) {
 
   int fitStatus = fitM->status();
   if (found!=string::npos)
-    cout << "CBG_PbPb" << mBkgFunct[0] << "_" << mBkgFunct[1] << "_" << mBkgFunct[2] << "_pp" << mBkgFunct[3] << "_rap" << yrange_str << "_pT" << prange_str << "_cent" << crange << fix_str << endl;
+    cout << "CBG_PbPb";
   else
-    cout << "CB_PbPb" <<mBkgFunct[0] << "_" << mBkgFunct[1] << "_" << mBkgFunct[2] << "_pp" << mBkgFunct[3] << "_rap" << yrange_str << "_pT" << prange_str << "_cent" << crange << fix_str << endl;
+    cout << "CB_PbPb";
+
+  for (unsigned int i=0; i<nFiles-1; ++i) {
+    cout << "_" << mBkgFunct[i];
+  }
+  cout << "_pp" << mBkgFunct[nFiles-1] << "_rap" << yrange_str << "_pT" << prange_str << "_cent" << crange << fix_str << endl;
 
   cout << "---FIT result summary: " << edmStatus << covStatus << fitStatus;
   for (unsigned int j=0; j<fitM->numStatusHistory(); ++j) {
@@ -1449,6 +1485,26 @@ void defineMassSig(RooWorkspace *ws) {
 
 void defineMassBkgHI(RooWorkspace *ws) {
   // 1st order polynomial
+  ws->factory("Chebychev::pol1_HI(Jpsi_Mass,{coeffPol1_HI[-0.8,-1.0,1.0]})");
+  // 2nd order polynomial
+  ws->factory("Chebychev::pol2_HI(Jpsi_Mass,{coeffPol1_HI, coeffPol2_HI[0.0,-1.0,1.0]})");
+  // 3rd order polynomial
+  ws->factory("Chebychev::pol3_HI(Jpsi_Mass,{coeffPol1_HI, coeffPol2_HI, coeffPol3_HI[0.0,-1.0,1.0]})");
+  // 4th order polynomial
+  ws->factory("Chebychev::pol4_HI(Jpsi_Mass,{coeffPol1_HI, coeffPol2_HI, coeffPol3_HI, coeffPol4_HI[0.0,-1.0,1.0]})");
+  // 5th order polynomial
+  ws->factory("Chebychev::pol5_HI(Jpsi_Mass,{coeffPol1_HI, coeffPol2_HI, coeffPol3_HI, coeffPol4_HI, coeffPol5_HI[0.0,-1.0,1.0]})");
+  // 6th order polynomial
+  ws->factory("Chebychev::pol6_HI(Jpsi_Mass,{coeffPol1_HI, coeffPol2_HI, coeffPol3_HI, coeffPol4_HI, coeffPol5_HI, coeffPol6_HI[0.0,-1.0,1.0]})");
+
+  // expo
+  ws->factory("Exponential::expFunct_HI(Jpsi_Mass,coeffExp_HI[-0.1,-3.0,1.0])");
+
+  // gauss
+  ws->factory("Gaussian::gausBkg_HI(Jpsi_Mass,meanBkg_HI[0.0,0.0,10.0],sigmaBkg_HI[1.0,0.5,5.0])");
+
+  // 0-20%
+  // 1st order polynomial
   ws->factory("Chebychev::pol1_HI020(Jpsi_Mass,{coeffPol1_HI020[-0.8,-1.0,1.0]})");
   // 2nd order polynomial
   ws->factory("Chebychev::pol2_HI020(Jpsi_Mass,{coeffPol1_HI020, coeffPol2_HI020[0.0,-1.0,1.0]})");
@@ -1468,7 +1524,7 @@ void defineMassBkgHI(RooWorkspace *ws) {
   ws->factory("Gaussian::gausBkg_HI020(Jpsi_Mass,meanBkg_HI020[0.0,0.0,10.0],sigmaBkg_HI020[1.0,0.5,5.0])");
 
 
-
+  // 20-40%
   // 1st order polynomial
   ws->factory("Chebychev::pol1_HI2040(Jpsi_Mass,{coeffPol1_HI2040[-0.8,-1.0,1.0]})");
   // 2nd order polynomial
@@ -1489,6 +1545,7 @@ void defineMassBkgHI(RooWorkspace *ws) {
   ws->factory("Gaussian::gausBkg_HI2040(Jpsi_Mass,meanBkg_HI2040[0.0,0.0,10.0],sigmaBkg_HI2040[1.0,0.5,5.0])");
 
 
+  // 40-100%
   // 1st order polynomial
   ws->factory("Chebychev::pol1_HI40100(Jpsi_Mass,{coeffPol1_HI40100[-0.8,-1.0,1.0]})");
   // 2nd order polynomial
