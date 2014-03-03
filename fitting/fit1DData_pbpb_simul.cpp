@@ -1191,6 +1191,7 @@ int main(int argc, char* argv[]) {
 
   // prepare models for CLs calculations
   RooStats::ModelConfig *model[nFiles-1];
+  RooStats::ModelConfig *bmodel[nFiles-1];
   RooArgSet *nuisances[nFiles-1];
 
   for (unsigned int i=0;i<nFiles-1;++i) {
@@ -1210,7 +1211,17 @@ int main(int argc, char* argv[]) {
     nuisances[i]->Print("v");
     ws->defineSet(("nuisParameters_"+varSuffix.at(i)).c_str(),*nuisances[i]);
     model[i]->SetNuisanceParameters(*ws->set(("nuisParameters_"+varSuffix.at(i)).c_str()));
+    RooRealVar* poi = (RooRealVar*) model[i]->GetParametersOfInterest()->first();
+    model[i]->SetSnapshot(*poi);
+
     ws->import(*model[i]);
+
+
+    bmodel[i] = (RooStats::ModelConfig*)model[i]->Clone(("bmodel_"+varSuffix.at(i)).c_str());
+    bmodel[i]->SetName(("B_only_model_"+varSuffix.at(i)).c_str());
+    poi->setVal(1.0);
+    bmodel[i]->SetSnapshot(*poi);
+    ws->import(*bmodel[i]);
   }
   
   string fname = dirPre + "_PbPb" + mBkgFunct[0];
