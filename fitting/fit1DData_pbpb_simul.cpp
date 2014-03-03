@@ -1179,7 +1179,6 @@ int main(int argc, char* argv[]) {
     dir[i] = plotF.mkdir(varSuffix.at(i).c_str());
     dir[i]->cd();
 
-    cout << "Address: " << mframe[i] << " name: " << mframe[i]->GetName() << " title: " << mframe[i]->GetTitle() << endl;
     mframe[i]->Write();
     mframepull[i]->Write();
     hpull[i]->Write();
@@ -1198,13 +1197,17 @@ int main(int argc, char* argv[]) {
     model[i] = new RooStats::ModelConfig(("model_"+varSuffix.at(i)).c_str(),ws);
     model[i]->SetPdf(*ws->pdf("sigMassPDFSim"));
     model[i]->SetParametersOfInterest(*ws->var(("doubleRatio_"+varSuffix.at(i)).c_str()));
-    model[i]->SetObservables(*ws->var("Jpsi_Mass"));
+    model[i]->SetObservables(RooArgSet(*ws->var("Jpsi_Mass"),*ws->cat("sample")));
 
     RooArgSet *pars = ws->pdf("sigMassPDFSim")->getParameters(redData[nFiles-1]);
     pars->add(*ws->pdf("sigMassPDFSim")->getParameters(redData[i]));
+    cout << "All Parameters:" << endl;
     pars->Print("v");
     nuisances[i] = new RooArgSet(*pars);
     nuisances[i]->remove(*ws->var(("doubleRatio_"+varSuffix.at(i)).c_str()));
+    nuisances[i]->remove(*ws->cat("sample"));
+    cout << "Nuisance Parameters:" << endl;
+    nuisances[i]->Print("v");
     ws->defineSet(("nuisParameters_"+varSuffix.at(i)).c_str(),*nuisances[i]);
     model[i]->SetNuisanceParameters(*ws->set(("nuisParameters_"+varSuffix.at(i)).c_str()));
     ws->import(*model[i]);
