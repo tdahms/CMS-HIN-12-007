@@ -110,7 +110,7 @@ int main(int argc, char* argv[]) {
        	cout << "Mass J/psi function: " << mJpsiFunct << endl;
 	cout << "Mass psi(2S) function: " << mPsiPFunct << endl;
 	cout << "Mass PbPb background function: " << mBkgFunct.front();
-	for (unsigned int i=1;i<mBkgFunct.size()-1; ++i) {cout << " " << mBkgFunct.at(i);}
+	for (unsigned int j=1;j<mBkgFunct.size()-1; ++j) {cout << " " << mBkgFunct.at(j);}
 	cout << endl;
 	cout << "Mass pp background function: " << mBkgFunct.back() << endl;
 	break;
