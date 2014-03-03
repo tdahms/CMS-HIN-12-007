@@ -74,6 +74,7 @@ int main(int argc, char* argv[]) {
   bool fixAlpha = true;
   bool fixN = true;
   bool fixGwidth = true; // only used in PbPb
+  bool shareShape = false;
 
   // *** Check options
   for (int i=1; i<argc; ++i) {
@@ -84,22 +85,30 @@ int main(int argc, char* argv[]) {
       case 'f':
 	FileName.push_back(argv[i+1]);
 	FileName.push_back(argv[i+2]);
-	FileName.push_back(argv[i+3]);
-	FileName.push_back(argv[i+4]);
-	cout << "Fitted PbPb data file: " << FileName[0] << endl;
-	cout << "Fitted pp data file: " << FileName[1] << endl;
+	if ( argv[i+3][0] != '-' ) 
+	  FileName.push_back(argv[i+3]);
+	if ( argv[i+4][0] != '-' ) 
+	  FileName.push_back(argv[i+4]);
+	cout << "Fitted PbPb data file: " << FileName.front() << endl;
+	cout << "Fitted pp data file: " << FileName.back() << endl;
 	break;
       case 'v':
 	mJpsiFunct = argv[i+1];
 	mPsiPFunct = argv[i+2];
-	mBkgFunct.push_back(argv[i+3]);
-	mBkgFunct.push_back(argv[i+4]);
-	mBkgFunct.push_back(argv[i+5]);
-	mBkgFunct.push_back(argv[i+6]);
+	if ( argv[i+3][0] != '-' ) 
+	  mBkgFunct.push_back(argv[i+3]);
+	if ( argv[i+4][0] != '-' ) 
+	  mBkgFunct.push_back(argv[i+4]);
+	if ( argv[i+5][0] != '-' ) 
+	  mBkgFunct.push_back(argv[i+5]);
+	if ( argv[i+6][0] != '-' ) 
+	  mBkgFunct.push_back(argv[i+6]);
 	cout << "Mass J/psi function: " << mJpsiFunct << endl;
 	cout << "Mass psi(2S) function: " << mPsiPFunct << endl;
-	cout << "Mass PbPb background function: " << mBkgFunct[0] << " " << mBkgFunct[1] << " " << mBkgFunct[2] << endl;
-	cout << "Mass pp background function: " << mBkgFunct[3] << endl;
+	cout << "Mass PbPb background function: " << mBkgFunct.front();
+	for (unsigned int i=1;i<mBkgFunct.size()-1; ++i) {cout << " " << mBkgFunct.at(i);}
+	cout << endl;
+	cout << "Mass pp background function: " << mBkgFunct.back() << endl;
 	break;
       case 'd':
 	dirPre = argv[i+1];
@@ -136,6 +145,10 @@ int main(int argc, char* argv[]) {
       case 'g':
 	fixGwidth = false;
 	cout << "fix wideFactor: " << fixGwidth << endl;
+	break;
+      case 's':
+	shareShape = atoi(argv[i+1]);
+	cout << "Use same shape for pp and PbPb: " << shareShape << endl;
 	break;
       case 'z':
 	isPaper = atoi(argv[i+1]);
@@ -188,19 +201,46 @@ int main(int argc, char* argv[]) {
     fix_str+="freeN_";
   if (!fixGwidth)
     fix_str+="freeGwidth_";
-
   
-  const int nFiles = FileName.size();
+  const unsigned int nFiles = FileName.size();
+  if (nFiles<2) {
+    cout << "Need at least two files for simultaneous fit. Only " << nFiles << " provided." << endl;
+    return 1;
+  }
 
   // *** TFile for saving fitting results
   string resultFN;
-  resultFN = dirPre + "_PbPb" + mBkgFunct[0] + "_" + mBkgFunct[1] + "_" + mBkgFunct[2] + "_pp" + mBkgFunct[3] + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + fix_str + "fitResult.root";
+  resultFN = dirPre + "_PbPb" + mBkgFunct.front();
+  for (unsigned int i=1; i<nFiles-1;++i) {
+    resultFN +=  "_" + mBkgFunct.at(i);
+  }
+  resultFN += "_pp" + mBkgFunct.back() + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + fix_str + "fitResult.root";
   TFile resultF(resultFN.c_str(),"RECREATE");
+
+
+  vector<string> varSuffix;
+  if (nFiles==2) {
+    varSuffix.push_back("HI");
+    varSuffix.push_back("pp");
+  }
+  else if(nFiles==4) {
+    varSuffix.push_back("HI020");
+    varSuffix.push_back("HI2040");
+    varSuffix.push_back("HI40100");
+    varSuffix.push_back("pp");
+  }
+  else {
+    char substr[5];
+    for (unsigned int i=0; i<nFiles; ++i) {
+      sprintf(substr,"%u",i);
+      varSuffix.push_back(substr);
+    }
+  }
 
   // *** Read Data files
   TFile *fInData[nFiles];
   RooDataSet *data[nFiles];
-  for (int i=0; i<nFiles; i++) {
+  for (unsigned int i=0; i<nFiles; i++) {
     char name[100] = {0};
     fInData[i] = new TFile(FileName[i].c_str());
     cout << FileName[i].c_str() << endl;
@@ -233,13 +273,10 @@ int main(int argc, char* argv[]) {
     sprintf(reduceDS,"Jpsi_Pt>%.2f && Jpsi_Pt<%.2f && abs(Jpsi_Y)>%.2f && abs(Jpsi_Y)<%.2f",pmin,pmax,ymin,ymax);
 
   cout << "reduceDS for PbPb data: " << reduceDS << endl;
-  redData[0] = (RooDataSet*)data[0]->reduce(reduceDS);
-  ws->import(*redData[0]);
-  redData[1] = (RooDataSet*)data[1]->reduce(reduceDS);
-  ws->import(*redData[1]);
-  redData[2] = (RooDataSet*)data[2]->reduce(reduceDS);
-  ws->import(*redData[2]);
-
+  for (unsigned int i=0; i<nFiles-1; ++i) {
+    redData[i] = (RooDataSet*)data[i]->reduce(reduceDS);
+    ws->import(*redData[i]);
+  }
 
   if (cutNonPrompt) {
     if (prange=="6.5-30.0" && yrange=="0.0-2.4")
@@ -258,21 +295,53 @@ int main(int argc, char* argv[]) {
 
   cout << "reduceDS for pp data: " << reduceDS << endl;
 
-  redData[3] = (RooDataSet*)data[3]->reduce(reduceDS);
-  ws->import(*redData[3]);
+  redData[nFiles-1] = (RooDataSet*)data[nFiles-1]->reduce(reduceDS);
+  ws->import(*redData[nFiles-1]);
 
   setWSRange(ws);
 
   RooCategory* sample = new RooCategory("sample","sample") ;
-  //  sample->defineType("HI");
-  sample->defineType("HI020");
-  sample->defineType("HI2040");
-  sample->defineType("HI40100");
-  sample->defineType("pp");
-  ws->factory("sample[HI020,HI2040,HI40100,pp]");  //Index for simultaneous fit
+  string index;
+  if (nFiles==2) {
+    sample->defineType("HI");
+    sample->defineType("pp");
+    index = "sample[HI,pp]";
+  }
+  else if (nFiles==4) {
+    sample->defineType("HI020");
+    sample->defineType("HI2040");
+    sample->defineType("HI40100");
+    sample->defineType("pp");
+    index = "sample[HI020,HI2040,HI40100,pp]";
+  }
+  else {
+    index = "sample[";
+    char substr[5];
+    for (unsigned int i=0;i<nFiles;++i) {
+      sprintf(substr,"%u",i);
+      sample->defineType(substr);
+      if (i>0)
+	index += ",";
+
+      index += substr;
+    }
+    index += "]";
+  }
+  ws->factory(index.c_str());  //Index for simultaneous fit
 
   RooDataSet *redDataSim;
-  redDataSim = new RooDataSet("redDataSim","redDataSim",RooArgSet(*(ws->var("Jpsi_Mass"))),Index(*(ws->cat("sample"))),Import("HI020",*redData[0]),Import("HI2040",*redData[1]),Import("HI40100",*redData[2]),Import("pp",*redData[3]));
+  if (nFiles==2) {
+    redDataSim = new RooDataSet("redDataSim","redDataSim",RooArgSet(*(ws->var("Jpsi_Mass"))),Index(*(ws->cat("sample"))),Import("HI",*redData[0]),Import("pp",*redData[nFiles-1]));
+  }
+  else if (nFiles==4) {
+    redDataSim = new RooDataSet("redDataSim","redDataSim",RooArgSet(*(ws->var("Jpsi_Mass"))),Index(*(ws->cat("sample"))),Import("HI020",*redData[0]),Import("HI2040",*redData[1]),Import("HI40100",*redData[2]),Import("pp",*redData[3]));
+  }
+  else {
+    redDataSim = NULL;
+    cout << nFiles << " files not yet supported." << endl;
+    return 1;
+  }
+
   ws->import(*redDataSim);
 
   // Draw data
@@ -281,9 +350,12 @@ int main(int argc, char* argv[]) {
   // Binning for invariant mass distribution
   RooBinning rbm(2.2,4.2);
   int nbins = 100;
+  // RooBinning rbm(2.0,4.5);
+  // int nbins = 150;
   bool highStats=true;
   if (highStats)
     rbm.addUniform(nbins,2.2,4.2);
+  //    rbm.addUniform(nbins,2.0,4.5);
   else {
     // rbm.addUniform(14,2.2,2.760);
     // rbm.addUniform(24,2.760,3.240);
@@ -299,7 +371,7 @@ int main(int argc, char* argv[]) {
 
 
   RooDataHist *binData[nFiles];
-  for (int i=0; i<nFiles; i++) {
+  for (unsigned int i=0; i<nFiles; i++) {
     char name[100] = {0};
     sprintf(name,"binData%d",i+1);
     binData[i]= new RooDataHist(name,name,RooArgSet( *(ws->var("Jpsi_Mass")) ), *redData[i]);
@@ -376,12 +448,6 @@ int main(int argc, char* argv[]) {
 
 
   RooFitResult *fitM;
-
-  vector<string> varSuffix;
-  varSuffix.push_back("HI020");
-  varSuffix.push_back("HI2040");
-  varSuffix.push_back("HI40100");
-  varSuffix.push_back("pp");
   
   RooRealVar *NJpsi[nFiles];
   RooRealVar *NBkg[nFiles];
@@ -392,50 +458,37 @@ int main(int argc, char* argv[]) {
   RooFormulaVar *NPsiP_mix[nFiles-1];
 
   for (int i=nFiles-1; i>=0; --i) {
-    NJpsi[i]  = new RooRealVar(("NJpsi_"+varSuffix.at(i)).c_str(),("J/psi yield in "+varSuffix.at(i)).c_str(),0.5*binData[i]->sumEntries(),0.0,2.0*binData[i]->sumEntries());  ws->import(*NJpsi[i]);
+    NJpsi[i]  = new RooRealVar(("NJpsi_"+varSuffix.at(i)).c_str(),("J/psi yield in "+varSuffix.at(i)).c_str(),0.5*binData[i]->sumEntries(),0.0,2.0*binData[i]->sumEntries()); ws->import(*NJpsi[i]);
     
-    NBkg[i]  = new RooRealVar(("NBkg_"+varSuffix.at(i)).c_str(),("Brackground yield in "+varSuffix.at(i)).c_str(), 0.5*binData[i]->sumEntries(),0.0,2.0*binData[i]->sumEntries());   ws->import(*NBkg[i]);
+    NBkg[i]  = new RooRealVar(("NBkg_"+varSuffix.at(i)).c_str(),("Brackground yield in "+varSuffix.at(i)).c_str(), 0.5*binData[i]->sumEntries(),0.0,2.0*binData[i]->sumEntries()); ws->import(*NBkg[i]);
 
-    if (i==nFiles-1) {
+    if (i == (int)nFiles-1) {
       fracP_pp = new RooRealVar(("fracP_"+varSuffix.at(i)).c_str(),("psi(2S) fraction in "+varSuffix.at(i)).c_str(),0.01);
       fracP_pp->setConstant(false); ws->import(*fracP_pp);
-      
-      NPsiP[i] = new RooFormulaVar(("NPsiP_"+varSuffix.at(i)).c_str(), "@0*@1", RooArgList(*(ws->var(("NJpsi_"+varSuffix.at(i)).c_str())),*(ws->var(("fracP_"+varSuffix.at(i)).c_str()))));  ws->import(*NPsiP[i]);
     }
     else {
       doubleRatio[i] = new RooRealVar(("doubleRatio_"+varSuffix.at(i)).c_str(),("psi(2S) double ratio in "+varSuffix.at(i)).c_str(),1.0);
       doubleRatio[i]->setConstant(false); ws->import(*doubleRatio[i]);
 
-      fracP_HI[i] = new RooFormulaVar(("fracP_"+varSuffix.at(i)).c_str(), "@0*@1", RooArgList(*(ws->var(("doubleRatio_"+varSuffix.at(i)).c_str())),*(ws->var("fracP_pp"))));  ws->import(*fracP_HI[i]);
+      fracP_HI[i] = new RooFormulaVar(("fracP_"+varSuffix.at(i)).c_str(), "@0*@1", RooArgList(*(ws->var(("doubleRatio_"+varSuffix.at(i)).c_str())),*(ws->var("fracP_pp")))); ws->import(*fracP_HI[i]);
 
-      NPsiP[i] = new RooFormulaVar(("NPsiP_"+varSuffix.at(i)).c_str(), "@0*@1", RooArgList(*(ws->var(("NJpsi_"+varSuffix.at(i)).c_str())),*(ws->function(("fracP_"+varSuffix.at(i)).c_str()))));  ws->import(*NPsiP[i]);
-      
       NPsiP_mix[i]  = new RooFormulaVar(("NPsiP_mix_"+varSuffix.at(i)).c_str(),"@0*@1",RooArgList(*(ws->var(("NJpsi_"+varSuffix.at(nFiles-1)).c_str())),*(ws->function(("fracP_"+varSuffix.at(i)).c_str()))));   ws->import(*NPsiP_mix[i]);
     }
+
+    NPsiP[i] = new RooFormulaVar(("NPsiP_"+varSuffix.at(i)).c_str(), "@0*@1", RooArgList(*(ws->var(("NJpsi_"+varSuffix.at(i)).c_str())),*(ws->var(("fracP_"+varSuffix.at(i)).c_str()))));  ws->import(*NPsiP[i]);
     
-    if (i<nFiles-1)
-      sprintf(funct,"SUM::sigMassPDF_%s(NJpsi_%s*%s,NPsiP_%s*%s,NBkg_%s*%s)",varSuffix.at(i).c_str(),varSuffix.at(i).c_str(),(mJpsiFunct+"_HI").c_str(),varSuffix.at(i).c_str(),(mPsiPFunct+"_HI").c_str(),varSuffix.at(i).c_str(),mBkgFunct[i].c_str());
-    else 
-      sprintf(funct,"SUM::sigMassPDF_%s(NJpsi_%s*%s,NPsiP_%s*%s,NBkg_%s*%s)",varSuffix.at(i).c_str(),varSuffix.at(i).c_str(),mJpsiFunct.c_str(),varSuffix.at(i).c_str(),mPsiPFunct.c_str(),varSuffix.at(i).c_str(),mBkgFunct[i].c_str());
+    sprintf(funct,"SUM::sigMassPDF_%s(NJpsi_%s*%s,NPsiP_%s*%s,NBkg_%s*%s)",varSuffix.at(i).c_str(),varSuffix.at(i).c_str(),mJpsiFunct.c_str(),varSuffix.at(i).c_str(),mPsiPFunct.c_str(),varSuffix.at(i).c_str(),mBkgFunct[i].c_str());
 
     cout << funct << endl;
     ws->factory(funct);
     
-    //sprintf(funct,"SUM::sigMassPDF_HI(NJpsi_HI*%s,NPsiP_HI*%s,NBkg_HI*%s)",(mJpsiFunct+"_HI").c_str(),(mPsiPFunct+"_HI").c_str(),mBkgFunct[0].c_str());
-    //  ws->factory(funct);
+    if (i < (int)nFiles-1) {
+      sprintf(funct,"SUM::sigMassPDF_mix_%s(NJpsi_pp*%s,NPsiP_mix_%s*%s,NBkg_pp*%s)",varSuffix.at(i).c_str(),mJpsiFunct.c_str(),varSuffix.at(i).c_str(),mPsiPFunct.c_str(),mBkgFunct[nFiles-1].c_str());
+      ws->factory(funct);
+      cout << funct << endl;
+    }
   }
-
-  sprintf(funct,"SUM::sigMassPDF_mix_%s(NJpsi_pp*%s,NPsiP_mix_%s*%s,NBkg_pp*%s)",varSuffix.at(0).c_str(),mJpsiFunct.c_str(),varSuffix.at(0).c_str(),mPsiPFunct.c_str(),mBkgFunct[3].c_str());
-  ws->factory(funct);
-  cout << funct << endl;
-  sprintf(funct,"SUM::sigMassPDF_mix_%s(NJpsi_pp*%s,NPsiP_mix_%s*%s,NBkg_pp*%s)",varSuffix.at(1).c_str(),mJpsiFunct.c_str(),varSuffix.at(1).c_str(),mPsiPFunct.c_str(),mBkgFunct[3].c_str());
-  ws->factory(funct);
-  cout << funct << endl;
-  sprintf(funct,"SUM::sigMassPDF_mix_%s(NJpsi_pp*%s,NPsiP_mix_%s*%s,NBkg_pp*%s)",varSuffix.at(2).c_str(),mJpsiFunct.c_str(),varSuffix.at(2).c_str(),mPsiPFunct.c_str(),mBkgFunct[3].c_str());
-  ws->factory(funct);
-  cout << funct << endl;
-
-
+  
   ws->factory("SIMUL::sigMassPDFSim(sample,HI020=sigMassPDF_HI020,HI2040=sigMassPDF_HI2040,HI40100=sigMassPDF_HI40100,pp=sigMassPDF_pp)");
 
   string str("CBG");
@@ -452,7 +505,6 @@ int main(int argc, char* argv[]) {
       ws->var("wideFactor_HI")->setVal(1.901);
       ws->var("alpha")->setVal(1.693);
       ws->var("enne")->setVal(1.709);
-
     }
     else if (prange=="6.5-30.0" && yrange=="0.0-1.6") {
       ws->var("alpha_HI")->setVal(1.516);
@@ -460,7 +512,6 @@ int main(int argc, char* argv[]) {
       ws->var("enne_HI")->setVal(1.683);
       ws->var("alpha")->setVal(1.710);
       ws->var("enne")->setVal(1.646);
-
     }
     else if (prange=="3.0-30.0" && yrange=="1.6-2.4") {
       ws->var("alpha_HI")->setVal(1.880);
@@ -468,7 +519,6 @@ int main(int argc, char* argv[]) {
       ws->var("wideFactor_HI")->setVal(1.503);
       ws->var("alpha")->setVal(2.079);
       ws->var("enne")->setVal(1.390);
-
     }
     else if (prange=="3.0-6.5" && yrange=="1.6-2.4") {
       ws->var("alpha_HI")->setVal(1.860);
@@ -476,7 +526,6 @@ int main(int argc, char* argv[]) {
       ws->var("wideFactor_HI")->setVal(1.540);
       ws->var("alpha")->setVal(2.000);
       ws->var("enne")->setVal(1.350);
-
     }
     else if (prange=="6.5-30.0" && yrange=="1.6-2.4") {
       ws->var("alpha_HI")->setVal(2.187);
@@ -484,7 +533,6 @@ int main(int argc, char* argv[]) {
       ws->var("wideFactor_HI")->setVal(1.830);
       ws->var("alpha")->setVal(2.161);
       ws->var("enne")->setVal(1.370);
-
     }
     else {
       ws->var("alpha_HI")->setVal(2.0);
@@ -525,13 +573,9 @@ int main(int argc, char* argv[]) {
       inputFNcb =  dirPre2 + "_PbPb" + mBkgFunct[0] + "_" + mBkgFunct[1] + "_" + mBkgFunct[2] + "_pp" + mBkgFunct[3] + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + "_allVars.txt";
 
     RooArgSet *set = ws->pdf("sigMassPDFSim")->getParameters(*(ws->var("Jpsi_Mass")));
-    //    set->Print("v");
     set->readFromFile(inputFNcb.c_str());
-    //    cout << set->getRealValue("sigmaSig1",0,1) << endl;
     cout << "Import variable values from: " << inputFNcb << endl;
     ws->import(*set);
-    // set->Print("v");
-    // ws->Print("v");
   }
 
   fitM = ws->pdf("sigMassPDFSim")->fitTo(*redDataSim,Extended(1),Hesse(1),Minos(0),Save(1),SumW2Error(0),NumCPU(8),PrintEvalErrors(0),Verbose(0));
@@ -572,40 +616,60 @@ int main(int argc, char* argv[]) {
 
   // *** TFile for saving plots
   string plotFN;
-  plotFN = dirPre + "_PbPb" + mBkgFunct[0] + "_" + mBkgFunct[1] + "_" + mBkgFunct[2] + "_pp" + mBkgFunct[3] + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + fix_str + "plots.root";
+  plotFN = dirPre + "_PbPb" + mBkgFunct[0];
+  for (unsigned int i=1; i<nFiles-1; ++i) {
+    plotFN += "_" + mBkgFunct[i];
+  }
+  plotFN += "_pp" + mBkgFunct[nFiles-1] + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + fix_str + "plots.root";
   TFile plotF(plotFN.c_str(),"RECREATE");
   //    plotF.cd();
   TDirectory *dir[nFiles];
 
-  for (int i=0; i<nFiles; ++i) {
+  for (unsigned int i=0; i<nFiles; ++i) {
     if (i<nFiles-1)
       isPbPb = true;
     else
       isPbPb = false;
 
     string crange_tmp = crange;
-    switch (i) {
-    case 0:
-      crange = "0-20";
-      break;
-    case 1:
-      crange = "20-40";
-      break;
-    case 2:
-      crange = "40-100";
-      break;
-    case 3:
-      crange = "pp";
-      break;
-    default:
-      crange = "0-100";
-      break;
+    if (nFiles==2) {
+      switch (i) {
+      case 0:
+	crange = crange_tmp;
+	break;
+      case 1:
+	crange = "pp";
+	break;
+      default:
+	crange = "0-100";
+	break;
+      }
     }
+    else if (nFiles==4) {
+      switch (i) {
+      case 0:
+	crange = "0-20";
+	break;
+      case 1:
+	crange = "20-40";
+	break;
+      case 2:
+	crange = "40-100";
+	break;
+      case 3:
+	crange = "pp";
+	break;
+      default:
+	crange = "0-100";
+	break;
+      }
+    }
+    else
+      crange = crange_tmp;
 
     if (isPbPb)
       getOptRange(crange,&cmin,&cmax);
 
-    //    char name[100] = {0};
     mframe[i] = ws->var("Jpsi_Mass")->frame();
     mframe[i]->SetName(("frame_"+varSuffix.at(i)).c_str());
     mframe[i]->SetTitle(("A RooPlot of \"J/#psi mass\" in "+varSuffix.at(i)).c_str());
@@ -633,14 +697,14 @@ int main(int argc, char* argv[]) {
 
     if (!isPaper && found!=string::npos) { 
       string signal;
-      if (isPbPb)
-	signal = ",signalCB1_HI,signalCB1P_HI";
+      if (isPbPb && !shareShape)
+       	signal = ",signalCB1_HI,signalCB1P_HI";
       else
 	signal = ",signalCB1,signalCB1P";
       ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],VisualizeError(*fitM,1,kFALSE),FillColor(kRed-9),Components((mBkgFunct[i]+signal).c_str()));
       ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],Components((mBkgFunct[i]+signal).c_str()),LineColor(kRed),LineStyle(kDashed),LineWidth(2));
-      if (isPbPb)
-	signal = ",signalG2_HI,signalG2P_HI";
+      if (isPbPb && !shareShape)
+       	signal = ",signalG2_HI,signalG2P_HI";
       else
 	signal = ",signalG2,signalG2P";
       ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],VisualizeError(*fitM,1,kFALSE),FillColor(kGreen-9),Components((mBkgFunct[i]+signal).c_str()));
@@ -907,7 +971,7 @@ int main(int argc, char* argv[]) {
     double ErrsigmaSig1;
     double ErrsigmaSig2;
 
-    if (isPbPb) {
+    if (isPbPb && !shareShape) {
       coeffGaus = ws->var("coeffGaus_HI")->getVal();
       sigmaSig1 = ws->var("sigmaSig1_HI")->getVal();
       sigmaSig2 = ws->function("sigmaSig2_HI")->getVal();
@@ -934,7 +998,7 @@ int main(int argc, char* argv[]) {
       if  (found!=string::npos) {
 	sprintf(reduceDS,"#sigma_{G} = %0.0f MeV/c^{2}",sigmaSig2*1000.0);
 	lSigG->SetText(0.62,0.60,reduceDS);
-	if (isPbPb)
+	if (isPbPb && !shareShape)
 	  name = "wideFactor_HI";
 	else
 	  name = "wideFactor";
@@ -972,7 +1036,7 @@ int main(int argc, char* argv[]) {
 	lSigma->SetText(0.62,0.50,reduceDS);
 	mframe[i]->addObject(lSigma,"");
 
-	if (isPbPb)
+	if (isPbPb && !shareShape)
 	  name = "alpha_HI";
 	else
 	  name = "alpha";
@@ -984,7 +1048,7 @@ int main(int argc, char* argv[]) {
 	  sprintf(reduceDS,"#alpha = %0.2f #pm %0.2f",ws->var(name.c_str())->getVal(),ws->var(name.c_str())->getError());
 	lAlpha->SetText(0.62,0.45,reduceDS);
 
-	if (isPbPb)
+	if (isPbPb && !shareShape)
 	  name = "enne_HI";
 	else
 	  name = "enne";
@@ -996,7 +1060,7 @@ int main(int argc, char* argv[]) {
 	  sprintf(reduceDS,"n = %0.2f #pm %0.2f",ws->var(name.c_str())->getVal(),ws->var(name.c_str())->getError());
 	lN->SetText(0.62,0.40,reduceDS);
 
-	if (isPbPb)
+	if (isPbPb && !shareShape)
 	  name = "coeffGaus_HI";
 	else
 	  name = "coeffGaus";
@@ -1008,7 +1072,7 @@ int main(int argc, char* argv[]) {
 	mframe[i]->addObject(lFG,"");
       }
       else {
-	if (isPbPb)
+	if (isPbPb && !shareShape)
 	  name = "alpha_HI";
 	else
 	  name = "alpha";
@@ -1018,7 +1082,7 @@ int main(int argc, char* argv[]) {
 	  sprintf(reduceDS,"#alpha = %0.2f #pm %0.2f",ws->var(name.c_str())->getVal(),ws->var(name.c_str())->getError());
 	lAlpha->SetText(0.62,0.60,reduceDS);
 
-	if (isPbPb)
+	if (isPbPb && !shareShape)
 	  name = "enne_HI";
 	else
 	  name = "enne";
@@ -1039,11 +1103,11 @@ int main(int argc, char* argv[]) {
     leg1->AddEntry(gfake1,"data","p");
     leg1->AddEntry(&hfake21,"total fit","lf");
     leg1->AddEntry(&hfake11,"background","lf");
-    // if (!isPbPb)
-    //   leg1->AddEntry(&hfake22,"with R_{#psi(2S)}^{0-20%}(PbPb)","lf");
+    if (!isPbPb)
+      leg1->AddEntry(&hfake22,"with R_{#psi(2S)}(PbPb)","lf");
 
     if (isPaper)
-      mframe[i]->addObject(leg1,"sa,e");
+      mframe[i]->addObject(leg1,"same");
 
     mframe[i]->Draw();
     if (!isPaper) {
@@ -1067,7 +1131,7 @@ int main(int argc, char* argv[]) {
       st->SetTextFont(42);
     }
  
-    titlestr = dirPre + "_" + mBkgFunct[i] + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str +  "massfit" + ".pdf";
+    titlestr = dirPre + "_" + mBkgFunct[i] + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str +  "massfit.pdf";
     c00.SaveAs(titlestr.c_str());
 
 
@@ -1080,65 +1144,48 @@ int main(int argc, char* argv[]) {
     dir[i]->cd();
 
     cout << "Address: " << mframe[i] << " name: " << mframe[i]->GetName() << " title: " << mframe[i]->GetTitle() << endl;
-    // if (i==0) {
     mframe[i]->Write();
     mframepull[i]->Write();
     hpull[i]->Write();
     hpull_proj[i]->Write();
-       //    }
     plotF.cd();
 
     crange = crange_tmp; // set back to orignal crange
   }
-  cout << "HELLO" << endl;
   plotF.Close();
-  cout << "HELLO" << endl;
 
   // prepare models for CLs calculations
-  RooStats::ModelConfig *model = new RooStats::ModelConfig("model",ws);
-  //  model->SetWorkspace(*ws);
-  model->SetPdf(*ws->pdf("sigMassPDFSim"));
-  model->SetParametersOfInterest(*ws->var("doubleRatio_HI40100"));
-  model->SetObservables(*ws->var("Jpsi_Mass"));
+  RooStats::ModelConfig *model[nFiles-1];
+  RooArgSet *nuisances[nFiles-1];
 
-  RooArgSet *pars = ws->pdf("sigMassPDFSim")->getParameters(redData[1]);
-  pars->add(*ws->pdf("sigMassPDFSim")->getParameters(redData[0]));
-  //  pars.assignFast(pars);
-  pars->Print("v");
-  RooArgSet nuisances = RooArgSet(*pars);
-  nuisances.remove(*ws->var("doubleRatio_HI40100"));
-  // nuisances.remove(*ws->var("coeffGaus"));
-  // nuisances.remove(*ws->var("meanSig1"));
-  // nuisances.remove(*ws->var("wideFactor"));
-  //  nuisances.Print("v");
-  ws->defineSet("nuisParameters",nuisances);
-  model->SetNuisanceParameters(*ws->set("nuisParameters"));
+  for (unsigned int i=0;i<nFiles-1;++i) {
+    model[i] = new RooStats::ModelConfig(("model_"+varSuffix.at(i)).c_str(),ws);
+    model[i]->SetPdf(*ws->pdf("sigMassPDFSim"));
+    model[i]->SetParametersOfInterest(*ws->var(("doubleRatio_"+varSuffix.at(i)).c_str()));
+    model[i]->SetObservables(*ws->var("Jpsi_Mass"));
 
-  /*
-  model->SetSnapshot(*pars);
-  // prepare models for CLs calculations
-  RooStats::ModelConfig *model_null = (RooStats::ModelConfig*)model->Clone("modell_null");
-  //  model_null->SetWorkSpace(ws);
-  //  model_null->SetPdf("sigMassPDF");
-  //  model_null->SetObservables(RooArgSet("Jpsi_Mass"));
-  //  RooArgSet *pars = ws->pdf("sigMassPDF")->getParameters(redData);
-  //  pars.assignFast(pars);
-  //  pars->Print("v");
-  //  RooArgSet *nuisances = RooArgSet(pars);
-  //  nuisances->remove(ws->var("fracP"));
-  //  model->SetNuisanceParameters(nuisances);
-  RooArgSet poiNew = RooArgSet(*ws->var("fracP"));
-  double oldVal = ws->var("fracP")->getVal();
-  ws->var("fracP")->setVal(0.0);
-  model_null->SetSnapshot(poiNew);
-  ws->var("fracP")->setVal(oldVal);
-  ws->import(*model_null);
-  */
-  ws->import(*model);
-
-  string fname = dirPre + "_PbPb" + mBkgFunct[0] + "_" + mBkgFunct[1] + "_" + mBkgFunct[2] + "_pp" + mBkgFunct[3] + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str + "Workspace.root";
+    RooArgSet *pars = ws->pdf("sigMassPDFSim")->getParameters(redData[nFiles-1]);
+    pars->add(*ws->pdf("sigMassPDFSim")->getParameters(redData[i]));
+    pars->Print("v");
+    nuisances[i] = new RooArgSet(*pars);
+    nuisances[i]->remove(*ws->var(("doubleRatio_"+varSuffix.at(i)).c_str()));
+    ws->defineSet(("nuisParameters_"+varSuffix.at(i)).c_str(),*nuisances[i]);
+    model[i]->SetNuisanceParameters(*ws->set(("nuisParameters_"+varSuffix.at(i)).c_str()));
+    ws->import(*model[i]);
+  }
+  
+  string fname = dirPre + "_PbPb" + mBkgFunct[0];
+  for (unsigned int i=1; i<nFiles-1;++i) {
+    fname += "_" + mBkgFunct[i];
+  }
+  fname += "_pp" + mBkgFunct[nFiles-1] + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str + "Workspace.root";
   ws->writeToFile(fname.c_str(),kTRUE);
-  fname = dirPre + "_PbPb" + mBkgFunct[0] + "_" + mBkgFunct[1] + "_" + mBkgFunct[2] + "_pp" + mBkgFunct[3] + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str + "allVars.txt";
+
+  fname = dirPre + "_PbPb" + mBkgFunct[0];
+  for (unsigned int i=1; i<nFiles-1;++i) {
+    fname += "_" + mBkgFunct[i];
+  }
+  fname += "_pp" + mBkgFunct[nFiles-1] + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str + "allVars.txt";
   ws->allVars().writeToFile(fname.c_str());
 
   double NJpsi_fin[2] = {0,0};
@@ -1152,7 +1199,7 @@ int main(int argc, char* argv[]) {
   double DoubleRatio_fin = 0.0;
   double ErrDoubleRatio_fin = 0.0;
 
-  for (int i=0; i<nFiles; i++) {
+  for (unsigned int i=0; i<nFiles; i++) {
     string name;
 
     name = "NJpsi_"+varSuffix.at(i);
@@ -1184,15 +1231,15 @@ int main(int argc, char* argv[]) {
 
   // To check values of fit parameters
   cout << endl << "J/psi yields:" << endl;
-  for (int i=0; i<nFiles; i++) {
+  for (unsigned int i=0; i<nFiles; i++) {
     cout << "NJpsi"     << i << " :    Fit :"  << NJpsi_fin[i] << " +/- " << ErrNJpsi_fin[i] << endl;
     cout << "R_psi(2S)" << i << " :    Fit: "  << fracP_fin[i] << " +/- " << ErrFracP_fin[i] << endl;
   }
   cout << "Double Ratio: " << DoubleRatio_fin << " +/- " << ErrDoubleRatio_fin << endl;
  
+  /*
   titlestr = dirPre + "_PbPb" + mBkgFunct[0] + "_" + mBkgFunct[1] + "_" + mBkgFunct[2] + "_pp" + mBkgFunct[3] + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + fix_str + "fitResult.txt";
 
-  /*
   ofstream outputFile(titlestr.c_str());
   if (!outputFile.good()) {cout << "Fail to open result file." << endl; return 1;}
   outputFile.precision(10);
@@ -1315,7 +1362,7 @@ int main(int argc, char* argv[]) {
   */
 
 
-  for (int i=0; i<nFiles; i++) {
+  for (unsigned int i=0; i<nFiles; i++) {
     fInData[i]->Close();
   }
 

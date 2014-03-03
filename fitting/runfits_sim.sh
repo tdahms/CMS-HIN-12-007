@@ -37,9 +37,8 @@ do
 	    continue;
 	fi;
 	echo "fitting " ${rap} " " ${pt};
-	
-	./Fit1DDataPbPbSim -f ../root_files/PbPbData2011_DblMu0_cent0-20_M22-42.root ../root_files/PbPbData2011_DblMu0_cent20-40_M22-42.root ../root_files/PbPbData2011_DblMu0_cent40-100_M22-42.root ../root_files/ppData2013_DblMu0_cent0-100_M22-42.root -v signalCB1 signalCB1P ${bkg} -d ${DIRECTORY}/fracLogCB -p ${pt} -y ${rap} -t Mult -l 1 -b 1 &> ${DIRECTORY}/sim_fitCB_rap${rap}_pt${pt}.log
-	./Fit1DDataPbPbSim -f ../root_files/PbPbData2011_DblMu0_cent0-20_M22-42.root ../root_files/PbPbData2011_DblMu0_cent20-40_M22-42.root ../root_files/PbPbData2011_DblMu0_cent40-100_M22-42.root ../root_files/ppData2013_DblMu0_cent0-100_M22-42.root -v sigCB1G2 sigCB1G2P ${bkg} -d ${DIRECTORY}/fracLogCBG -p ${pt} -y ${rap} -t Mult -l 1 -b 1 &> ${DIRECTORY}/sim_fitCBG_rap${rap}_pt${pt}.log
+	./Fit1DDataPbPbSim -f ../root_files/PbPbData2011_DblMu0_cent0-20_M22-42.root ../root_files/PbPbData2011_DblMu0_cent20-40_M22-42.root ../root_files/PbPbData2011_DblMu0_cent40-100_M22-42.root ../root_files/ppData2013_DblMu0_cent0-100_M22-42.root -v signalCB1 signalCB1P ${bkg} -d ${DIRECTORY}/fracLogCB -p ${pt} -y ${rap} -t Mult -l 1 -b 1 -s 0 &> ${DIRECTORY}/sim_fitCB_rap${rap}_pt${pt}.log
+	./Fit1DDataPbPbSim -f ../root_files/PbPbData2011_DblMu0_cent0-20_M22-42.root ../root_files/PbPbData2011_DblMu0_cent20-40_M22-42.root ../root_files/PbPbData2011_DblMu0_cent40-100_M22-42.root ../root_files/ppData2013_DblMu0_cent0-100_M22-42.root -v sigCB1G2 sigCB1G2P ${bkg} -d ${DIRECTORY}/fracLogCBG -p ${pt} -y ${rap} -t Mult -l 1 -b 1 -s 0 &> ${DIRECTORY}/sim_fitCBG_rap${rap}_pt${pt}.log
     done;
 done;
 
