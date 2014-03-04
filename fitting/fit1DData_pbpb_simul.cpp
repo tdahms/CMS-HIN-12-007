@@ -246,9 +246,9 @@ int main(int argc, char* argv[]) {
   RooDataSet *data[nFiles];
   for (unsigned int i=0; i<nFiles; i++) {
     char name[100] = {0};
-    fInData[i] = new TFile(FileName[i].c_str());
-    cout << FileName[i].c_str() << endl;
-    if (fInData[i]->IsZombie()) { cout << "CANNOT open data root file: " << FileName[i] << "\n"; return 1; }
+    fInData[i] = new TFile(FileName.at(i).c_str());
+    cout << FileName.at(i) << endl;
+    if (fInData[i]->IsZombie()) { cout << "CANNOT open data root file: " << FileName.at(i) << "\n"; return 1; }
     fInData[i]->cd();
     data[i] = (RooDataSet*)fInData[i]->Get("dataJpsi");
     sprintf(name,"data%d",i+1);
@@ -479,17 +479,17 @@ int main(int argc, char* argv[]) {
 
       NPsiP[i] = new RooFormulaVar(("NPsiP_"+varSuffix.at(i)).c_str(), "@0*@1", RooArgList(*(ws->var(("NJpsi_"+varSuffix.at(i)).c_str())),*(ws->function(("fracP_"+varSuffix.at(i)).c_str()))));  ws->import(*NPsiP[i]);
 
-      NPsiP_mix[i]  = new RooFormulaVar(("NPsiP_mix_"+varSuffix.at(i)).c_str(),"@0*@1",RooArgList(*(ws->var(("NJpsi_"+varSuffix.at(nFiles-1)).c_str())),*(ws->function(("fracP_"+varSuffix.at(i)).c_str()))));   ws->import(*NPsiP_mix[i]);
+      NPsiP_mix[i]  = new RooFormulaVar(("NPsiP_mix_"+varSuffix.at(i)).c_str(),"@0*@1",RooArgList(*(ws->var(("NJpsi_"+varSuffix.back()).c_str())),*(ws->function(("fracP_"+varSuffix.at(i)).c_str()))));   ws->import(*NPsiP_mix[i]);
     }
 
     
-    sprintf(funct,"SUM::sigMassPDF_%s(NJpsi_%s*%s,NPsiP_%s*%s,NBkg_%s*%s)",varSuffix.at(i).c_str(),varSuffix.at(i).c_str(),mJpsiFunct.c_str(),varSuffix.at(i).c_str(),mPsiPFunct.c_str(),varSuffix.at(i).c_str(),mBkgFunct[i].c_str());
+    sprintf(funct,"SUM::sigMassPDF_%s(NJpsi_%s*%s,NPsiP_%s*%s,NBkg_%s*%s)",varSuffix.at(i).c_str(),varSuffix.at(i).c_str(),mJpsiFunct.c_str(),varSuffix.at(i).c_str(),mPsiPFunct.c_str(),varSuffix.at(i).c_str(),mBkgFunct.at(i).c_str());
 
     cout << funct << endl;
     ws->factory(funct);
     
     if (i < (int)nFiles-1) {
-      sprintf(funct,"SUM::sigMassPDF_mix_%s(NJpsi_pp*%s,NPsiP_mix_%s*%s,NBkg_pp*%s)",varSuffix.at(i).c_str(),mJpsiFunct.c_str(),varSuffix.at(i).c_str(),mPsiPFunct.c_str(),mBkgFunct[nFiles-1].c_str());
+      sprintf(funct,"SUM::sigMassPDF_mix_%s(NJpsi_pp*%s,NPsiP_mix_%s*%s,NBkg_pp*%s)",varSuffix.at(i).c_str(),mJpsiFunct.c_str(),varSuffix.at(i).c_str(),mPsiPFunct.c_str(),mBkgFunct.back().c_str());
       ws->factory(funct);
       cout << funct << endl;
     }
@@ -589,18 +589,18 @@ int main(int argc, char* argv[]) {
   if ( found!=string::npos ) {
     string inputFNcb;
     if ( !fixAlpha || !fixN || !fixGwidth) {// read for free alpha, n, or wideFactor from the default CBG fit
-      inputFNcb =  dirPre + "_PbPb" + mBkgFunct[0];
+      inputFNcb =  dirPre + "_PbPb" + mBkgFunct.front();
       for (unsigned int i=1; i<nFiles-1; ++i) {
-	inputFNcb += "_" + mBkgFunct[i];
+	inputFNcb += "_" + mBkgFunct.at(i);
       }
-      inputFNcb += "_pp" + mBkgFunct[nFiles-1] + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + "_allVars.txt";
+      inputFNcb += "_pp" + mBkgFunct.back() + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + "_allVars.txt";
     }
     else { // read results from CB fit
-      inputFNcb =  dirPre2 + "_PbPb" + mBkgFunct[0];
+      inputFNcb =  dirPre2 + "_PbPb" + mBkgFunct.front();
       for (unsigned int i=1; i<nFiles-1; ++i) {
-	inputFNcb += "_" + mBkgFunct[i];
+	inputFNcb += "_" + mBkgFunct.at(i);
       }
-      inputFNcb += "_pp" + mBkgFunct[nFiles-1] + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + "_allVars.txt";
+      inputFNcb += "_pp" + mBkgFunct.back() + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + "_allVars.txt";
     }
 
     RooArgSet *set = ws->pdf("sigMassPDFSim")->getParameters(*(ws->var("Jpsi_Mass")));
@@ -627,9 +627,9 @@ int main(int argc, char* argv[]) {
     cout << "CB_PbPb";
 
   for (unsigned int i=0; i<nFiles-1; ++i) {
-    cout << "_" << mBkgFunct[i];
+    cout << "_" << mBkgFunct.at(i);
   }
-  cout << "_pp" << mBkgFunct[nFiles-1] << "_rap" << yrange_str << "_pT" << prange_str << "_cent" << crange << fix_str << endl;
+  cout << "_pp" << mBkgFunct.back() << "_rap" << yrange_str << "_pT" << prange_str << "_cent" << crange << fix_str << endl;
 
   cout << "---FIT result summary: " << edmStatus << covStatus << fitStatus;
   for (unsigned int j=0; j<fitM->numStatusHistory(); ++j) {
@@ -643,6 +643,7 @@ int main(int argc, char* argv[]) {
   cout << "fitM->Write() into: " << resultFN << endl;
   resultF.Close();
 
+
   // *** Draw mass plot
   RooPlot *mframe[nFiles];
   RooPlot *mframepull[nFiles];
@@ -652,14 +653,15 @@ int main(int argc, char* argv[]) {
 
   // *** TFile for saving plots
   string plotFN;
-  plotFN = dirPre + "_PbPb" + mBkgFunct[0];
+  plotFN = dirPre + "_PbPb" + mBkgFunct.front();
   for (unsigned int i=1; i<nFiles-1; ++i) {
-    plotFN += "_" + mBkgFunct[i];
+    plotFN += "_" + mBkgFunct.at(i);
   }
-  plotFN += "_pp" + mBkgFunct[nFiles-1] + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + fix_str + "plots.root";
+  plotFN += "_pp" + mBkgFunct.back() + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + fix_str + "plots.root";
   TFile plotF(plotFN.c_str(),"RECREATE");
   //    plotF.cd();
   TDirectory *dir[nFiles];
+  string name;
 
   for (unsigned int i=0; i<nFiles; ++i) {
     if (i<nFiles-1)
@@ -718,7 +720,7 @@ int main(int argc, char* argv[]) {
     double min = 0.0;
     mframe[i]->SetMaximum(max);
 
-    string name = "NBkg_"+varSuffix.at(i);
+    name = "NBkg_"+varSuffix.at(i);
     min = ws->var(name.c_str())->getVal()/(double(nbins)) * 0.7;
 
     ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],VisualizeError(*fitM,1,kFALSE),FillColor(kGray),LineWidth(2),Normalization(redData[i]->sumEntries(),RooAbsReal::NumEvent));
@@ -728,8 +730,8 @@ int main(int argc, char* argv[]) {
     hpull[i]->SetName(("hpullhist_"+varSuffix.at(i)).c_str());
     hpull[i]->SetTitle(("hpullhist_"+varSuffix.at(i)).c_str());
     
-    ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],Components(mBkgFunct[i].c_str()),VisualizeError(*fitM,1,kFALSE),FillColor(kCyan),Normalization(redData[i]->sumEntries(),RooAbsReal::NumEvent));
-    ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],Components(mBkgFunct[i].c_str()),LineColor(kBlue),LineStyle(kDashed),LineWidth(2),Normalization(redData[i]->sumEntries(),RooAbsReal::NumEvent));
+    ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],Components(mBkgFunct.at(i).c_str()),VisualizeError(*fitM,1,kFALSE),FillColor(kCyan),Normalization(redData[i]->sumEntries(),RooAbsReal::NumEvent));
+    ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],Components(mBkgFunct.at(i).c_str()),LineColor(kBlue),LineStyle(kDashed),LineWidth(2),Normalization(redData[i]->sumEntries(),RooAbsReal::NumEvent));
 
     if (!isPaper && found!=string::npos) { 
       string signal;
@@ -737,20 +739,20 @@ int main(int argc, char* argv[]) {
        	signal = ",signalCB1_HI,signalCB1P_HI";
       else
 	signal = ",signalCB1,signalCB1P";
-      ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],VisualizeError(*fitM,1,kFALSE),FillColor(kRed-9),Components((mBkgFunct[i]+signal).c_str()));
-      ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],Components((mBkgFunct[i]+signal).c_str()),LineColor(kRed),LineStyle(kDashed),LineWidth(2));
+      ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],VisualizeError(*fitM,1,kFALSE),FillColor(kRed-9),Components((mBkgFunct.at(i)+signal).c_str()));
+      ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],Components((mBkgFunct.at(i)+signal).c_str()),LineColor(kRed),LineStyle(kDashed),LineWidth(2));
       if (isPbPb && !shareShape)
        	signal = ",signalG2_HI,signalG2P_HI";
       else
 	signal = ",signalG2,signalG2P";
-      ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],VisualizeError(*fitM,1,kFALSE),FillColor(kGreen-9),Components((mBkgFunct[i]+signal).c_str()));
-      ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],Components((mBkgFunct[i]+signal).c_str()),LineColor(kGreen+2),LineStyle(kDashed),LineWidth(2));
+      ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],VisualizeError(*fitM,1,kFALSE),FillColor(kGreen-9),Components((mBkgFunct.at(i)+signal).c_str()));
+      ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],Components((mBkgFunct.at(i)+signal).c_str()),LineColor(kGreen+2),LineStyle(kDashed),LineWidth(2));
     }
 
     if (i==nFiles-1) {
-      ws->pdf(("sigMassPDF_mix_"+varSuffix.at(0)).c_str())->plotOn(mframe[i],VisualizeError(*fitM,1,kFALSE),FillColor(kOrange-9));
+      ws->pdf(("sigMassPDF_mix_"+varSuffix.front()).c_str())->plotOn(mframe[i],VisualizeError(*fitM,1,kFALSE),FillColor(kOrange-9));
       redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerStyle(20),MarkerSize(0.8),Binning(rbm));
-      ws->pdf(("sigMassPDF_mix_"+varSuffix.at(0)).c_str())->plotOn(mframe[i],LineColor(kOrange+2),LineWidth(2));
+      ws->pdf(("sigMassPDF_mix_"+varSuffix.front()).c_str())->plotOn(mframe[i],LineColor(kOrange+2),LineWidth(2));
     }
 
 
@@ -1167,7 +1169,7 @@ int main(int argc, char* argv[]) {
       st->SetTextFont(42);
     }
  
-    titlestr = dirPre + "_" + mBkgFunct[i] + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str +  "massfit.pdf";
+    titlestr = dirPre + "_" + mBkgFunct.at(i) + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str +  "massfit.pdf";
     c00.SaveAs(titlestr.c_str());
 
 
@@ -1212,6 +1214,7 @@ int main(int argc, char* argv[]) {
     ws->defineSet(("nuisParameters_"+varSuffix.at(i)).c_str(),*nuisances[i]);
     model[i]->SetNuisanceParameters(*ws->set(("nuisParameters_"+varSuffix.at(i)).c_str()));
     RooRealVar* poi = (RooRealVar*) model[i]->GetParametersOfInterest()->first();
+    double tmp_poi = poi->getVal();
     model[i]->SetSnapshot(*poi);
 
     ws->import(*model[i]);
@@ -1222,36 +1225,35 @@ int main(int argc, char* argv[]) {
     poi->setVal(1.0);
     bmodel[i]->SetSnapshot(*poi);
     ws->import(*bmodel[i]);
+    poi->setVal(tmp_poi);
   }
-  
-  string fname = dirPre + "_PbPb" + mBkgFunct[0];
+
+  string fname = dirPre + "_PbPb" + mBkgFunct.front();
   for (unsigned int i=1; i<nFiles-1;++i) {
-    fname += "_" + mBkgFunct[i];
+    fname += "_" + mBkgFunct.at(i);
   }
-  fname += "_pp" + mBkgFunct[nFiles-1] + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str + "Workspace.root";
+  fname += "_pp" + mBkgFunct.back() + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str + "Workspace.root";
   ws->writeToFile(fname.c_str(),kTRUE);
 
-  fname = dirPre + "_PbPb" + mBkgFunct[0];
+  fname = dirPre + "_PbPb" + mBkgFunct.front();
   for (unsigned int i=1; i<nFiles-1;++i) {
-    fname += "_" + mBkgFunct[i];
+    fname += "_" + mBkgFunct.at(i);
   }
-  fname += "_pp" + mBkgFunct[nFiles-1] + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str + "allVars.txt";
+  fname += "_pp" + mBkgFunct.back() + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str + "allVars.txt";
   ws->allVars().writeToFile(fname.c_str());
 
-  double NJpsi_fin[2] = {0,0};
-  double ErrNJpsi_fin[2] = {0,0};
-  // double NPsiP_fin[2] = {0,0};
-  // double ErrNPsiP_fin[2] = {0,0};
-  double fracP_fin[2] = {0,0};
-  double ErrFracP_fin[2] = {0,0};
-  double NBkg_fin[2] = {0,0};
-  double ErrNBkg_fin[2] = {0,0};
-  double DoubleRatio_fin = 0.0;
-  double ErrDoubleRatio_fin = 0.0;
+  double NJpsi_fin[nFiles];
+  double ErrNJpsi_fin[nFiles];
+  // double NPsiP_fin[nFiles];
+  // double ErrNPsiP_fin[nFiles];
+  double fracP_fin[nFiles];
+  double ErrFracP_fin[nFiles];
+  double NBkg_fin[nFiles];
+  double ErrNBkg_fin[nFiles];
+  double DoubleRatio_fin[nFiles-1];
+  double ErrDoubleRatio_fin[nFiles-1];
 
   for (unsigned int i=0; i<nFiles; i++) {
-    string name;
-
     name = "NJpsi_"+varSuffix.at(i);
     NJpsi_fin[i]= ws->var(name.c_str())->getVal();
     ErrNJpsi_fin[i] = ws->var(name.c_str())->getError();
@@ -1261,15 +1263,15 @@ int main(int argc, char* argv[]) {
 
     if (i<nFiles-1) {
       name = "doubleRatio_"+varSuffix.at(i);
-      DoubleRatio_fin = ws->var(name.c_str())->getVal();
-      ErrDoubleRatio_fin = ws->var(name.c_str())->getError();
+      DoubleRatio_fin[i] = ws->var(name.c_str())->getVal();
+      ErrDoubleRatio_fin[i] = ws->var(name.c_str())->getError();
       name = "fracP_"+varSuffix.at(i);
 
       double fracP_pp = ws->var("fracP_pp")->getVal();
       double errFracP_pp = ws->var("fracP_pp")->getError();
       double corr = fitM->correlation( *ws->var(("doubleRatio_"+varSuffix.at(i)).c_str()) , *ws->var("fracP_pp") );
       fracP_fin[i] = ws->function(("fracP_"+varSuffix.at(i)).c_str())->getVal();
-      ErrFracP_fin[i] = sqrt( pow(ErrDoubleRatio_fin/DoubleRatio_fin,2) + pow(errFracP_pp/fracP_pp,2) + 2*ErrDoubleRatio_fin*errFracP_pp*corr/fracP_fin[i] )*fracP_fin[i];
+      ErrFracP_fin[i] = sqrt( pow(ErrDoubleRatio_fin[i]/DoubleRatio_fin[i],2) + pow(errFracP_pp/fracP_pp,2) + 2*ErrDoubleRatio_fin[i]*errFracP_pp*corr/fracP_fin[i] )*fracP_fin[i];
     }
     else {
       name = "fracP_pp";
@@ -1277,145 +1279,24 @@ int main(int argc, char* argv[]) {
       ErrFracP_fin[i] = ws->var(name.c_str())->getError();
     }
   }
-
-
+  
   // To check values of fit parameters
-  cout << endl << "J/psi yields:" << endl;
+  cout << endl << "J/psi yields:\n" << endl;
   for (unsigned int i=0; i<nFiles; i++) {
-    cout << "NJpsi"     << i << " :    Fit :"  << NJpsi_fin[i] << " +/- " << ErrNJpsi_fin[i] << endl;
-    cout << "R_psi(2S)" << i << " :    Fit: "  << fracP_fin[i] << " +/- " << ErrFracP_fin[i] << endl;
+    cout << varSuffix.at(i) << ":"<< endl;
+    cout << "---------------------" << endl;
+    cout << "NBkg: "  << NBkg_fin[i] << " +/- " << ErrNBkg_fin[i] << endl;
+    cout << "NJpsi: " << NJpsi_fin[i] << " +/- " << ErrNJpsi_fin[i] << endl;
+    cout << "R_psi(2S) Fit: "  << fracP_fin[i] << " +/- " << ErrFracP_fin[i] << endl;
+    if (i<nFiles-1)
+      cout << "Double Ratio: " << DoubleRatio_fin[i] << " +/- " << ErrDoubleRatio_fin[i] << endl;
+    cout << endl;
   }
-  cout << "Double Ratio: " << DoubleRatio_fin << " +/- " << ErrDoubleRatio_fin << endl;
  
-  /*
-  titlestr = dirPre + "_PbPb" + mBkgFunct[0] + "_" + mBkgFunct[1] + "_" + mBkgFunct[2] + "_pp" + mBkgFunct[3] + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + fix_str + "fitResult.txt";
-
-  ofstream outputFile(titlestr.c_str());
-  if (!outputFile.good()) {cout << "Fail to open result file." << endl; return 1;}
-  outputFile.precision(10);
-  //  outputFile.setf( std::ios::fixed, std::ios::floatfield)
-
-  for (int i=0; i<nFiles; i++) {
-  outputFile
-    << "NJpsi " << i+1 << NJpsi_fin[i]                       << " " << ErrNJpsi_fin[i] << "\n"
-    << "NPsiP " << i+1 << NJpsi_fin[i]*fracP_fin[i] << "\n"
-    << "R_psi(2S) " << i+1 << fracP_fin[i]            << " " << ErrFracP_fin[i] << "\n"
-    << "NBkg "  << i+1 << NBkg_fin[i]                          << " " << ErrNBkg_fin[i] << "\n";
-  }
-  if (!mBkgFunct[0].compare("expFunct_HI")) {
-    outputFile
-      << "coeffExp_HI "      << ws->var("coeffExp_HI")->getVal()      << " " << ws->var("coeffExp_HI")->getError() << "\n";
-  }
-  if (!mBkgFunct[0].compare("twoExpFunct_HI")) {
-    outputFile
-      << "coeffExp_HI "      << ws->var("coeffExp_HI")->getVal()      << " " << ws->var("coeffExp_HI")->getError() << "\n"
-      << "coeffExp2_HI "     << ws->var("coeffExp2_HI")->getVal()     << " " << ws->var("coeffExp2_HI")->getError() << "\n"
-      << "cutx_HI "          << ws->var("cutx_HI")->getVal()          << " " << ws->var("cutx_HI")->getError() << "\n";
-  }
-  if (!mBkgFunct[0].compare("gausBkg_HI")) {
-    outputFile
-      << "meanBkg_HI "      << ws->var("meanBkg_HI")->getVal()      << " " << ws->var("meanBkg_HI")->getError() << "\n"
-      << "sigmaBkg_HI "     << ws->var("sigmaBkg_HI")->getVal()     << " " << ws->var("sigmaBkg_HI")->getError() << "\n";
-  }
-  if (!mBkgFunct[0].compare("pol1_HI")) {
-    outputFile
-      << "coeffPol1_HI "     << ws->var("coeffPol1_HI")->getVal()     << " " << ws->var("coeffPol1_HI")->getError() << "\n";
-  }
-  if (!mBkgFunct[0].compare("pol2_HI")) {
-    outputFile
-      << "coeffPol1_HI "     << ws->var("coeffPol1_HI")->getVal()     << " " << ws->var("coeffPol1_HI")->getError() << "\n"
-      << "coeffPol2_HI "     << ws->var("coeffPol2_HI")->getVal()     << " " << ws->var("coeffPol2_HI")->getError() << "\n";
-  }
-  if (!mBkgFunct[0].compare("pol3_HI")) {
-    outputFile
-      << "coeffPol1_HI "     << ws->var("coeffPol1_HI")->getVal()     << " " << ws->var("coeffPol1_HI")->getError() << "\n"
-      << "coeffPol2_HI "     << ws->var("coeffPol2_HI")->getVal()     << " " << ws->var("coeffPol2_HI")->getError() << "\n"
-      << "coeffPol3_HI "     << ws->var("coeffPol3_HI")->getVal()     << " " << ws->var("coeffPol3_HI")->getError() << "\n";
-  }
-  if (!mBkgFunct[0].compare("pol4_HI")) {
-    outputFile
-      << "coeffPol1_HI "     << ws->var("coeffPol1_HI")->getVal()     << " " << ws->var("coeffPol1_HI")->getError() << "\n"
-      << "coeffPol2_HI "     << ws->var("coeffPol2_HI")->getVal()     << " " << ws->var("coeffPol2_HI")->getError() << "\n"
-      << "coeffPol3_HI "     << ws->var("coeffPol3_HI")->getVal()     << " " << ws->var("coeffPol3_HI")->getError() << "\n"
-      << "coeffPol4_HI "     << ws->var("coeffPol4_HI")->getVal()     << " " << ws->var("coeffPol4_HI")->getError() << "\n";
-  }
-  if (!mBkgFunct[0].compare("pol5_HI")) {
-    outputFile
-      << "coeffPol1_HI "     << ws->var("coeffPol1_HI")->getVal()     << " " << ws->var("coeffPol1_HI")->getError() << "\n"
-      << "coeffPol2_HI "     << ws->var("coeffPol2_HI")->getVal()     << " " << ws->var("coeffPol2_HI")->getError() << "\n"
-      << "coeffPol3_HI "     << ws->var("coeffPol3_HI")->getVal()     << " " << ws->var("coeffPol3_HI")->getError() << "\n"
-      << "coeffPol4_HI "     << ws->var("coeffPol4_HI")->getVal()     << " " << ws->var("coeffPol4_HI")->getError() << "\n"
-      << "coeffPol5_HI "     << ws->var("coeffPol5_HI")->getVal()     << " " << ws->var("coeffPol5_HI")->getError() << "\n";
-  }
-  if (!mBkgFunct[1].compare("expFunct")) {
-    outputFile
-      << "coeffExp "      << ws->var("coeffExp")->getVal()      << " " << ws->var("coeffExp")->getError() << "\n";
-  }
-  if (!mBkgFunct[1].compare("twoExpFunct")) {
-    outputFile
-      << "coeffExp "      << ws->var("coeffExp")->getVal()      << " " << ws->var("coeffExp")->getError() << "\n"
-      << "coeffExp2 "     << ws->var("coeffExp2")->getVal()     << " " << ws->var("coeffExp2")->getError() << "\n"
-      << "cutx "          << ws->var("cutx")->getVal()          << " " << ws->var("cutx")->getError() << "\n";
-  }
-  if (!mBkgFunct[1].compare("gausBkg")) {
-    outputFile
-      << "meanBkg "      << ws->var("meanBkg")->getVal()      << " " << ws->var("meanBkg")->getError() << "\n"
-      << "sigmaBkg "     << ws->var("sigmaBkg")->getVal()     << " " << ws->var("sigmaBkg")->getError() << "\n";
-  }
-  if (!mBkgFunct[1].compare("pol1")) {
-    outputFile
-      << "coeffPol1 "     << ws->var("coeffPol1")->getVal()     << " " << ws->var("coeffPol1")->getError() << "\n";
-  }
-  if (!mBkgFunct[1].compare("pol2")) {
-    outputFile
-      << "coeffPol1 "     << ws->var("coeffPol1")->getVal()     << " " << ws->var("coeffPol1")->getError() << "\n"
-      << "coeffPol2 "     << ws->var("coeffPol2")->getVal()     << " " << ws->var("coeffPol2")->getError() << "\n";
-  }
-  if (!mBkgFunct[1].compare("pol3")) {
-    outputFile
-      << "coeffPol1 "     << ws->var("coeffPol1")->getVal()     << " " << ws->var("coeffPol1")->getError() << "\n"
-      << "coeffPol2 "     << ws->var("coeffPol2")->getVal()     << " " << ws->var("coeffPol2")->getError() << "\n"
-      << "coeffPol3 "     << ws->var("coeffPol3")->getVal()     << " " << ws->var("coeffPol3")->getError() << "\n";
-  }
-  if (!mBkgFunct[1].compare("pol4")) {
-    outputFile
-      << "coeffPol1 "     << ws->var("coeffPol1")->getVal()     << " " << ws->var("coeffPol1")->getError() << "\n"
-      << "coeffPol2 "     << ws->var("coeffPol2")->getVal()     << " " << ws->var("coeffPol2")->getError() << "\n"
-      << "coeffPol3 "     << ws->var("coeffPol3")->getVal()     << " " << ws->var("coeffPol3")->getError() << "\n"
-      << "coeffPol4 "     << ws->var("coeffPol4")->getVal()     << " " << ws->var("coeffPol4")->getError() << "\n";
-  }
-  if (!mBkgFunct[1].compare("pol5")) {
-    outputFile
-      << "coeffPol1 "     << ws->var("coeffPol1")->getVal()     << " " << ws->var("coeffPol1")->getError() << "\n"
-      << "coeffPol2 "     << ws->var("coeffPol2")->getVal()     << " " << ws->var("coeffPol2")->getError() << "\n"
-      << "coeffPol3 "     << ws->var("coeffPol3")->getVal()     << " " << ws->var("coeffPol3")->getError() << "\n"
-      << "coeffPol4 "     << ws->var("coeffPol4")->getVal()     << " " << ws->var("coeffPol4")->getError() << "\n"
-      << "coeffPol5 "     << ws->var("coeffPol5")->getVal()     << " " << ws->var("coeffPol5")->getError() << "\n";
-  }
-
-
-  outputFile
-    << "coeffGaus_HI "    << ws->var("coeffGaus_HI")->getVal()    << " " << ws->var("coeffGaus_HI")->getError() << "\n"
-    << "meanSig1_HI "     << ws->var("meanSig1_HI")->getVal()     << " " << ws->var("meanSig1_HI")->getError() << "\n"
-    << "sigmaSig1_HI "    << ws->var("sigmaSig1_HI")->getVal()    << " " << ws->var("sigmaSig1_HI")->getError() << "\n"
-    << "wideFactor_HI "   << ws->var("wideFactor_HI")->getVal()   << " " << ws->var("wideFactor_HI")->getError() << "\n"
-    << "sigmaSig2_HI "    << ws->function("sigmaSig2_HI")->getVal() << " " << ws->function("sigmaSig2_HI")->getVal()*ws->var("wideFactor_HI")->getError()/ws->var("wideFactor_HI")->getVal() << "\n"
-    << "alpha_HI "        << ws->var("alpha_HI")->getVal()        << " " << ws->var("alpha_HI")->getError() << "\n"
-    << "enne_HI "         << ws->var("enne_HI")->getVal()         << " " << ws->var("enne_HI")->getError() << "\n"
-    << "coeffGaus "    << ws->var("coeffGaus")->getVal()    << " " << ws->var("coeffGaus")->getError() << "\n"
-    << "meanSig1 "     << ws->var("meanSig1")->getVal()     << " " << ws->var("meanSig1")->getError() << "\n"
-    << "sigmaSig1 "    << ws->var("sigmaSig1")->getVal()    << " " << ws->var("sigmaSig1")->getError() << "\n"
-    << "wideFactor "   << ws->var("wideFactor")->getVal()   << " " << ws->var("wideFactor")->getError() << "\n"
-    << "sigmaSig2 "    << ws->function("sigmaSig2")->getVal() << " " << ws->function("sigmaSig2")->getVal()*ws->var("wideFactor")->getError()/ws->var("wideFactor")->getVal() << "\n"
-    << "alpha "        << ws->var("alpha")->getVal()        << " " << ws->var("alpha")->getError() << "\n"
-    << "enne "         << ws->var("enne")->getVal()         << " " << ws->var("enne")->getError() << endl;
-  */
-
-
-  for (unsigned int i=0; i<nFiles; i++) {
+  for (unsigned int i=0; i<nFiles; ++i) {
     fInData[i]->Close();
   }
-
+  
   return 0;
 }
 
