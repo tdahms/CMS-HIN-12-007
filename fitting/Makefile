@@ -2,7 +2,7 @@ ROOTCFLAGS	=	$(shell root-config --cflags)
 ROOTGLIBS	=	$(shell root-config --glibs)
 
 CXX           = g++
-CXXFLAGS      = -g -fPIC -Wno-deprecated -O -ansi -D_GNU_SOURCE -g -O2
+CXXFLAGS      = -g -O2 -pipe -Wall -Woverloaded-virtual -W -fPIC -ansi -D_GNU_SOURCE
 LD            = g++
 LDFLAGS       = -g
 SOFLAGS       = -shared
@@ -14,7 +14,7 @@ ifeq ($(PLATFORM),macosx)
 # MacOS X with cc (GNU cc 2.95.2 and gcc 3.3)
 MACOSX_MINOR := $(shell sw_vers | sed -n 's/ProductVersion://p' | cut -d . -f 2)
 CXX           = c++ -lm
-CXXFLAGS      = -O2 -pipe -Wall -W -Woverloaded-virtual -fPIC -Wno-deprecated -O -ansi -D_GNU_SOURCE  
+CXXFLAGS      = -g -O2 -pipe -Wall -Woverloaded-virtual -W -fPIC -ansi -D_GNU_SOURCE  
 LD           = c++
 LDFLAGS       = -O2 -g
 # The SOFLAGS will be used to create the .dylib,

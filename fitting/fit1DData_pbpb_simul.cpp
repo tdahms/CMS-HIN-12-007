@@ -74,6 +74,7 @@ int main(int argc, char* argv[]) {
   bool fixAlpha = true;
   bool fixN = true;
   bool fixGwidth = true; // only used in PbPb
+  bool shareShape = false;
 
   // *** Check options
   for (int i=1; i<argc; ++i) {
@@ -84,18 +85,34 @@ int main(int argc, char* argv[]) {
       case 'f':
 	FileName.push_back(argv[i+1]);
 	FileName.push_back(argv[i+2]);
-	cout << "Fitted PbPb data file: " << FileName[0] << endl;
-	cout << "Fitted pp data file: " << FileName[1] << endl;
+	if ( argv[i+3][0] != '-' ) {
+	  FileName.push_back(argv[i+3]);
+	  if ( argv[i+4][0] != '-' ) 
+	    FileName.push_back(argv[i+4]);
+	}
+	cout << "Fitted PbPb data file: " << FileName.front() << endl;
+	cout << "Fitted pp data file: " << FileName.back() << endl;
 	break;
       case 'v':
 	mJpsiFunct = argv[i+1];
 	mPsiPFunct = argv[i+2];
-	mBkgFunct.push_back(argv[i+3]);
-	mBkgFunct.push_back(argv[i+4]);
-	cout << "Mass J/psi function: " << mJpsiFunct << endl;
+	if ( argv[i+3][0] != '-' ) {
+	  mBkgFunct.push_back(argv[i+3]);
+	  if ( argv[i+4][0] != '-' ) {
+	    mBkgFunct.push_back(argv[i+4]);
+	    if ( argv[i+5][0] != '-' ) {
+	      mBkgFunct.push_back(argv[i+5]);
+	      if ( argv[i+6][0] != '-' ) 
+		mBkgFunct.push_back(argv[i+6]);
+	    }
+	  }
+	}
+       	cout << "Mass J/psi function: " << mJpsiFunct << endl;
 	cout << "Mass psi(2S) function: " << mPsiPFunct << endl;
-	cout << "Mass PbPb background function: " << mBkgFunct[0] << endl;
-	cout << "Mass pp background function: " << mBkgFunct[1] << endl;
+	cout << "Mass PbPb background function: " << mBkgFunct.front();
+	for (unsigned int j=1;j<mBkgFunct.size()-1; ++j) {cout << " " << mBkgFunct.at(j);}
+	cout << endl;
+	cout << "Mass pp background function: " << mBkgFunct.back() << endl;
 	break;
       case 'd':
 	dirPre = argv[i+1];
@@ -133,6 +150,10 @@ int main(int argc, char* argv[]) {
 	fixGwidth = false;
 	cout << "fix wideFactor: " << fixGwidth << endl;
 	break;
+      case 's':
+	shareShape = atoi(argv[i+1]);
+	cout << "Use same shape for pp and PbPb: " << shareShape << endl;
+	break;
       case 'z':
 	isPaper = atoi(argv[i+1]);
 	cout << "paper plots: " << isPaper << endl;
@@ -144,7 +165,6 @@ int main(int argc, char* argv[]) {
  
   float pmin=0, pmax=0, ymin=0, ymax=0, cmin=0, cmax=0;
   getOptRange(prange,&pmin,&pmax);
-  getOptRange(crange,&cmin,&cmax);
   getOptRange(yrange,&ymin,&ymax);
 
   string yrange_str, prange_str;
@@ -185,21 +205,50 @@ int main(int argc, char* argv[]) {
     fix_str+="freeN_";
   if (!fixGwidth)
     fix_str+="freeGwidth_";
+  
+  const unsigned int nFiles = FileName.size();
+  if (nFiles<2) {
+    cout << "Need at least two files for simultaneous fit. Only " << nFiles << " provided." << endl;
+    return 1;
+  }
 
   // *** TFile for saving fitting results
   string resultFN;
-  resultFN = dirPre + "_PbPb" + mBkgFunct[0] + "_pp" + mBkgFunct[1] + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + fix_str + "fitResult.root";
+  resultFN = dirPre + "_PbPb" + mBkgFunct.front();
+  for (unsigned int i=1; i<nFiles-1;++i) {
+    resultFN +=  "_" + mBkgFunct.at(i);
+  }
+  resultFN += "_pp" + mBkgFunct.back() + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + fix_str + "fitResult.root";
   TFile resultF(resultFN.c_str(),"RECREATE");
 
+
+  vector<string> varSuffix;
+  if (nFiles==2) {
+    varSuffix.push_back("HI");
+    varSuffix.push_back("pp");
+  }
+  else if(nFiles==4) {
+    varSuffix.push_back("HI020");
+    varSuffix.push_back("HI2040");
+    varSuffix.push_back("HI40100");
+    varSuffix.push_back("pp");
+  }
+  else {
+    char substr[5];
+    for (unsigned int i=0; i<nFiles; ++i) {
+      sprintf(substr,"%u",i);
+      varSuffix.push_back(substr);
+    }
+  }
+
   // *** Read Data files
-  const int nFiles = FileName.size();
   TFile *fInData[nFiles];
   RooDataSet *data[nFiles];
-  for (int i=0; i<nFiles; i++) {
+  for (unsigned int i=0; i<nFiles; i++) {
     char name[100] = {0};
-    fInData[i] = new TFile(FileName[i].c_str());
-    cout << FileName[i].c_str() << endl;
-    if (fInData[i]->IsZombie()) { cout << "CANNOT open data root file: " << FileName[i] << "\n"; return 1; }
+    fInData[i] = new TFile(FileName.at(i).c_str());
+    cout << FileName.at(i) << endl;
+    if (fInData[i]->IsZombie()) { cout << "CANNOT open data root file: " << FileName.at(i) << "\n"; return 1; }
     fInData[i]->cd();
     data[i] = (RooDataSet*)fInData[i]->Get("dataJpsi");
     sprintf(name,"data%d",i+1);
@@ -228,10 +277,10 @@ int main(int argc, char* argv[]) {
     sprintf(reduceDS,"Jpsi_Pt>%.2f && Jpsi_Pt<%.2f && abs(Jpsi_Y)>%.2f && abs(Jpsi_Y)<%.2f",pmin,pmax,ymin,ymax);
 
   cout << "reduceDS for PbPb data: " << reduceDS << endl;
-  redData[0] = (RooDataSet*)data[0]->reduce(reduceDS);
-  ws->import(*redData[0]);
-
-
+  for (unsigned int i=0; i<nFiles-1; ++i) {
+    redData[i] = (RooDataSet*)data[i]->reduce(reduceDS);
+    ws->import(*redData[i]);
+  }
 
   if (cutNonPrompt) {
     if (prange=="6.5-30.0" && yrange=="0.0-2.4")
@@ -249,16 +298,54 @@ int main(int argc, char* argv[]) {
     sprintf(reduceDS,"Jpsi_Pt>%.2f && Jpsi_Pt<%.2f && abs(Jpsi_Y)>%.2f && abs(Jpsi_Y)<%.2f",pmin,pmax,ymin,ymax);
 
   cout << "reduceDS for pp data: " << reduceDS << endl;
-  redData[1] = (RooDataSet*)data[1]->reduce(reduceDS);
-  ws->import(*redData[1]);
- 
+
+  redData[nFiles-1] = (RooDataSet*)data[nFiles-1]->reduce(reduceDS);
+  ws->import(*redData[nFiles-1]);
+
   setWSRange(ws);
 
   RooCategory* sample = new RooCategory("sample","sample") ;
-  sample->defineType("HI") ;
-  sample->defineType("pp") ;
-  ws->factory("sample[HI,pp]");  //Index for simultaneous fit
-  RooDataSet *redDataSim = new RooDataSet("redDataSim","redDataSim",RooArgSet(*(ws->var("Jpsi_Mass"))),Index(*(ws->cat("sample"))),Import("HI",*redData[0]),Import("pp",*redData[1]));
+  string index;
+  if (nFiles==2) {
+    sample->defineType("HI");
+    sample->defineType("pp");
+    index = "sample[HI,pp]";
+  }
+  else if (nFiles==4) {
+    sample->defineType("HI020");
+    sample->defineType("HI2040");
+    sample->defineType("HI40100");
+    sample->defineType("pp");
+    index = "sample[HI020,HI2040,HI40100,pp]";
+  }
+  else {
+    index = "sample[";
+    char substr[5];
+    for (unsigned int i=0;i<nFiles;++i) {
+      sprintf(substr,"%u",i);
+      sample->defineType(substr);
+      if (i>0)
+	index += ",";
+
+      index += substr;
+    }
+    index += "]";
+  }
+  ws->factory(index.c_str());  //Index for simultaneous fit
+
+  RooDataSet *redDataSim;
+  if (nFiles==2) {
+    redDataSim = new RooDataSet("redDataSim","redDataSim",RooArgSet(*(ws->var("Jpsi_Mass"))),Index(*(ws->cat("sample"))),Import("HI",*redData[0]),Import("pp",*redData[nFiles-1]));
+  }
+  else if (nFiles==4) {
+    redDataSim = new RooDataSet("redDataSim","redDataSim",RooArgSet(*(ws->var("Jpsi_Mass"))),Index(*(ws->cat("sample"))),Import("HI020",*redData[0]),Import("HI2040",*redData[1]),Import("HI40100",*redData[2]),Import("pp",*redData[3]));
+  }
+  else {
+    redDataSim = NULL;
+    cout << nFiles << " files not yet supported." << endl;
+    return 1;
+  }
+
   ws->import(*redDataSim);
 
   // Draw data
@@ -267,9 +354,12 @@ int main(int argc, char* argv[]) {
   // Binning for invariant mass distribution
   RooBinning rbm(2.2,4.2);
   int nbins = 100;
+  // RooBinning rbm(2.0,4.5);
+  // int nbins = 150;
   bool highStats=true;
   if (highStats)
     rbm.addUniform(nbins,2.2,4.2);
+  //    rbm.addUniform(nbins,2.0,4.5);
   else {
     // rbm.addUniform(14,2.2,2.760);
     // rbm.addUniform(24,2.760,3.240);
@@ -285,7 +375,7 @@ int main(int argc, char* argv[]) {
 
 
   RooDataHist *binData[nFiles];
-  for (int i=0; i<nFiles; i++) {
+  for (unsigned int i=0; i<nFiles; i++) {
     char name[100] = {0};
     sprintf(name,"binData%d",i+1);
     binData[i]= new RooDataHist(name,name,RooArgSet( *(ws->var("Jpsi_Mass")) ), *redData[i]);
@@ -362,37 +452,65 @@ int main(int argc, char* argv[]) {
 
 
   RooFitResult *fitM;
-  RooFitResult *fitP = NULL;
-
-  RooRealVar *NJpsi  = new RooRealVar("NJpsi","J/psi yield in pp",0.5*binData[1]->sumEntries(),0.0,2.0*binData[1]->sumEntries());  ws->import(*NJpsi);
-  RooRealVar *NJpsi_HI  = new RooRealVar("NJpsi_HI","J/psi yield in PbPb",0.5*binData[0]->sumEntries(),0.0,2.0*binData[0]->sumEntries());  ws->import(*NJpsi_HI);
-  RooRealVar *NBkg  = new RooRealVar("NBkg","Brackground yield in pp", 0.5*binData[1]->sumEntries(),0.0,2.0*binData[1]->sumEntries());   ws->import(*NBkg);
-  RooRealVar *NBkg_HI  = new RooRealVar("NBkg_HI","Brackground yield in PbPb", 0.5*binData[0]->sumEntries(),0.0,2.0*binData[0]->sumEntries());   ws->import(*NBkg_HI);
-
-  RooRealVar *fracP  = new RooRealVar("fracP","psi(2S) fraction in pp",0.01);
-  fracP->setConstant(false); ws->import(*fracP);
-  RooFormulaVar *NPsiP = new RooFormulaVar("NPsiP", "@0*@1", RooArgList(*(ws->var("NJpsi")),*(ws->var("fracP"))));  ws->import(*NPsiP);
-
-  RooRealVar *doubleRatio  = new RooRealVar("doubleRatio","psi(2S) double ratio",1.0);
-  doubleRatio->setConstant(false); ws->import(*doubleRatio);
-
-  //    RooRealVar *fracP_HI  = new RooRealVar("fracP_HI","psi(2S) fraction in PbPb",0.01);
-  //    fracP_HI->setConstant(false); ws->import(*fracP);
-  RooFormulaVar *fracP_HI = new RooFormulaVar("fracP_HI", "@0*@1", RooArgList(*(ws->var("doubleRatio")),*(ws->var("fracP"))));  ws->import(*fracP_HI);
-  RooFormulaVar *NPsiP_HI = new RooFormulaVar("NPsiP_HI", "@0*@1", RooArgList(*(ws->var("NJpsi_HI")),*(ws->function("fracP_HI"))));  ws->import(*NPsiP_HI);
-
-  RooFormulaVar *NPsiP_mix  = new RooFormulaVar("NPsiP_mix","@0*@1",RooArgList(*(ws->var("NJpsi")),*(ws->function("fracP_HI"))));   ws->import(*NPsiP_mix);
-
-  sprintf(funct,"SUM::sigMassPDF(NJpsi*%s,NPsiP*%s,NBkg*%s)",mJpsiFunct.c_str(),mPsiPFunct.c_str(),mBkgFunct[1].c_str());
-  ws->factory(funct);
-
-
-  sprintf(funct,"SUM::sigMassPDF_HI(NJpsi_HI*%s,NPsiP_HI*%s,NBkg_HI*%s)",(mJpsiFunct+"_HI").c_str(),(mPsiPFunct+"_HI").c_str(),mBkgFunct[0].c_str());
-  ws->factory(funct);
-  sprintf(funct,"SUM::sigMassPDF_mix(NJpsi*%s,NPsiP_mix*%s,NBkg*%s)",(mJpsiFunct).c_str(),(mPsiPFunct).c_str(),mBkgFunct[1].c_str());
-  ws->factory(funct);
   
-  ws->factory("SIMUL::sigMassPDFSim(sample,HI=sigMassPDF_HI,pp=sigMassPDF)");
+  RooRealVar *NJpsi[nFiles];
+  RooRealVar *NBkg[nFiles];
+  RooRealVar *fracP_pp;
+  RooFormulaVar *NPsiP[nFiles];
+  RooRealVar *doubleRatio[nFiles-1];
+  RooFormulaVar *fracP_HI[nFiles-1];
+  RooFormulaVar *NPsiP_mix[nFiles-1];
+
+  for (int i=nFiles-1; i>=0; --i) {
+    NJpsi[i]  = new RooRealVar(("NJpsi_"+varSuffix.at(i)).c_str(),("J/psi yield in "+varSuffix.at(i)).c_str(),0.5*binData[i]->sumEntries(),0.0,2.0*binData[i]->sumEntries()); ws->import(*NJpsi[i]);
+    
+    NBkg[i]  = new RooRealVar(("NBkg_"+varSuffix.at(i)).c_str(),("Brackground yield in "+varSuffix.at(i)).c_str(), 0.5*binData[i]->sumEntries(),0.0,2.0*binData[i]->sumEntries()); ws->import(*NBkg[i]);
+
+    if (i == (int)nFiles-1) {
+      fracP_pp = new RooRealVar(("fracP_"+varSuffix.at(i)).c_str(),("psi(2S) fraction in "+varSuffix.at(i)).c_str(),0.01);
+      fracP_pp->setConstant(false); ws->import(*fracP_pp);
+      NPsiP[i] = new RooFormulaVar(("NPsiP_"+varSuffix.at(i)).c_str(), "@0*@1", RooArgList(*(ws->var(("NJpsi_"+varSuffix.at(i)).c_str())),*(ws->var(("fracP_"+varSuffix.at(i)).c_str()))));  ws->import(*NPsiP[i]);
+    }
+    else {
+      doubleRatio[i] = new RooRealVar(("doubleRatio_"+varSuffix.at(i)).c_str(),("psi(2S) double ratio in "+varSuffix.at(i)).c_str(),1.0);
+      doubleRatio[i]->setConstant(false); ws->import(*doubleRatio[i]);
+
+      fracP_HI[i] = new RooFormulaVar(("fracP_"+varSuffix.at(i)).c_str(), "@0*@1", RooArgList(*(ws->var(("doubleRatio_"+varSuffix.at(i)).c_str())),*(ws->var("fracP_pp")))); ws->import(*fracP_HI[i]);
+
+      NPsiP[i] = new RooFormulaVar(("NPsiP_"+varSuffix.at(i)).c_str(), "@0*@1", RooArgList(*(ws->var(("NJpsi_"+varSuffix.at(i)).c_str())),*(ws->function(("fracP_"+varSuffix.at(i)).c_str()))));  ws->import(*NPsiP[i]);
+
+      NPsiP_mix[i]  = new RooFormulaVar(("NPsiP_mix_"+varSuffix.at(i)).c_str(),"@0*@1",RooArgList(*(ws->var(("NJpsi_"+varSuffix.back()).c_str())),*(ws->function(("fracP_"+varSuffix.at(i)).c_str()))));   ws->import(*NPsiP_mix[i]);
+    }
+
+    
+    sprintf(funct,"SUM::sigMassPDF_%s(NJpsi_%s*%s,NPsiP_%s*%s,NBkg_%s*%s)",varSuffix.at(i).c_str(),varSuffix.at(i).c_str(),mJpsiFunct.c_str(),varSuffix.at(i).c_str(),mPsiPFunct.c_str(),varSuffix.at(i).c_str(),mBkgFunct.at(i).c_str());
+
+    cout << funct << endl;
+    ws->factory(funct);
+    
+    if (i < (int)nFiles-1) {
+      sprintf(funct,"SUM::sigMassPDF_mix_%s(NJpsi_pp*%s,NPsiP_mix_%s*%s,NBkg_pp*%s)",varSuffix.at(i).c_str(),mJpsiFunct.c_str(),varSuffix.at(i).c_str(),mPsiPFunct.c_str(),mBkgFunct.back().c_str());
+      ws->factory(funct);
+      cout << funct << endl;
+    }
+  }
+  
+  if (nFiles==2) {
+    ws->factory("SIMUL::sigMassPDFSim(sample,HI=sigMassPDF_HI,pp=sigMassPDF_pp)");
+  }
+  else if (nFiles==4) {
+    ws->factory("SIMUL::sigMassPDFSim(sample,HI020=sigMassPDF_HI020,HI2040=sigMassPDF_HI2040,HI40100=sigMassPDF_HI40100,pp=sigMassPDF_pp)");
+  }
+  else {
+    index = "SIMUL::sigMassPDFSim(sample";
+    char substr[5];
+    for (unsigned int i=0;i<nFiles;++i) {
+      sprintf(substr,",%u=sigMassPDF_%u",i,i);
+      index += substr;
+    }
+    index += ")";
+    ws->factory(index.c_str());
+  }
 
   string str("CBG");
   string dirPre2 = dirPre;
@@ -408,7 +526,6 @@ int main(int argc, char* argv[]) {
       ws->var("wideFactor_HI")->setVal(1.901);
       ws->var("alpha")->setVal(1.693);
       ws->var("enne")->setVal(1.709);
-
     }
     else if (prange=="6.5-30.0" && yrange=="0.0-1.6") {
       ws->var("alpha_HI")->setVal(1.516);
@@ -416,7 +533,6 @@ int main(int argc, char* argv[]) {
       ws->var("enne_HI")->setVal(1.683);
       ws->var("alpha")->setVal(1.710);
       ws->var("enne")->setVal(1.646);
-
     }
     else if (prange=="3.0-30.0" && yrange=="1.6-2.4") {
       ws->var("alpha_HI")->setVal(1.880);
@@ -424,7 +540,6 @@ int main(int argc, char* argv[]) {
       ws->var("wideFactor_HI")->setVal(1.503);
       ws->var("alpha")->setVal(2.079);
       ws->var("enne")->setVal(1.390);
-
     }
     else if (prange=="3.0-6.5" && yrange=="1.6-2.4") {
       ws->var("alpha_HI")->setVal(1.860);
@@ -432,7 +547,6 @@ int main(int argc, char* argv[]) {
       ws->var("wideFactor_HI")->setVal(1.540);
       ws->var("alpha")->setVal(2.000);
       ws->var("enne")->setVal(1.350);
-
     }
     else if (prange=="6.5-30.0" && yrange=="1.6-2.4") {
       ws->var("alpha_HI")->setVal(2.187);
@@ -440,7 +554,6 @@ int main(int argc, char* argv[]) {
       ws->var("wideFactor_HI")->setVal(1.830);
       ws->var("alpha")->setVal(2.161);
       ws->var("enne")->setVal(1.370);
-
     }
     else {
       ws->var("alpha_HI")->setVal(2.0);
@@ -475,19 +588,25 @@ int main(int argc, char* argv[]) {
   // 20140128: seed with CB fit parameters
   if ( found!=string::npos ) {
     string inputFNcb;
-    if ( !fixAlpha || !fixN || !fixGwidth) // read for free alpha, n, or wideFactor from the default CBG fit
-      inputFNcb =  dirPre + "_PbPb" + mBkgFunct[0] + "_pp" + mBkgFunct[1] + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + "_allVars.txt";
-    else // read results from CB fit
-      inputFNcb =  dirPre2 + "_PbPb" + mBkgFunct[0] + "_pp" + mBkgFunct[1] + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + "_allVars.txt";
+    if ( !fixAlpha || !fixN || !fixGwidth) {// read for free alpha, n, or wideFactor from the default CBG fit
+      inputFNcb =  dirPre + "_PbPb" + mBkgFunct.front();
+      for (unsigned int i=1; i<nFiles-1; ++i) {
+	inputFNcb += "_" + mBkgFunct.at(i);
+      }
+      inputFNcb += "_pp" + mBkgFunct.back() + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + "_allVars.txt";
+    }
+    else { // read results from CB fit
+      inputFNcb =  dirPre2 + "_PbPb" + mBkgFunct.front();
+      for (unsigned int i=1; i<nFiles-1; ++i) {
+	inputFNcb += "_" + mBkgFunct.at(i);
+      }
+      inputFNcb += "_pp" + mBkgFunct.back() + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + "_allVars.txt";
+    }
 
-    RooArgSet *set = ws->pdf("sigMassPDF")->getParameters(*(ws->var("Jpsi_Mass")));
-    //    set->Print("v");
+    RooArgSet *set = ws->pdf("sigMassPDFSim")->getParameters(*(ws->var("Jpsi_Mass")));
     set->readFromFile(inputFNcb.c_str());
-    //    cout << set->getRealValue("sigmaSig1",0,1) << endl;
     cout << "Import variable values from: " << inputFNcb << endl;
     ws->import(*set);
-    // set->Print("v");
-    // ws->Print("v");
   }
 
   fitM = ws->pdf("sigMassPDFSim")->fitTo(*redDataSim,Extended(1),Hesse(1),Minos(0),Save(1),SumW2Error(0),NumCPU(8),PrintEvalErrors(0),Verbose(0));
@@ -503,9 +622,14 @@ int main(int argc, char* argv[]) {
 
   int fitStatus = fitM->status();
   if (found!=string::npos)
-    cout << "CBG_PbPb" << mBkgFunct[0] << "_pp" << mBkgFunct[1] << "_rap" << yrange_str << "_pT" << prange_str << "_cent" << crange << fix_str << endl;
+    cout << "CBG_PbPb";
   else
-    cout << "CB_PbPb" <<mBkgFunct[0] << "_pp" << mBkgFunct[1] << "_rap" << yrange_str << "_pT" << prange_str << "_cent" << crange << fix_str << endl;
+    cout << "CB_PbPb";
+
+  for (unsigned int i=0; i<nFiles-1; ++i) {
+    cout << "_" << mBkgFunct.at(i);
+  }
+  cout << "_pp" << mBkgFunct.back() << "_rap" << yrange_str << "_pT" << prange_str << "_cent" << crange << fix_str << endl;
 
   cout << "---FIT result summary: " << edmStatus << covStatus << fitStatus;
   for (unsigned int j=0; j<fitM->numStatusHistory(); ++j) {
@@ -517,23 +641,76 @@ int main(int argc, char* argv[]) {
   resultF.cd();
   fitM->Write();
   cout << "fitM->Write() into: " << resultFN << endl;
+  resultF.Close();
+
 
   // *** Draw mass plot
   RooPlot *mframe[nFiles];
-  RooPlot* mframepull[nFiles];
+  RooPlot *mframepull[nFiles];
+  RooHist *hpull[nFiles]; 
+  TH1 *hdata[nFiles];
   TH1F *hpull_proj[nFiles];
-  for (int i=0; i<nFiles; i++) {
-    if (i==0) 
+
+  // *** TFile for saving plots
+  string plotFN;
+  plotFN = dirPre + "_PbPb" + mBkgFunct.front();
+  for (unsigned int i=1; i<nFiles-1; ++i) {
+    plotFN += "_" + mBkgFunct.at(i);
+  }
+  plotFN += "_pp" + mBkgFunct.back() + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + fix_str + "plots.root";
+  TFile plotF(plotFN.c_str(),"RECREATE");
+  //    plotF.cd();
+  TDirectory *dir[nFiles];
+  string name;
+
+  for (unsigned int i=0; i<nFiles; ++i) {
+    if (i<nFiles-1)
       isPbPb = true;
     else
       isPbPb = false;
 
-    char name[100] = {0};
-    mframe[i] = ws->var("Jpsi_Mass")->frame();
-    if (isPbPb)
-      mframe[i]->SetName("HI_frame");
+    string crange_tmp = crange;
+    if (nFiles==2) {
+      switch (i) {
+      case 0:
+	crange = crange_tmp;
+	break;
+      case 1:
+	crange = "pp";
+	break;
+      default:
+	crange = "0-100";
+	break;
+      }
+    }
+    else if (nFiles==4) {
+      switch (i) {
+      case 0:
+	crange = "0-20";
+	break;
+      case 1:
+	crange = "20-40";
+	break;
+      case 2:
+	crange = "40-100";
+	break;
+      case 3:
+	crange = "pp";
+	break;
+      default:
+	crange = "0-100";
+	break;
+      }
+    }
     else
-      mframe[i]->SetName("pp_frame");
+      crange = crange_tmp;
+
+    if (isPbPb)
+      getOptRange(crange,&cmin,&cmax);
+
+    mframe[i] = ws->var("Jpsi_Mass")->frame();
+    mframe[i]->SetName(("frame_"+varSuffix.at(i)).c_str());
+    mframe[i]->SetTitle(("A RooPlot of \"J/#psi mass\" in "+varSuffix.at(i)).c_str());
 
     redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(rbm));
     titlestr = "2D fit for" + partTit + "muons (mass projection), p_{T} = " + prange + " GeV/c and |y| = " + yrange;
@@ -542,93 +719,85 @@ int main(int argc, char* argv[]) {
     double max = mframe[i]->GetMaximum() * 1.3;
     double min = 0.0;
     mframe[i]->SetMaximum(max);
-    if (isPbPb)
-      sprintf(name,"NBkg_HI");
-    else
-      sprintf(name,"NBkg");
-    min = ws->var(name)->getVal()/(double(nbins)) * 0.7;
-    RooHist *hpull_jpsi;
-    RooHist *hpull_psip;
-    RooHist *hpull; 
-    if (isPbPb)
-      sprintf(name,"sigMassPDF_HI");
-    else
-      sprintf(name,"sigMassPDF");
 
-    ws->pdf(name)->plotOn(mframe[i],VisualizeError(*fitM,1,kFALSE),FillColor(kGray),LineWidth(2),Normalization(redData[i]->sumEntries(),RooAbsReal::NumEvent));
-    ws->pdf(name)->plotOn(mframe[i],LineColor(kBlack),LineWidth(2),Normalization(redData[i]->sumEntries(),RooAbsReal::NumEvent));
+    name = "NBkg_"+varSuffix.at(i);
+    min = ws->var(name.c_str())->getVal()/(double(nbins)) * 0.7;
 
-    hpull = mframe[i]->pullHist(0,0,true); hpull->SetName("hpullhist");
+    ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],VisualizeError(*fitM,1,kFALSE),FillColor(kGray),LineWidth(2),Normalization(redData[i]->sumEntries(),RooAbsReal::NumEvent));
+    ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],LineColor(kBlack),LineWidth(2),Normalization(redData[i]->sumEntries(),RooAbsReal::NumEvent));
+
+    hpull[i] = mframe[i]->pullHist(0,0,true);
+    hpull[i]->SetName(("hpullhist_"+varSuffix.at(i)).c_str());
+    hpull[i]->SetTitle(("hpullhist_"+varSuffix.at(i)).c_str());
     
-    ws->pdf(name)->plotOn(mframe[i],Components(mBkgFunct[i].c_str()),VisualizeError(*fitM,1,kFALSE),FillColor(kCyan),Normalization(redData[i]->sumEntries(),RooAbsReal::NumEvent));
-    ws->pdf(name)->plotOn(mframe[i],Components(mBkgFunct[i].c_str()),LineColor(kBlue),LineStyle(kDashed),LineWidth(2),Normalization(redData[i]->sumEntries(),RooAbsReal::NumEvent));
+    ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],Components(mBkgFunct.at(i).c_str()),VisualizeError(*fitM,1,kFALSE),FillColor(kCyan),Normalization(redData[i]->sumEntries(),RooAbsReal::NumEvent));
+    ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],Components(mBkgFunct.at(i).c_str()),LineColor(kBlue),LineStyle(kDashed),LineWidth(2),Normalization(redData[i]->sumEntries(),RooAbsReal::NumEvent));
 
     if (!isPaper && found!=string::npos) { 
       string signal;
-      if (isPbPb)
-	signal = ",signalCB1_HI,signalCB1P_HI";
+      if (isPbPb && !shareShape)
+       	signal = ",signalCB1_HI,signalCB1P_HI";
       else
 	signal = ",signalCB1,signalCB1P";
-      ws->pdf(name)->plotOn(mframe[i],VisualizeError(*fitM,1,kFALSE),FillColor(kRed-9),Components((mBkgFunct[i]+signal).c_str()));
-      ws->pdf(name)->plotOn(mframe[i],Components((mBkgFunct[i]+signal).c_str()),LineColor(kRed),LineStyle(kDashed),LineWidth(2));
-      if (isPbPb)
-	signal = ",signalG2_HI,signalG2P_HI";
+      ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],VisualizeError(*fitM,1,kFALSE),FillColor(kRed-9),Components((mBkgFunct.at(i)+signal).c_str()));
+      ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],Components((mBkgFunct.at(i)+signal).c_str()),LineColor(kRed),LineStyle(kDashed),LineWidth(2));
+      if (isPbPb && !shareShape)
+       	signal = ",signalG2_HI,signalG2P_HI";
       else
 	signal = ",signalG2,signalG2P";
-      ws->pdf(name)->plotOn(mframe[i],VisualizeError(*fitM,1,kFALSE),FillColor(kGreen-9),Components((mBkgFunct[i]+signal).c_str()));
-      ws->pdf(name)->plotOn(mframe[i],Components((mBkgFunct[i]+signal).c_str()),LineColor(kGreen+2),LineStyle(kDashed),LineWidth(2));
-    }
-    
-    if (i==1) {
-      ws->pdf("sigMassPDF_mix")->plotOn(mframe[i],VisualizeError(*fitM,1,kFALSE),FillColor(kOrange-9));
-      ws->pdf("sigMassPDF_mix")->plotOn(mframe[i],LineColor(kOrange+2),LineWidth(2));
+      ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],VisualizeError(*fitM,1,kFALSE),FillColor(kGreen-9),Components((mBkgFunct.at(i)+signal).c_str()));
+      ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],Components((mBkgFunct.at(i)+signal).c_str()),LineColor(kGreen+2),LineStyle(kDashed),LineWidth(2));
     }
 
-    //    redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerStyle(24),MarkerSize(0.8),Binning(rbm));
+    if (i==nFiles-1) {
+      ws->pdf(("sigMassPDF_mix_"+varSuffix.front()).c_str())->plotOn(mframe[i],VisualizeError(*fitM,1,kFALSE),FillColor(kOrange-9));
+      redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerStyle(20),MarkerSize(0.8),Binning(rbm));
+      ws->pdf(("sigMassPDF_mix_"+varSuffix.front()).c_str())->plotOn(mframe[i],LineColor(kOrange+2),LineWidth(2));
+    }
 
-    TH1 *hdata = redData[i]->createHistogram("hdata",*ws->var("Jpsi_Mass"),Binning(rbm));
+
+    hdata[i] = redData[i]->createHistogram(("hdata"+varSuffix.at(i)).c_str(),*ws->var("Jpsi_Mass"),Binning(rbm));
 
 
     // *** Calculate chi2/nDof for mass fitting
-    unsigned int nBins = hdata->GetNbinsX();
+    unsigned int nBins = hdata[i]->GetNbinsX();
     double Chi2 = 0;
     int nFullBinsPull = 0;
     double *ypull;
-    double *ypull_psip;
-    ypull = hpull->GetY();
+    ypull = hpull[i]->GetY();
   
     // Make a histogram with the pull distribution
     hpull_proj[i] = new TH1F("hpull_proj","hpull_proj;Pull;Events",100,-10,10);
-    if (isPbPb)
-      hpull_proj[i]->SetName("HI_hpull_proj");
-    else
-      hpull_proj[i]->SetName("pp_hpull_proj");
+    hpull_proj[i]->SetName(("hpull_proj_"+varSuffix.at(i)).c_str());
+    hpull_proj[i]->SetTitle(("hpull_proj_"+varSuffix.at(i)).c_str());
 
     for (unsigned int j=0; j < nBins; ++j) {
       hpull_proj[i]->Fill(ypull[j]);
-      if (hdata->GetBinContent(j+1) == 0) continue;
+      if (hdata[i]->GetBinContent(j+1) == 0) continue;
       nFullBinsPull++;
       Chi2 = Chi2 + pow(ypull[j],2);
     }
 
     double UnNormChi2 = Chi2;
-    int Dof = nFullBinsPull - nFitParam/2; // half the free parameters are for the other dataset
+    cout << "nFullBinsPull = " << nFullBinsPull << endl;
+    // only consider the free parameters relevant for particular dataset
+    nFitParam = ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->getParameters(redData[i])->selectByAttrib("Constant",kFALSE)->getSize();
+    if (i!=nFiles-1) nFitParam--; // do not count fracP_pp as free parameter in PbPb fits
+    
+    int Dof = nFullBinsPull - nFitParam;
     if (Dof!=0)
       Chi2 /= Dof;
 
     double theNLL=0;
     theNLL = fitM->minNll();
     
-    mframepull[i] =  ws->var("Jpsi_Mass")->frame(Title("Pull")) ;
-    if (isPbPb)
-      mframepull[i]->SetName("HI_pull_frame");
-    else
-      mframepull[i]->SetName("pp_pull_frame");
+    mframepull[i] =  ws->var("Jpsi_Mass")->frame(Title(("Pull of "+varSuffix.at(i)).c_str()));
+    mframepull[i]->SetName(("pull_frame_"+varSuffix.at(i)).c_str());
     mframepull[i]->GetYaxis()->SetTitle("Pull");
     mframepull[i]->SetLabelSize(0.08,"XYZ");
     mframepull[i]->SetTitleSize(0.1,"XYZ");
     mframepull[i]->SetTitleOffset(0.55,"Y");
-    mframepull[i]->addPlotable(hpull,"PX") ;
+    mframepull[i]->addPlotable(hpull[i],"PX") ;
 
     if ( fabs(mframepull[i]->GetMaximum()) > fabs(mframepull[i]->GetMinimum()) )
       mframepull[i]->SetMinimum(-(mframepull[i]->GetMaximum())); 
@@ -656,14 +825,6 @@ int main(int argc, char* argv[]) {
     mframepull[i]->addObject(f1,"same");
     mframepull[i]->addObject(f2,"same");
 
-    // *** Check in narrower signal region NSig
-    //  ws->var("Jpsi_Mass")->setRange("sigpeak",2.9,3.3);
-
-    //  RooAbsReal *inteAll = ws->pdf(mJpsiFunct.c_str())->createIntegral(RooArgSet(*ws->var("Jpsi_Mass")),NormSet(RooArgSet(*ws->var("Jpsi_Mass"))));
-    //  RooAbsReal *inteSig = ws->pdf(mSigFunct.c_str())->createIntegral(RooArgSet(*ws->var("Jpsi_Mass")),Range("sigpeak"),NormSet(RooArgSet(*ws->var("Jpsi_Mass"))),Range("sigpeak"));
-
-    // mframe->SetMinimum(0.03*max);
-    // mframe->SetMaximum(5.0*max);
     TCanvas c00; c00.cd();
 
     TPad *pad1 = new TPad("pad1","This is pad1",0.0,0.35,1.00,1.00);
@@ -680,15 +841,7 @@ int main(int argc, char* argv[]) {
       pad2->cd(); mframepull[i]->Draw();
       pad1->cd();
     }
-
-    // if (!isPbPb)
-    //   ws->pdf("sigMassPDF_mix")->plotOn(mframe,LineColor(kRed),LineStyle(2),LineWidth(4),Normalization(redData[i]->sumEntries(),RooAbsReal::NumEvent));
-
-    if (isPbPb)
-      sprintf(name,"PbPb");
-    else
-      sprintf(name,"pp");
-
+    
 
     if (logScale) {
       if (isPaper)
@@ -795,51 +948,48 @@ int main(int argc, char* argv[]) {
       mframe[i]->addObject(lPval,"");
     }
 
-    if (isPbPb)
-      sprintf(name,"NJpsi_HI");
+    name = "NJpsi_"+varSuffix.at(i);
+    
+    if (ws->var(name.c_str())->hasAsymError() && abs(-1.0*ws->var(name.c_str())->getErrorLo()/ws->var(name.c_str())->getErrorHi() - 1)>0.1)
+      sprintf(reduceDS,"N_{J/#psi} = %0.0f^{+%0.0f}_{%0.0f}",ws->var(name.c_str())->getVal(),ws->var(name.c_str())->getErrorHi(),ws->var(name.c_str())->getErrorLo());
     else
-      sprintf(name,"NJpsi");
-
-    if (ws->var(name)->hasAsymError() && abs(-1.0*ws->var(name)->getErrorLo()/ws->var(name)->getErrorHi() - 1)>0.1)
-      sprintf(reduceDS,"N_{J/#psi} = %0.0f^{+%0.0f}_{%0.0f}",ws->var(name)->getVal(),ws->var(name)->getErrorHi(),ws->var(name)->getErrorLo());
-    else
-      sprintf(reduceDS,"N_{J/#psi} = %0.0f #pm %0.0f",ws->var(name)->getVal(),ws->var(name)->getError());
+      sprintf(reduceDS,"N_{J/#psi} = %0.0f #pm %0.0f",ws->var(name.c_str())->getVal(),ws->var(name.c_str())->getError());
     lNJpsi->SetText(0.62,0.80,reduceDS);
     mframe[i]->addObject(lNJpsi,"");
 
     if (isPbPb) {
-      sprintf(name,"doubleRatio");
+      name = "doubleRatio_"+varSuffix.at(i);
       
-      double DoubleRatio = ws->var(name)->getVal();
-      double fracP = ws->var("fracP")->getVal();
-      double errDoubleRatio = ws->var(name)->getError();
-      double errFracP = ws->var("fracP")->getError();
-      double corr = fitM->correlation( *ws->var(name) , *ws->var("fracP") );
-      std::cout << "Correlation between double ratio and fracP: " << corr << std::endl;
-      double fracP_HI = ws->function("fracP_HI")->getVal();
-      double errFracP_HI = sqrt( pow(errDoubleRatio/DoubleRatio,2) + pow(errFracP/fracP,2) + 2*errDoubleRatio*errFracP*corr/fracP_HI )*fracP_HI;
+      double DoubleRatio = ws->var(name.c_str())->getVal();
+      double fracP_pp = ws->var("fracP_pp")->getVal();
+      double errDoubleRatio = ws->var(name.c_str())->getError();
+      double errFracP_pp = ws->var("fracP_pp")->getError();
+      double corr = fitM->correlation( *ws->var(name.c_str()) , *ws->var("fracP_pp") );
+      std::cout << "Correlation between double ratio and fracP_pp: " << corr << std::endl;
+      double fracP_HI = ws->function( ("fracP_"+varSuffix.at(i)).c_str())->getVal();
+      double errFracP_HI = sqrt( pow(errDoubleRatio/DoubleRatio,2) + pow(errFracP_pp/fracP_pp,2) + 2*errDoubleRatio*errFracP_pp*corr/fracP_HI )*fracP_HI;
 
       sprintf(reduceDS,"R_{#psi(2S)} = %0.3f #pm %0.3f",fracP_HI,errFracP_HI);
     }
     else {
-      sprintf(name,"fracP");
+      name = "fracP_pp";
       
-      if (ws->var(name)->hasAsymError() && abs(-1.0*ws->var(name)->getErrorLo()/ws->var(name)->getErrorHi() - 1)>0.1)
-	sprintf(reduceDS,"R_{#psi(2S)} = %0.3f^{+%0.3f}_{%0.3f}",ws->var(name)->getVal(),ws->var(name)->getErrorHi(),ws->var(name)->getErrorLo());
+      if (ws->var(name.c_str())->hasAsymError() && abs(-1.0*ws->var(name.c_str())->getErrorLo()/ws->var(name.c_str())->getErrorHi() - 1)>0.1)
+	sprintf(reduceDS,"R_{#psi(2S)} = %0.3f^{+%0.3f}_{%0.3f}",ws->var(name.c_str())->getVal(),ws->var(name.c_str())->getErrorHi(),ws->var(name.c_str())->getErrorLo());
       else
-	sprintf(reduceDS,"R_{#psi(2S)} = %0.3f #pm %0.3f",ws->var(name)->getVal(),ws->var(name)->getError());
+	sprintf(reduceDS,"R_{#psi(2S)} = %0.3f #pm %0.3f",ws->var(name.c_str())->getVal(),ws->var(name.c_str())->getError());
     }
     lRpsi->SetText(0.62,0.75,reduceDS);
     mframe[i]->addObject(lRpsi,"");
 
     if (!isPbPb) {
-      double NJpsi = ws->var("NJpsi")->getVal();
-      double fracP = ws->var("fracP")->getVal();
-      double errNJpsi = ws->var("NJpsi")->getError();
-      double errFracP = ws->var("fracP")->getError();
-      double corr = fitM->correlation( *ws->var("NJpsi") , *ws->var("fracP") );
-      std::cout << "Correlation between NJpsi and fracP: " << corr << std::endl;
-      double Npsi2S = ws->function("NPsiP")->getVal();
+      double NJpsi = ws->var("NJpsi_pp")->getVal();
+      double fracP = ws->var("fracP_pp")->getVal();
+      double errNJpsi = ws->var("NJpsi_pp")->getError();
+      double errFracP = ws->var("fracP_pp")->getError();
+      double corr = fitM->correlation( *ws->var("NJpsi_pp") , *ws->var("fracP_pp") );
+      std::cout << "Correlation between NJpsi and fracP_pp: " << corr << std::endl;
+      double Npsi2S = ws->function("NPsiP_pp")->getVal();
       double errNpsi2S = sqrt( pow(errNJpsi/NJpsi,2) + pow(errFracP/fracP,2) + 2*errNJpsi*errFracP*corr/Npsi2S )*Npsi2S;
       // if (ws->var("fracP")->hasAsymError() && abs(-1.0*ws->var("fracP")->getErrorLo()/ws->var("fracP")->getErrorHi() - 1)>0.1)
       //   sprintf(reduceDS,"N_{#psi(2S)} = %0.1f^{+%0.1f}_{%0.1f}",ws->function("NPsiP")->getVal(),ws->var("fracP")->getErrorHi()*ws->var("NJpsi")->getVal(),ws->var("fracP")->getErrorLo()*ws->var("NJpsi")->getVal());
@@ -847,10 +997,10 @@ int main(int argc, char* argv[]) {
       sprintf(reduceDS,"N_{#psi(2S)} = %0.1f #pm %0.1f",Npsi2S,errNpsi2S);
     }
     else {
-      sprintf(reduceDS,"#chi_{#psi(2S)} = %0.3f #pm %0.3f",ws->var("doubleRatio")->getVal(),ws->var("doubleRatio")->getError());
+      sprintf(reduceDS,"#chi_{#psi(2S)} = %0.3f #pm %0.3f",ws->var(("doubleRatio_"+varSuffix.at(i)).c_str())->getVal(),ws->var(("doubleRatio_"+varSuffix.at(i)).c_str())->getError());
     }
-      lNpsiP->SetText(0.62,0.70,reduceDS);
-      mframe[i]->addObject(lNpsiP,"");
+    lNpsiP->SetText(0.62,0.70,reduceDS);
+    mframe[i]->addObject(lNpsiP,"");
 
     double coeffGaus;
     double sigmaSig1;
@@ -859,7 +1009,7 @@ int main(int argc, char* argv[]) {
     double ErrsigmaSig1;
     double ErrsigmaSig2;
 
-    if (isPbPb) {
+    if (isPbPb && !shareShape) {
       coeffGaus = ws->var("coeffGaus_HI")->getVal();
       sigmaSig1 = ws->var("sigmaSig1_HI")->getVal();
       sigmaSig2 = ws->function("sigmaSig2_HI")->getVal();
@@ -886,17 +1036,17 @@ int main(int argc, char* argv[]) {
       if  (found!=string::npos) {
 	sprintf(reduceDS,"#sigma_{G} = %0.0f MeV/c^{2}",sigmaSig2*1000.0);
 	lSigG->SetText(0.62,0.60,reduceDS);
-	if (isPbPb)
-	  sprintf(name,"wideFactor_HI");
+	if (isPbPb && !shareShape)
+	  name = "wideFactor_HI";
 	else
-	  sprintf(name,"wideFactor");
+	  name = "wideFactor";
 
-	if (ws->var(name)->isConstant())
-	  sprintf(reduceDS,"n_{G} = %0.2f (fixed)",ws->var(name)->getVal());
-	else if (ws->var(name)->hasAsymError() && abs(-1.0*ws->var(name)->getErrorLo()/ws->var(name)->getErrorHi() - 1)>0.1)
-	  sprintf(reduceDS,"n_{G} = %0.2f^{+%0.2f}_{%0.2f}",ws->var(name)->getVal(),ws->var(name)->getErrorHi(),ws->var(name)->getErrorLo());
+	if (ws->var(name.c_str())->isConstant())
+	  sprintf(reduceDS,"n_{G} = %0.2f (fixed)",ws->var(name.c_str())->getVal());
+	else if (ws->var(name.c_str())->hasAsymError() && abs(-1.0*ws->var(name.c_str())->getErrorLo()/ws->var(name.c_str())->getErrorHi() - 1)>0.1)
+	  sprintf(reduceDS,"n_{G} = %0.2f^{+%0.2f}_{%0.2f}",ws->var(name.c_str())->getVal(),ws->var(name.c_str())->getErrorHi(),ws->var(name.c_str())->getErrorLo());
 	else
-	  sprintf(reduceDS,"n_{G} = %0.2f #pm %0.2f",ws->var(name)->getVal(),ws->var(name)->getError());
+	  sprintf(reduceDS,"n_{G} = %0.2f #pm %0.2f",ws->var(name.c_str())->getVal(),ws->var(name.c_str())->getError());
 	lNG->SetText(0.62,0.55,reduceDS);
       }
       mframe[i]->addObject(lSigCB,"");
@@ -924,60 +1074,60 @@ int main(int argc, char* argv[]) {
 	lSigma->SetText(0.62,0.50,reduceDS);
 	mframe[i]->addObject(lSigma,"");
 
-	if (isPbPb)
-	  sprintf(name,"alpha_HI");
+	if (isPbPb && !shareShape)
+	  name = "alpha_HI";
 	else
-	  sprintf(name,"alpha");
-	if (ws->var(name)->isConstant())
-	  sprintf(reduceDS,"#alpha = %0.2f (fixed)",ws->var(name)->getVal());
-	else if (ws->var(name)->hasAsymError() && abs(-1.0*ws->var(name)->getErrorLo()/ws->var(name)->getErrorHi() - 1)>0.1)
-	  sprintf(reduceDS,"#alpha = %0.2f^{+%0.2f}_{%0.2f}",ws->var(name)->getVal(),ws->var(name)->getErrorHi(),ws->var(name)->getErrorLo());
+	  name = "alpha";
+	if (ws->var(name.c_str())->isConstant())
+	  sprintf(reduceDS,"#alpha = %0.2f (fixed)",ws->var(name.c_str())->getVal());
+	else if (ws->var(name.c_str())->hasAsymError() && abs(-1.0*ws->var(name.c_str())->getErrorLo()/ws->var(name.c_str())->getErrorHi() - 1)>0.1)
+	  sprintf(reduceDS,"#alpha = %0.2f^{+%0.2f}_{%0.2f}",ws->var(name.c_str())->getVal(),ws->var(name.c_str())->getErrorHi(),ws->var(name.c_str())->getErrorLo());
 	else
-	  sprintf(reduceDS,"#alpha = %0.2f #pm %0.2f",ws->var(name)->getVal(),ws->var(name)->getError());
+	  sprintf(reduceDS,"#alpha = %0.2f #pm %0.2f",ws->var(name.c_str())->getVal(),ws->var(name.c_str())->getError());
 	lAlpha->SetText(0.62,0.45,reduceDS);
 
-	if (isPbPb)
-	  sprintf(name,"enne_HI");
+	if (isPbPb && !shareShape)
+	  name = "enne_HI";
 	else
-	  sprintf(name,"enne");
-	if (ws->var(name)->isConstant())
-	  sprintf(reduceDS,"n = %0.2f (fixed)",ws->var(name)->getVal());
-	else if (ws->var(name)->hasAsymError() && abs(-1.0*ws->var(name)->getErrorLo()/ws->var(name)->getErrorHi() - 1)>0.1)
-	  sprintf(reduceDS,"n = %0.2f^{+%0.2f}_{%0.2f}",ws->var(name)->getVal(),ws->var(name)->getErrorHi(),ws->var(name)->getErrorLo());
+	  name = "enne";
+	if (ws->var(name.c_str())->isConstant())
+	  sprintf(reduceDS,"n = %0.2f (fixed)",ws->var(name.c_str())->getVal());
+	else if (ws->var(name.c_str())->hasAsymError() && abs(-1.0*ws->var(name.c_str())->getErrorLo()/ws->var(name.c_str())->getErrorHi() - 1)>0.1)
+	  sprintf(reduceDS,"n = %0.2f^{+%0.2f}_{%0.2f}",ws->var(name.c_str())->getVal(),ws->var(name.c_str())->getErrorHi(),ws->var(name.c_str())->getErrorLo());
 	else
-	  sprintf(reduceDS,"n = %0.2f #pm %0.2f",ws->var(name)->getVal(),ws->var(name)->getError());
+	  sprintf(reduceDS,"n = %0.2f #pm %0.2f",ws->var(name.c_str())->getVal(),ws->var(name.c_str())->getError());
 	lN->SetText(0.62,0.40,reduceDS);
 
-	if (isPbPb)
-	  sprintf(name,"coeffGaus_HI");
+	if (isPbPb && !shareShape)
+	  name = "coeffGaus_HI";
 	else
-	  sprintf(name,"coeffGaus");
-	if (ws->var(name)->hasAsymError() && abs(-1.0*ws->var(name)->getErrorLo()/ws->var(name)->getErrorHi() - 1)>0.1)
-	  sprintf(reduceDS,"f_{G} = %0.3f^{+%0.3f}_{%0.3f}",ws->var(name)->getVal(),ws->var(name)->getErrorHi(),ws->var(name)->getErrorLo());
+	  name = "coeffGaus";
+	if (ws->var(name.c_str())->hasAsymError() && abs(-1.0*ws->var(name.c_str())->getErrorLo()/ws->var(name.c_str())->getErrorHi() - 1)>0.1)
+	  sprintf(reduceDS,"f_{G} = %0.3f^{+%0.3f}_{%0.3f}",ws->var(name.c_str())->getVal(),ws->var(name.c_str())->getErrorHi(),ws->var(name.c_str())->getErrorLo());
 	else
-	  sprintf(reduceDS,"f_{G} = %0.2f #pm %0.2f",ws->var(name)->getVal(),ws->var(name)->getError());
+	  sprintf(reduceDS,"f_{G} = %0.2f #pm %0.2f",ws->var(name.c_str())->getVal(),ws->var(name.c_str())->getError());
 	lFG->SetText(0.62,0.35,reduceDS);
 	mframe[i]->addObject(lFG,"");
       }
       else {
-	if (isPbPb)
-	  sprintf(name,"alpha_HI");
+	if (isPbPb && !shareShape)
+	  name = "alpha_HI";
 	else
-	  sprintf(name,"alpha");
-	if (ws->var(name)->isConstant())
-	  sprintf(reduceDS,"#alpha = %0.2f (fixed)",ws->var(name)->getVal());
+	  name = "alpha";
+	if (ws->var(name.c_str())->isConstant())
+	  sprintf(reduceDS,"#alpha = %0.2f (fixed)",ws->var(name.c_str())->getVal());
 	else
-	  sprintf(reduceDS,"#alpha = %0.2f #pm %0.2f",ws->var(name)->getVal(),ws->var(name)->getError());
+	  sprintf(reduceDS,"#alpha = %0.2f #pm %0.2f",ws->var(name.c_str())->getVal(),ws->var(name.c_str())->getError());
 	lAlpha->SetText(0.62,0.60,reduceDS);
 
-	if (isPbPb)
-	  sprintf(name,"enne_HI");
+	if (isPbPb && !shareShape)
+	  name = "enne_HI";
 	else
-	  sprintf(name,"enne");
-	if (ws->var(name)->isConstant())
-	  sprintf(reduceDS,"n = %0.2f (fixed)",ws->var(name)->getVal());
+	  name = "enne";
+	if (ws->var(name.c_str())->isConstant())
+	  sprintf(reduceDS,"n = %0.2f (fixed)",ws->var(name.c_str())->getVal());
 	else
-	  sprintf(reduceDS,"n = %0.2f #pm %0.2f",ws->var(name)->getVal(),ws->var(name)->getError());
+	  sprintf(reduceDS,"n = %0.2f #pm %0.2f",ws->var(name.c_str())->getVal(),ws->var(name.c_str())->getError());
 	lN->SetText(0.62,0.55,reduceDS);
       }
 
@@ -991,11 +1141,11 @@ int main(int argc, char* argv[]) {
     leg1->AddEntry(gfake1,"data","p");
     leg1->AddEntry(&hfake21,"total fit","lf");
     leg1->AddEntry(&hfake11,"background","lf");
-    // if (!isPbPb)
-    //   leg1->AddEntry(&hfake22,"with R_{#psi(2S)}^{0-20%}(PbPb)","lf");
+    if (!isPbPb)
+      leg1->AddEntry(&hfake22,"with R_{#psi(2S)}(PbPb)","lf");
 
     if (isPaper)
-      mframe[i]->addObject(leg1,"sa,e");
+      mframe[i]->addObject(leg1,"same");
 
     mframe[i]->Draw();
     if (!isPaper) {
@@ -1018,249 +1168,135 @@ int main(int argc, char* argv[]) {
       st->SetTextSize(0.065);
       st->SetTextFont(42);
     }
-
-    if (isPbPb)
-      sprintf(name,"PbPb");
-    else
-      sprintf(name,"pp");
-
-    titlestr = dirPre + "_PbPb" + mBkgFunct[0] + "_pp" + mBkgFunct[1] + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str +  "massfit_" + name + ".pdf";
+ 
+    titlestr = dirPre + "_" + mBkgFunct.at(i) + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str +  "massfit.pdf";
     c00.SaveAs(titlestr.c_str());
-    resultF.cd();
+
+
+    ws->import(*mframe[i]);
+    ws->import(*mframepull[i]);
+    ws->import(*hpull[i]);
+    ws->import(*hpull_proj[i]);
+
+    dir[i] = plotF.mkdir(varSuffix.at(i).c_str());
+    dir[i]->cd();
+
     mframe[i]->Write();
     mframepull[i]->Write();
+    hpull[i]->Write();
     hpull_proj[i]->Write();
+    plotF.cd();
+
+    crange = crange_tmp; // set back to orignal crange
+  }
+  plotF.Close();
+
+  // prepare models for CLs calculations
+  RooStats::ModelConfig *model[nFiles-1];
+  RooStats::ModelConfig *bmodel[nFiles-1];
+  RooArgSet *nuisances[nFiles-1];
+
+  for (unsigned int i=0;i<nFiles-1;++i) {
+    model[i] = new RooStats::ModelConfig(("model_"+varSuffix.at(i)).c_str(),ws);
+    model[i]->SetPdf(*ws->pdf("sigMassPDFSim"));
+    model[i]->SetParametersOfInterest(*ws->var(("doubleRatio_"+varSuffix.at(i)).c_str()));
+    model[i]->SetObservables(RooArgSet(*ws->var("Jpsi_Mass"),*ws->cat("sample")));
+
+    RooArgSet *pars = ws->pdf("sigMassPDFSim")->getParameters(redData[nFiles-1]);
+    pars->add(*ws->pdf("sigMassPDFSim")->getParameters(redData[i]));
+    cout << "All Parameters:" << endl;
+    pars->Print("v");
+    nuisances[i] = new RooArgSet(*pars);
+    nuisances[i]->remove(*ws->var(("doubleRatio_"+varSuffix.at(i)).c_str()));
+    nuisances[i]->remove(*ws->cat("sample"));
+    cout << "Nuisance Parameters:" << endl;
+    nuisances[i]->Print("v");
+    ws->defineSet(("nuisParameters_"+varSuffix.at(i)).c_str(),*nuisances[i]);
+    model[i]->SetNuisanceParameters(*ws->set(("nuisParameters_"+varSuffix.at(i)).c_str()));
+    RooRealVar* poi = (RooRealVar*) model[i]->GetParametersOfInterest()->first();
+    double tmp_poi = poi->getVal();
+    model[i]->SetSnapshot(*poi);
+
+    ws->import(*model[i]);
+
+
+    bmodel[i] = (RooStats::ModelConfig*)model[i]->Clone(("bmodel_"+varSuffix.at(i)).c_str());
+    bmodel[i]->SetName(("B_only_model_"+varSuffix.at(i)).c_str());
+    poi->setVal(1.0);
+    bmodel[i]->SetSnapshot(*poi);
+    ws->import(*bmodel[i]);
+    poi->setVal(tmp_poi);
   }
 
-  // prepare models for CLs calculations
-  RooStats::ModelConfig *model = new RooStats::ModelConfig("model",ws);
-  //  model->SetWorkspace(*ws);
-  model->SetPdf(*ws->pdf("sigMassPDFSim"));
-  model->SetParametersOfInterest(*ws->var("doubleRatio"));
-  model->SetObservables(*ws->var("Jpsi_Mass"));
-
-  RooArgSet *pars = ws->pdf("sigMassPDFSim")->getParameters(redData[1]);
-  pars->add(*ws->pdf("sigMassPDFSim")->getParameters(redData[0]));
-  //  pars.assignFast(pars);
-  pars->Print("v");
-  RooArgSet nuisances = RooArgSet(*pars);
-  nuisances.remove(*ws->var("doubleRatio"));
-  // nuisances.remove(*ws->var("coeffGaus"));
-  // nuisances.remove(*ws->var("meanSig1"));
-  // nuisances.remove(*ws->var("wideFactor"));
-  //  nuisances.Print("v");
-  ws->defineSet("nuisParameters",nuisances);
-  model->SetNuisanceParameters(*ws->set("nuisParameters"));
-
-  /*
-  model->SetSnapshot(*pars);
-  // prepare models for CLs calculations
-  RooStats::ModelConfig *model_null = (RooStats::ModelConfig*)model->Clone("modell_null");
-  //  model_null->SetWorkSpace(ws);
-  //  model_null->SetPdf("sigMassPDF");
-  //  model_null->SetObservables(RooArgSet("Jpsi_Mass"));
-  //  RooArgSet *pars = ws->pdf("sigMassPDF")->getParameters(redData);
-  //  pars.assignFast(pars);
-  //  pars->Print("v");
-  //  RooArgSet *nuisances = RooArgSet(pars);
-  //  nuisances->remove(ws->var("fracP"));
-  //  model->SetNuisanceParameters(nuisances);
-  RooArgSet poiNew = RooArgSet(*ws->var("fracP"));
-  double oldVal = ws->var("fracP")->getVal();
-  ws->var("fracP")->setVal(0.0);
-  model_null->SetSnapshot(poiNew);
-  ws->var("fracP")->setVal(oldVal);
-  ws->import(*model_null);
-  */
-  ws->import(*model);
-
-  string fname = dirPre + "_PbPb" + mBkgFunct[0] + "_pp" + mBkgFunct[1] + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str + "Workspace.root";
+  string fname = dirPre + "_PbPb" + mBkgFunct.front();
+  for (unsigned int i=1; i<nFiles-1;++i) {
+    fname += "_" + mBkgFunct.at(i);
+  }
+  fname += "_pp" + mBkgFunct.back() + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str + "Workspace.root";
   ws->writeToFile(fname.c_str(),kTRUE);
-  fname = dirPre + "_PbPb" + mBkgFunct[0] + "_pp" + mBkgFunct[1] + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str + "allVars.txt";
+
+  fname = dirPre + "_PbPb" + mBkgFunct.front();
+  for (unsigned int i=1; i<nFiles-1;++i) {
+    fname += "_" + mBkgFunct.at(i);
+  }
+  fname += "_pp" + mBkgFunct.back() + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str + "allVars.txt";
   ws->allVars().writeToFile(fname.c_str());
 
-  double NJpsi_fin[2] = {0,0};
-  double ErrNJpsi_fin[2] = {0,0};
-  double NPsiP_fin[2] = {0,0};
-  double ErrNPsiP_fin[2] = {0,0};
-  double fracP_fin[2] = {0,0};
-  double ErrFracP_fin[2] = {0,0};
-  double NBkg_fin[2] = {0,0};
-  double ErrNBkg_fin[2] = {0,0};
-  double DoubleRatio_fin = 0.0;
-  double ErrDoubleRatio_fin = 0.0;
+  double NJpsi_fin[nFiles];
+  double ErrNJpsi_fin[nFiles];
+  // double NPsiP_fin[nFiles];
+  // double ErrNPsiP_fin[nFiles];
+  double fracP_fin[nFiles];
+  double ErrFracP_fin[nFiles];
+  double NBkg_fin[nFiles];
+  double ErrNBkg_fin[nFiles];
+  double DoubleRatio_fin[nFiles-1];
+  double ErrDoubleRatio_fin[nFiles-1];
 
-  for (int i=0; i<nFiles; i++) {
-    char name[100] = {0};
+  for (unsigned int i=0; i<nFiles; i++) {
+    name = "NJpsi_"+varSuffix.at(i);
+    NJpsi_fin[i]= ws->var(name.c_str())->getVal();
+    ErrNJpsi_fin[i] = ws->var(name.c_str())->getError();
+    name = "NBkg_"+varSuffix.at(i);
+    NBkg_fin[i] = ws->var(name.c_str())->getVal();
+    ErrNBkg_fin[i] = ws->var(name.c_str())->getError();
 
-    if (i==0) {
-      sprintf(name,"NJpsi_HI");
-      NJpsi_fin[i]= ws->var(name)->getVal();
-      ErrNJpsi_fin[i] = ws->var(name)->getError();
-      sprintf(name,"NBkg_HI");
-      NBkg_fin[i] = ws->var(name)->getVal();
-      ErrNBkg_fin[i] = ws->var(name)->getError();
-      sprintf(name,"doubleRatio");
-      DoubleRatio_fin = ws->var(name)->getVal();
-      ErrDoubleRatio_fin = ws->var(name)->getError();
-      sprintf(name,"fracP_HI");
+    if (i<nFiles-1) {
+      name = "doubleRatio_"+varSuffix.at(i);
+      DoubleRatio_fin[i] = ws->var(name.c_str())->getVal();
+      ErrDoubleRatio_fin[i] = ws->var(name.c_str())->getError();
+      name = "fracP_"+varSuffix.at(i);
 
-      double fracP = ws->var("fracP")->getVal();
-      double errFracP = ws->var("fracP")->getError();
-      double corr = fitM->correlation( *ws->var("doubleRatio") , *ws->var("fracP") );
-      fracP_fin[i] = ws->function("fracP_HI")->getVal();
-      ErrFracP_fin[i] = sqrt( pow(ErrDoubleRatio_fin/DoubleRatio_fin,2) + pow(errFracP/fracP,2) + 2*ErrDoubleRatio_fin*errFracP*corr/fracP_fin[i] )*fracP_fin[i];
+      double fracP_pp = ws->var("fracP_pp")->getVal();
+      double errFracP_pp = ws->var("fracP_pp")->getError();
+      double corr = fitM->correlation( *ws->var(("doubleRatio_"+varSuffix.at(i)).c_str()) , *ws->var("fracP_pp") );
+      fracP_fin[i] = ws->function(("fracP_"+varSuffix.at(i)).c_str())->getVal();
+      ErrFracP_fin[i] = sqrt( pow(ErrDoubleRatio_fin[i]/DoubleRatio_fin[i],2) + pow(errFracP_pp/fracP_pp,2) + 2*ErrDoubleRatio_fin[i]*errFracP_pp*corr/fracP_fin[i] )*fracP_fin[i];
     }
     else {
-      sprintf(name,"NJpsi");
-      NJpsi_fin[i]= ws->var(name)->getVal();
-      ErrNJpsi_fin[i] = ws->var(name)->getError();
-      sprintf(name,"NBkg");
-      NBkg_fin[i] = ws->var(name)->getVal();
-      ErrNBkg_fin[i] = ws->var(name)->getError();
-      sprintf(name,"fracP");
-      fracP_fin[i]= ws->var(name)->getVal();
-      ErrFracP_fin[i] = ws->var(name)->getError();
+      name = "fracP_pp";
+      fracP_fin[i]= ws->var(name.c_str())->getVal();
+      ErrFracP_fin[i] = ws->var(name.c_str())->getError();
     }
   }
-
-
+  
   // To check values of fit parameters
-  cout << endl << "J/psi yields:" << endl;
-  for (int i=0; i<nFiles; i++) {
-    cout << "NJpsi"     << i << " :    Fit :"  << NJpsi_fin[i] << " +/- " << ErrNJpsi_fin[i] << endl;
-    cout << "R_psi(2S)" << i << " :    Fit: "  << fracP_fin[i] << " +/- " << ErrFracP_fin[i] << endl;
+  cout << endl << "J/psi yields:\n" << endl;
+  for (unsigned int i=0; i<nFiles; i++) {
+    cout << varSuffix.at(i) << ":"<< endl;
+    cout << "---------------------" << endl;
+    cout << "NBkg: "  << NBkg_fin[i] << " +/- " << ErrNBkg_fin[i] << endl;
+    cout << "NJpsi: " << NJpsi_fin[i] << " +/- " << ErrNJpsi_fin[i] << endl;
+    cout << "R_psi(2S) Fit: "  << fracP_fin[i] << " +/- " << ErrFracP_fin[i] << endl;
+    if (i<nFiles-1)
+      cout << "Double Ratio: " << DoubleRatio_fin[i] << " +/- " << ErrDoubleRatio_fin[i] << endl;
+    cout << endl;
   }
-  cout << "Double Ratio: " << DoubleRatio_fin << " +/- " << ErrDoubleRatio_fin << endl;
  
-  titlestr = dirPre + "_PbPb" + mBkgFunct[0] + "_pp" + mBkgFunct[1] + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + fix_str + "fitResult.txt";
-
-  ofstream outputFile(titlestr.c_str());
-  if (!outputFile.good()) {cout << "Fail to open result file." << endl; return 1;}
-  outputFile.precision(10);
-  //  outputFile.setf( std::ios::fixed, std::ios::floatfield)
-
-  for (int i=0; i<nFiles; i++) {
-  outputFile
-    << "NJpsi " << i+1 << NJpsi_fin[i]                       << " " << ErrNJpsi_fin[i] << "\n"
-    << "NPsiP " << i+1 << NJpsi_fin[i]*fracP_fin[i] << "\n"
-    << "R_psi(2S) " << i+1 << fracP_fin[i]            << " " << ErrFracP_fin[i] << "\n"
-    << "NBkg "  << i+1 << NBkg_fin[i]                          << " " << ErrNBkg_fin[i] << "\n";
-  }
-  if (!mBkgFunct[0].compare("expFunct_HI")) {
-    outputFile
-      << "coeffExp_HI "      << ws->var("coeffExp_HI")->getVal()      << " " << ws->var("coeffExp_HI")->getError() << "\n";
-  }
-  if (!mBkgFunct[0].compare("twoExpFunct_HI")) {
-    outputFile
-      << "coeffExp_HI "      << ws->var("coeffExp_HI")->getVal()      << " " << ws->var("coeffExp_HI")->getError() << "\n"
-      << "coeffExp2_HI "     << ws->var("coeffExp2_HI")->getVal()     << " " << ws->var("coeffExp2_HI")->getError() << "\n"
-      << "cutx_HI "          << ws->var("cutx_HI")->getVal()          << " " << ws->var("cutx_HI")->getError() << "\n";
-  }
-  if (!mBkgFunct[0].compare("gausBkg_HI")) {
-    outputFile
-      << "meanBkg_HI "      << ws->var("meanBkg_HI")->getVal()      << " " << ws->var("meanBkg_HI")->getError() << "\n"
-      << "sigmaBkg_HI "     << ws->var("sigmaBkg_HI")->getVal()     << " " << ws->var("sigmaBkg_HI")->getError() << "\n";
-  }
-  if (!mBkgFunct[0].compare("pol1_HI")) {
-    outputFile
-      << "coeffPol1_HI "     << ws->var("coeffPol1_HI")->getVal()     << " " << ws->var("coeffPol1_HI")->getError() << "\n";
-  }
-  if (!mBkgFunct[0].compare("pol2_HI")) {
-    outputFile
-      << "coeffPol1_HI "     << ws->var("coeffPol1_HI")->getVal()     << " " << ws->var("coeffPol1_HI")->getError() << "\n"
-      << "coeffPol2_HI "     << ws->var("coeffPol2_HI")->getVal()     << " " << ws->var("coeffPol2_HI")->getError() << "\n";
-  }
-  if (!mBkgFunct[0].compare("pol3_HI")) {
-    outputFile
-      << "coeffPol1_HI "     << ws->var("coeffPol1_HI")->getVal()     << " " << ws->var("coeffPol1_HI")->getError() << "\n"
-      << "coeffPol2_HI "     << ws->var("coeffPol2_HI")->getVal()     << " " << ws->var("coeffPol2_HI")->getError() << "\n"
-      << "coeffPol3_HI "     << ws->var("coeffPol3_HI")->getVal()     << " " << ws->var("coeffPol3_HI")->getError() << "\n";
-  }
-  if (!mBkgFunct[0].compare("pol4_HI")) {
-    outputFile
-      << "coeffPol1_HI "     << ws->var("coeffPol1_HI")->getVal()     << " " << ws->var("coeffPol1_HI")->getError() << "\n"
-      << "coeffPol2_HI "     << ws->var("coeffPol2_HI")->getVal()     << " " << ws->var("coeffPol2_HI")->getError() << "\n"
-      << "coeffPol3_HI "     << ws->var("coeffPol3_HI")->getVal()     << " " << ws->var("coeffPol3_HI")->getError() << "\n"
-      << "coeffPol4_HI "     << ws->var("coeffPol4_HI")->getVal()     << " " << ws->var("coeffPol4_HI")->getError() << "\n";
-  }
-  if (!mBkgFunct[0].compare("pol5_HI")) {
-    outputFile
-      << "coeffPol1_HI "     << ws->var("coeffPol1_HI")->getVal()     << " " << ws->var("coeffPol1_HI")->getError() << "\n"
-      << "coeffPol2_HI "     << ws->var("coeffPol2_HI")->getVal()     << " " << ws->var("coeffPol2_HI")->getError() << "\n"
-      << "coeffPol3_HI "     << ws->var("coeffPol3_HI")->getVal()     << " " << ws->var("coeffPol3_HI")->getError() << "\n"
-      << "coeffPol4_HI "     << ws->var("coeffPol4_HI")->getVal()     << " " << ws->var("coeffPol4_HI")->getError() << "\n"
-      << "coeffPol5_HI "     << ws->var("coeffPol5_HI")->getVal()     << " " << ws->var("coeffPol5_HI")->getError() << "\n";
-  }
-  if (!mBkgFunct[1].compare("expFunct")) {
-    outputFile
-      << "coeffExp "      << ws->var("coeffExp")->getVal()      << " " << ws->var("coeffExp")->getError() << "\n";
-  }
-  if (!mBkgFunct[1].compare("twoExpFunct")) {
-    outputFile
-      << "coeffExp "      << ws->var("coeffExp")->getVal()      << " " << ws->var("coeffExp")->getError() << "\n"
-      << "coeffExp2 "     << ws->var("coeffExp2")->getVal()     << " " << ws->var("coeffExp2")->getError() << "\n"
-      << "cutx "          << ws->var("cutx")->getVal()          << " " << ws->var("cutx")->getError() << "\n";
-  }
-  if (!mBkgFunct[1].compare("gausBkg")) {
-    outputFile
-      << "meanBkg "      << ws->var("meanBkg")->getVal()      << " " << ws->var("meanBkg")->getError() << "\n"
-      << "sigmaBkg "     << ws->var("sigmaBkg")->getVal()     << " " << ws->var("sigmaBkg")->getError() << "\n";
-  }
-  if (!mBkgFunct[1].compare("pol1")) {
-    outputFile
-      << "coeffPol1 "     << ws->var("coeffPol1")->getVal()     << " " << ws->var("coeffPol1")->getError() << "\n";
-  }
-  if (!mBkgFunct[1].compare("pol2")) {
-    outputFile
-      << "coeffPol1 "     << ws->var("coeffPol1")->getVal()     << " " << ws->var("coeffPol1")->getError() << "\n"
-      << "coeffPol2 "     << ws->var("coeffPol2")->getVal()     << " " << ws->var("coeffPol2")->getError() << "\n";
-  }
-  if (!mBkgFunct[1].compare("pol3")) {
-    outputFile
-      << "coeffPol1 "     << ws->var("coeffPol1")->getVal()     << " " << ws->var("coeffPol1")->getError() << "\n"
-      << "coeffPol2 "     << ws->var("coeffPol2")->getVal()     << " " << ws->var("coeffPol2")->getError() << "\n"
-      << "coeffPol3 "     << ws->var("coeffPol3")->getVal()     << " " << ws->var("coeffPol3")->getError() << "\n";
-  }
-  if (!mBkgFunct[1].compare("pol4")) {
-    outputFile
-      << "coeffPol1 "     << ws->var("coeffPol1")->getVal()     << " " << ws->var("coeffPol1")->getError() << "\n"
-      << "coeffPol2 "     << ws->var("coeffPol2")->getVal()     << " " << ws->var("coeffPol2")->getError() << "\n"
-      << "coeffPol3 "     << ws->var("coeffPol3")->getVal()     << " " << ws->var("coeffPol3")->getError() << "\n"
-      << "coeffPol4 "     << ws->var("coeffPol4")->getVal()     << " " << ws->var("coeffPol4")->getError() << "\n";
-  }
-  if (!mBkgFunct[1].compare("pol5")) {
-    outputFile
-      << "coeffPol1 "     << ws->var("coeffPol1")->getVal()     << " " << ws->var("coeffPol1")->getError() << "\n"
-      << "coeffPol2 "     << ws->var("coeffPol2")->getVal()     << " " << ws->var("coeffPol2")->getError() << "\n"
-      << "coeffPol3 "     << ws->var("coeffPol3")->getVal()     << " " << ws->var("coeffPol3")->getError() << "\n"
-      << "coeffPol4 "     << ws->var("coeffPol4")->getVal()     << " " << ws->var("coeffPol4")->getError() << "\n"
-      << "coeffPol5 "     << ws->var("coeffPol5")->getVal()     << " " << ws->var("coeffPol5")->getError() << "\n";
-  }
-
-
-  outputFile
-    << "coeffGaus_HI "    << ws->var("coeffGaus_HI")->getVal()    << " " << ws->var("coeffGaus_HI")->getError() << "\n"
-    << "meanSig1_HI "     << ws->var("meanSig1_HI")->getVal()     << " " << ws->var("meanSig1_HI")->getError() << "\n"
-    << "sigmaSig1_HI "    << ws->var("sigmaSig1_HI")->getVal()    << " " << ws->var("sigmaSig1_HI")->getError() << "\n"
-    << "wideFactor_HI "   << ws->var("wideFactor_HI")->getVal()   << " " << ws->var("wideFactor_HI")->getError() << "\n"
-    << "sigmaSig2_HI "    << ws->function("sigmaSig2_HI")->getVal() << " " << ws->function("sigmaSig2_HI")->getVal()*ws->var("wideFactor_HI")->getError()/ws->var("wideFactor_HI")->getVal() << "\n"
-    << "alpha_HI "        << ws->var("alpha_HI")->getVal()        << " " << ws->var("alpha_HI")->getError() << "\n"
-    << "enne_HI "         << ws->var("enne_HI")->getVal()         << " " << ws->var("enne_HI")->getError() << "\n"
-    << "coeffGaus "    << ws->var("coeffGaus")->getVal()    << " " << ws->var("coeffGaus")->getError() << "\n"
-    << "meanSig1 "     << ws->var("meanSig1")->getVal()     << " " << ws->var("meanSig1")->getError() << "\n"
-    << "sigmaSig1 "    << ws->var("sigmaSig1")->getVal()    << " " << ws->var("sigmaSig1")->getError() << "\n"
-    << "wideFactor "   << ws->var("wideFactor")->getVal()   << " " << ws->var("wideFactor")->getError() << "\n"
-    << "sigmaSig2 "    << ws->function("sigmaSig2")->getVal() << " " << ws->function("sigmaSig2")->getVal()*ws->var("wideFactor")->getError()/ws->var("wideFactor")->getVal() << "\n"
-    << "alpha "        << ws->var("alpha")->getVal()        << " " << ws->var("alpha")->getError() << "\n"
-    << "enne "         << ws->var("enne")->getVal()         << " " << ws->var("enne")->getError() << endl;
-
-  for (int i=0; i<nFiles; i++) {
+  for (unsigned int i=0; i<nFiles; ++i) {
     fInData[i]->Close();
   }
-  resultF.Close();
-  outputFile.close();
-
+  
   return 0;
 }
 
@@ -1362,6 +1398,68 @@ void defineMassBkgHI(RooWorkspace *ws) {
   // gauss
   ws->factory("Gaussian::gausBkg_HI(Jpsi_Mass,meanBkg_HI[0.0,0.0,10.0],sigmaBkg_HI[1.0,0.5,5.0])");
 
+  // 0-20%
+  // 1st order polynomial
+  ws->factory("Chebychev::pol1_HI020(Jpsi_Mass,{coeffPol1_HI020[-0.8,-1.0,1.0]})");
+  // 2nd order polynomial
+  ws->factory("Chebychev::pol2_HI020(Jpsi_Mass,{coeffPol1_HI020, coeffPol2_HI020[0.0,-1.0,1.0]})");
+  // 3rd order polynomial
+  ws->factory("Chebychev::pol3_HI020(Jpsi_Mass,{coeffPol1_HI020, coeffPol2_HI020, coeffPol3_HI020[0.0,-1.0,1.0]})");
+  // 4th order polynomial
+  ws->factory("Chebychev::pol4_HI020(Jpsi_Mass,{coeffPol1_HI020, coeffPol2_HI020, coeffPol3_HI020, coeffPol4_HI020[0.0,-1.0,1.0]})");
+  // 5th order polynomial
+  ws->factory("Chebychev::pol5_HI020(Jpsi_Mass,{coeffPol1_HI020, coeffPol2_HI020, coeffPol3_HI020, coeffPol4_HI020, coeffPol5_HI020[0.0,-1.0,1.0]})");
+  // 6th order polynomial
+  ws->factory("Chebychev::pol6_HI020(Jpsi_Mass,{coeffPol1_HI020, coeffPol2_HI020, coeffPol3_HI020, coeffPol4_HI020, coeffPol5_HI020, coeffPol6_HI020[0.0,-1.0,1.0]})");
+
+  // expo
+  ws->factory("Exponential::expFunct_HI020(Jpsi_Mass,coeffExp_HI020[-0.1,-3.0,1.0])");
+
+  // gauss
+  ws->factory("Gaussian::gausBkg_HI020(Jpsi_Mass,meanBkg_HI020[0.0,0.0,10.0],sigmaBkg_HI020[1.0,0.5,5.0])");
+
+
+  // 20-40%
+  // 1st order polynomial
+  ws->factory("Chebychev::pol1_HI2040(Jpsi_Mass,{coeffPol1_HI2040[-0.8,-1.0,1.0]})");
+  // 2nd order polynomial
+  ws->factory("Chebychev::pol2_HI2040(Jpsi_Mass,{coeffPol1_HI2040, coeffPol2_HI2040[0.0,-1.0,1.0]})");
+  // 3rd order polynomial
+  ws->factory("Chebychev::pol3_HI2040(Jpsi_Mass,{coeffPol1_HI2040, coeffPol2_HI2040, coeffPol3_HI2040[0.0,-1.0,1.0]})");
+  // 4th order polynomial
+  ws->factory("Chebychev::pol4_HI2040(Jpsi_Mass,{coeffPol1_HI2040, coeffPol2_HI2040, coeffPol3_HI2040, coeffPol4_HI2040[0.0,-1.0,1.0]})");
+  // 5th order polynomial
+  ws->factory("Chebychev::pol5_HI2040(Jpsi_Mass,{coeffPol1_HI2040, coeffPol2_HI2040, coeffPol3_HI2040, coeffPol4_HI2040, coeffPol5_HI2040[0.0,-1.0,1.0]})");
+  // 6th order polynomial
+  ws->factory("Chebychev::pol6_HI2040(Jpsi_Mass,{coeffPol1_HI2040, coeffPol2_HI2040, coeffPol3_HI2040, coeffPol4_HI2040, coeffPol5_HI2040, coeffPol6_HI2040[0.0,-1.0,1.0]})");
+
+  // expo
+  ws->factory("Exponential::expFunct_HI2040(Jpsi_Mass,coeffExp_HI2040[-0.1,-3.0,1.0])");
+
+  // gauss
+  ws->factory("Gaussian::gausBkg_HI2040(Jpsi_Mass,meanBkg_HI2040[0.0,0.0,10.0],sigmaBkg_HI2040[1.0,0.5,5.0])");
+
+
+  // 40-100%
+  // 1st order polynomial
+  ws->factory("Chebychev::pol1_HI40100(Jpsi_Mass,{coeffPol1_HI40100[-0.8,-1.0,1.0]})");
+  // 2nd order polynomial
+  ws->factory("Chebychev::pol2_HI40100(Jpsi_Mass,{coeffPol1_HI40100, coeffPol2_HI40100[0.0,-1.0,1.0]})");
+  // 3rd order polynomial
+  ws->factory("Chebychev::pol3_HI40100(Jpsi_Mass,{coeffPol1_HI40100, coeffPol2_HI40100, coeffPol3_HI40100[0.0,-1.0,1.0]})");
+  // 4th order polynomial
+  ws->factory("Chebychev::pol4_HI40100(Jpsi_Mass,{coeffPol1_HI40100, coeffPol2_HI40100, coeffPol3_HI40100, coeffPol4_HI40100[0.0,-1.0,1.0]})");
+  // 5th order polynomial
+  ws->factory("Chebychev::pol5_HI40100(Jpsi_Mass,{coeffPol1_HI40100, coeffPol2_HI40100, coeffPol3_HI40100, coeffPol4_HI40100, coeffPol5_HI40100[0.0,-1.0,1.0]})");
+  // 6th order polynomial
+  ws->factory("Chebychev::pol6_HI40100(Jpsi_Mass,{coeffPol1_HI40100, coeffPol2_HI40100, coeffPol3_HI40100, coeffPol4_HI40100, coeffPol5_HI40100, coeffPol6_HI40100[0.0,-1.0,1.0]})");
+
+  // expo
+  ws->factory("Exponential::expFunct_HI40100(Jpsi_Mass,coeffExp_HI40100[-0.1,-3.0,1.0])");
+
+  // gauss
+  ws->factory("Gaussian::gausBkg_HI40100(Jpsi_Mass,meanBkg_HI40100[0.0,0.0,10.0],sigmaBkg_HI40100[1.0,0.5,5.0])");
+
   return;
 }
 
@@ -1392,7 +1490,7 @@ void defineMassSigHI(RooWorkspace *ws) {
   ws->factory("CBShape::signalCB1P_HI(Jpsi_Mass,meanSig1P_HI,sigmaSig1P_HI,alpha_HI,enne_HI)");
 
   // CB(narrow) + Gauss(wide)
-  ws->factory("SUM::sigCB1G2P_HI(coeffGaus*signalG2P_HI,signalCB1P_HI)");
+  ws->factory("SUM::sigCB1G2P_HI(coeffGaus_HI*signalG2P_HI,signalCB1P_HI)");
 
   return;
 }
