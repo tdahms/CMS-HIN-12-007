@@ -29,6 +29,9 @@ void tune_lpsi2s_cut(float ptmin=0.0, float ptmax=30.0, float ymin=0.0, float ym
   else
     rapCut = Form("Reco_QQ_4mom.Rapidity()>%3.1f&&Reco_QQ_4mom.Rapidity()<%3.1f",ymin,ymax);
 
+  unsigned int trigBit=2; // DoubleMu0_HighQ
+  TCut trigCut = Form("(HLTriggers&%u)==%u&&(Reco_QQ_trig&%u)=%u",trigBit,trigBit,trigBit,trigBit);
+
   TString fname;
   fname = Form("20140115/psi2s_pp_eff_%3.1f_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f.pdf",efficiency,ymin,ymax,ptmin,ptmax);
 
@@ -38,6 +41,7 @@ void tune_lpsi2s_cut(float ptmin=0.0, float ptmax=30.0, float ymin=0.0, float ym
   std::cout << "default: " << defaultCut.GetTitle() << std::endl;
   std::cout << "pt cut: " << ptCut.GetTitle() << std::endl;
   std::cout << "rapidity cut: " << rapCut.GetTitle() << std::endl;
+  std::cout << "trigger bit: " << trigCut.GetTitle() << std::endl;
 
   TLatex *lpt;
   if (ptmin==0.0)
@@ -87,7 +91,7 @@ void tune_lpsi2s_cut(float ptmin=0.0, float ptmax=30.0, float ymin=0.0, float ym
   //  hNP->SetDirectory(0);
   //  TH1::AddDirectory(kFALSE);
 
-  NPTree->Draw("Reco_QQ_ctau>>hNPorig",defaultCut&&ptCut&&rapCut,"e");
+  NPTree->Draw("Reco_QQ_ctau>>hNPorig",defaultCut&&ptCut&&rapCut&&trigCut,"e");
 
   //  TFile *_file1 = TFile::Open("/data/CMS/MC/pp/PRMC_Psi2S_GlbGlb_Histos_muLessPV.root");
   TChain *PRTree = new TChain("myTree");
@@ -107,7 +111,7 @@ void tune_lpsi2s_cut(float ptmin=0.0, float ptmax=30.0, float ymin=0.0, float ym
 
   TH1F* hPRCut = (TH1F*) hPR->Clone("hPRCut");
 
-  PRTree->Draw("Reco_QQ_ctau>>hPRorig",defaultCut&&ptCut&&rapCut,"e");
+  PRTree->Draw("Reco_QQ_ctau>>hPRorig",defaultCut&&ptCut&&rapCut&&trigCut,"e");
 
   for (int i=1; i<=hPRorig->GetNbinsX();++i) {
     float lJpsi = hPRorig->GetBinCenter(i);

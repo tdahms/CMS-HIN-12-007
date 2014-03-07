@@ -35,6 +35,13 @@ void tune_lJpsi_cut(bool isHI=false, float ptmin=0.0, float ptmax=30.0, float ym
   if (isHI)
     centCut = Form("Centrality>=%d&&Centrality<%d",centmin,centmax);
 
+  unsigned int trigBit;
+  if (isHI)
+    trigBit=1; // DoubleMu0_HighQ
+  else
+    trigBit=2; // DoubleMu0_HighQ
+  TCut trigCut = Form("(HLTriggers&%u)==%u&&(Reco_QQ_trig&%u)=%u",trigBit,trigBit,trigBit,trigBit);
+
   TString fname;
   TString outfname;
   if (isHI) {
@@ -53,6 +60,7 @@ void tune_lJpsi_cut(bool isHI=false, float ptmin=0.0, float ptmax=30.0, float ym
   std::cout << "pt cut: " << ptCut.GetTitle() << std::endl;
   std::cout << "rapidity cut: " << rapCut.GetTitle() << std::endl;
   std::cout << "centrality cut: " << centCut.GetTitle() << std::endl;
+  std::cout << "trigger bit: " << trigCut.GetTitle() << std::endl;
 
   TLatex *lpt;
   if (ptmin==0.0)
@@ -125,7 +133,7 @@ void tune_lJpsi_cut(bool isHI=false, float ptmin=0.0, float ptmax=30.0, float ym
   //  hNP->SetDirectory(0);
   //  TH1::AddDirectory(kFALSE);
 
-  NPTree->Draw("Reco_QQ_ctau>>hNP",defaultCut&&ptCut&&rapCut&&centCut,"e");
+  NPTree->Draw("Reco_QQ_ctau>>hNP",defaultCut&&ptCut&&rapCut&&centCut&&trigCut,"e");
 
   TChain *PRTree = new TChain("myTree");
   if (isHI) {
@@ -155,7 +163,7 @@ void tune_lJpsi_cut(bool isHI=false, float ptmin=0.0, float ptmax=30.0, float ym
 
   TH1F* hPRCut = (TH1F*) hPR->Clone("hPRCut");
 
-  PRTree->Draw("Reco_QQ_ctau>>hPR",defaultCut&&ptCut&&rapCut&&centCut,"e");
+  PRTree->Draw("Reco_QQ_ctau>>hPR",defaultCut&&ptCut&&rapCut&&centCut&&trigCut,"e");
 
   //  _file0->cd();
   if (!isHI) {

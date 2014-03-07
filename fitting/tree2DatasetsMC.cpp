@@ -100,9 +100,9 @@ int main(int argc, char* argv[]) {
   const double Jpsi_CtMin = -3.0;
   const double Jpsi_CtMax = 3.5;
 
-  const bool isHI = true;
+  bool isHI = true;
 
-  char fileName[100];
+  string fileName;
   if ( argc != 5 && argc != 3 ){
     char msg[300];
     sprintf(msg,"Usage1: %s [input file] [output file directory] [start event #] [end event # (-1 for total)]",argv[0]);
@@ -112,7 +112,10 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  strcpy(fileName,argv[1]);
+  fileName = argv[1];
+
+  if (fileName.find("pp")!=string::npos)
+    isPbPb = false;
 
 
   TFile *file= TFile::Open(fileName);
@@ -361,10 +364,11 @@ int main(int argc, char* argv[]) {
       }
 
       bool isTriggered = false;
-      if (isHI)
-	isTriggered = (Reco_QQ_trig[i]&1)==1; // HLT_HIL1DoubleMu0_HighQ_v*
+      if (isPbPb)
+	isTriggered = ((HLTriggers&1)==1 && (Reco_QQ_trig[i]&1)==1); // HLT_HIL1DoubleMu0_HighQ_v*
       else
-	isTriggered = (Reco_QQ_trig[i]&2)==2; // HLT_PAL1DoubleMu0_HighQ_v1
+	isTriggered = ((HLTriggers&2)==2 && (Reco_QQ_trig[i]&2)==2); // HLT_PAL1DoubleMu0_HighQ_v1
+
       if (theMass > Jpsi_MassMin && theMass < Jpsi_MassMax && 
 	  //          theCt > Jpsi_CtMin && theCt < Jpsi_CtMax && 
 	  //          thePt > Jpsi_PtMin && thePt < Jpsi_PtMax && 

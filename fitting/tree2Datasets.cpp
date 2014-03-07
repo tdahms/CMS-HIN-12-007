@@ -105,9 +105,9 @@ int main(int argc, char* argv[]) {
   const double Jpsi_PhiMin=-3.14;
   const double Jpsi_PhiMax=3.14;
 
-  const bool isHI = true;
+  bool isPbPb = true;
 
-  char fileName[100];
+  string fileName;
   if ( argc != 5 && argc != 3 ){
     char msg[300];
     sprintf(msg,"Usage1: %s [input file] [output file directory] [start event #] [end event # (-1 for total)]",argv[0]);
@@ -117,11 +117,13 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  strcpy(fileName,argv[1]);
+  fileName = argv[1];
 
+  if (fileName.find("pp")!=string::npos)
+    isPbPb = false;
 
-  TFile *file= TFile::Open(fileName);
-  TTree * Tree=(TTree*)file->Get("myTree");
+  TFile *file= TFile::Open(fileName.c_str());
+  TTree *Tree=(TTree*)file->Get("myTree");
 
   UInt_t          eventNb;
   //  Bool_t          goodEvent;
@@ -256,7 +258,7 @@ int main(int argc, char* argv[]) {
       RooArgList varlistSame(*Jpsi_Mass,*Jpsi_Pt,*Jpsi_Y,*Jpsi_Type,*Jpsi_Sign,*MCType,*Jpsi_Ct,*Jpsi_CtErr,*Jpsi_CtTrue);
       RooArgList varlist2(*Psip_Mass,*Jpsi_Pt,*Jpsi_Y,*Jpsi_Type,*Jpsi_Sign,*MCType,*Jpsi_Ct,*Jpsi_CtErr,*Jpsi_CtTrue);
   */
-  if (isHI) {
+  if (isPbPb) {
     for (unsigned int j = 0; j <= centRegions; j++) {
       char namefile[200] = {0};
       if (j==centRegions) {
@@ -338,10 +340,10 @@ int main(int argc, char* argv[]) {
       }
 
       bool isTriggered = false;
-      if (isHI)
-	isTriggered = (Reco_QQ_trig[i]&1)==1; // HLT_HIL1DoubleMu0_HighQ_v*
+      if (isPbPb)
+	isTriggered = ((HLTriggers&1)==1 && (Reco_QQ_trig[i]&1)==1); // HLT_HIL1DoubleMu0_HighQ_v*
       else
-	isTriggered = (Reco_QQ_trig[i]&2)==2; // HLT_PAL1DoubleMu0_HighQ_v1
+	isTriggered = ((HLTriggers&2)==2 && (Reco_QQ_trig[i]&2)==2); // HLT_PAL1DoubleMu0_HighQ_v1
 
       if (theMass > Jpsi_MassMin && theMass < Jpsi_MassMax && 
 	  //          theCt > Jpsi_CtMin && theCt < Jpsi_CtMax && 
@@ -371,7 +373,7 @@ int main(int argc, char* argv[]) {
         RooArgList varlist_tmp(*Jpsi_Mass,*Jpsi_Pt,*Jpsi_Y,*Jpsi_Type,*Jpsi_Sign,*Jpsi_Ct,*Jpsi_CtErr);
         RooArgList varlist2_tmp(*Psip_Mass,*Jpsi_Pt,*Jpsi_Y,*Jpsi_Type,*Jpsi_Sign,*Jpsi_Ct,*Jpsi_CtErr);
 
-	if (isHI) {       
+	if (isPbPb) {       
 	  for (unsigned int j = 0; j <= centRegions; j++) {
 	    if ( (j==centRegions && theCentrality < centLimits[j] && theCentrality >= centLimits[0]) ||
 		 (theCentrality < centLimits[j+1] && theCentrality >= centLimits[j]) ) {
@@ -431,14 +433,14 @@ int main(int argc, char* argv[]) {
   delete canv;
 
   canv = new TCanvas("canv","canv",4000,3000);
-  if (isHI) 
+  if (isPbPb) 
     canv->Divide(1,centRegions+1);
   canv->Draw();
 
   /// *** Fill TFiles with RooDataSet
   TFile* Out[centRegions+1];
   int padnum = 1;
-  if (isHI) {
+  if (isPbPb) {
     for (unsigned int j = 0; j <= centRegions; j++) {
       if (j==centRegions) {
 	sprintf(namefile,"%s/PbPbData2011_DblMu0_cent%d-%d_M22-42.root",argv[2],
@@ -528,7 +530,7 @@ int main(int argc, char* argv[]) {
     gPad->Update();
   }
   
-  if (isHI)
+  if (isPbPb)
     sprintf(namefile,"%s/PbPbCtauErr_centBins%d.pdf",argv[2],centRegions);
   else
     sprintf(namefile,"%s/ppCtauErr.pdf",argv[2]);

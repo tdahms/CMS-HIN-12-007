@@ -8,8 +8,8 @@ void check_dblmu0_efficiency()
   c1->cd(1);
   TFile *_file0 = TFile::Open("/data/CMS/MC/pp/PRMC_Jpsi_GlbGlb_Histos_muLessPV.root");
   
-  myTree->Draw("Reco_QQ_4mom.Rapidity()>>hgen_old(100,-2.5,2.5)","Reco_QQ_sign==0&&Reco_QQ_ctauTrue>-10&&(Reco_QQ_trig&1)==1","e");
-  myTree->Draw("Reco_QQ_4mom.Rapidity()>>hreco_old(100,-2.5,2.5)","Reco_QQ_sign==0&&Reco_QQ_ctauTrue>-10&&(Reco_QQ_trig&2)==2","esame");
+  myTree->Draw("Reco_QQ_4mom.Rapidity()>>hgen_old(100,-2.5,2.5)","Reco_QQ_sign==0&&Reco_QQ_ctauTrue>-10&&(HLTriggers&1)==1&&(Reco_QQ_trig&1)==1","e");
+  myTree->Draw("Reco_QQ_4mom.Rapidity()>>hreco_old(100,-2.5,2.5)","Reco_QQ_sign==0&&Reco_QQ_ctauTrue>-10&&(HLTriggers&2)==2&&(Reco_QQ_trig&2)==2","esame");
   hgen_old->Scale(1.0/hgen_old->GetEntries());
   hreco_old->Scale(1.0/hgen_old->GetEntries());
 
@@ -25,10 +25,10 @@ void check_dblmu0_efficiency()
   eff_old->GetXaxis()->SetRangeUser(-2.5,2.5);
 
   c1->cd(1);
-  TFile *_file1 = TFile::Open("/data/CMS/MC/pp/PRMC_Histos_2013pp_GlbGlb_STARTHI53_V28-v1.root");
+  TFile *_file1 = TFile::Open("/data/CMS/MC/pp/PRMC_Histos_2013pp_GlbGlb_STARTHI53_V28-v1_muLessPV.root");
   
-  myTree->Draw("Reco_QQ_4mom.Rapidity()>>hgen_new(100,-2.5,2.5)","Reco_QQ_sign==0&&Reco_QQ_ctauTrue>-10&&(Reco_QQ_trig&1)==1","esame");
-  myTree->Draw("Reco_QQ_4mom.Rapidity()>>hreco_new(100,-2.5,2.5)","Reco_QQ_sign==0&&Reco_QQ_ctauTrue>-10&&(Reco_QQ_trig&2)==2","esame");
+  myTree->Draw("Reco_QQ_4mom.Rapidity()>>hgen_new(100,-2.5,2.5)","Reco_QQ_sign==0&&Reco_QQ_ctauTrue>-10&&(HLTriggers&1)==1&&(Reco_QQ_trig&1)==1","esame");
+  myTree->Draw("Reco_QQ_4mom.Rapidity()>>hreco_new(100,-2.5,2.5)","Reco_QQ_sign==0&&Reco_QQ_ctauTrue>-10&&(HLTriggers&2)==2&&(Reco_QQ_trig&2)==2","esame");
 
   hgen_new->Scale(1.0/hgen_new->GetEntries());
   hreco_new->Scale(1.0/hgen_new->GetEntries());

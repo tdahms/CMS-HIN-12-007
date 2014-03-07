@@ -42,11 +42,11 @@ void fitSideBands_test(bool isHI=true)
   TFile *inf;
   if (isHI) {
     inf = new TFile("/Users/tdahms/CMS/HIN-12-007/Jpsi_Histos_PbPb_RegIT_glbglb.root","READ");
-    myTree->Draw("Reco_QQ_4mom.M()>>h1(100,2.2,4.2)","(Reco_QQ_trig&1)==1&&Reco_QQ_sign==0&&Reco_QQ_4mom.Pt()>3.0&&Reco_QQ_4mom.Pt()<6.5&&abs(Reco_QQ_4mom.Rapidity())>1.6&&abs(Reco_QQ_4mom.Rapidity())<2.4","e");
+    myTree->Draw("Reco_QQ_4mom.M()>>h1(100,2.2,4.2)","(HLTriggers&1)==1&&(Reco_QQ_trig&1)==1&&Reco_QQ_sign==0&&Reco_QQ_4mom.Pt()>3.0&&Reco_QQ_4mom.Pt()<6.5&&abs(Reco_QQ_4mom.Rapidity())>1.6&&abs(Reco_QQ_4mom.Rapidity())<2.4","e");
   }
   else {
-    inf = new TFile("/Users/tdahms/CMS/HIN-12-007/All_v2.24_Histos_Runs_211739-211831_GlbGlb_woPileUpRej_muLessPV.root","READ");
-    myTree->Draw("Reco_QQ_4mom.M()>>h1(100,2.2,4.2)","(Reco_QQ_trig&2)==2&&Reco_QQ_sign==0&&Reco_QQ_4mom.Pt()>6.5&&Reco_QQ_4mom.Pt()<30.0&&abs(Reco_QQ_4mom.Rapidity())>0.0&&abs(Reco_QQ_4mom.Rapidity())<1.6","e");
+    inf = new TFile("/Users/tdahms/CMS/HIN-12-007/Jpsi_Histos_pp_glbglb_woPileUpRej_muLessPV.root","READ");
+    myTree->Draw("Reco_QQ_4mom.M()>>h1(100,2.2,4.2)","(HLTriggers&2)==2&&(Reco_QQ_trig&2)==2&&Reco_QQ_sign==0&&Reco_QQ_4mom.Pt()>6.5&&Reco_QQ_4mom.Pt()<30.0&&abs(Reco_QQ_4mom.Rapidity())>0.0&&abs(Reco_QQ_4mom.Rapidity())<1.6","e");
   }
 
 
