@@ -37,7 +37,10 @@ bool isAccept(const TLorentzVector* aMuon) {
   */
   // *REMOVE* muon kinematical cuts (eta dependent momentum / pT cuts )
   // by just returning TRUE
-  return true;
+  if (aMuon->Pt()>0)
+    return true;
+  else
+    return true;
 }
 
 double CorrectMass(const TLorentzVector* mu1,const TLorentzVector* mu2, int mode){  
@@ -95,12 +98,12 @@ int main(int argc, char* argv[]) {
   const double Jpsi_MassMax=3.4;
   const double Jpsi_PtMin=0;
   const double Jpsi_PtMax=50;
-  const double Jpsi_YMin=0;
+  const double Jpsi_YMin=-2.4;
   const double Jpsi_YMax=2.4;
   const double Jpsi_CtMin = -3.0;
   const double Jpsi_CtMax = 3.5;
 
-  bool isHI = true;
+  bool isPbPb = true;
 
   string fileName;
   if ( argc != 5 && argc != 3 ){
@@ -118,7 +121,7 @@ int main(int argc, char* argv[]) {
     isPbPb = false;
 
 
-  TFile *file= TFile::Open(fileName);
+  TFile *file= TFile::Open(fileName.c_str());
   TTree * Tree=(TTree*)file->Get("myTree");
 
   UInt_t          eventNb;
@@ -212,7 +215,7 @@ int main(int argc, char* argv[]) {
   Jpsi_Mass = new RooRealVar("Jpsi_Mass","J/#psi mass",Jpsi_MassMin,Jpsi_MassMax,"GeV/c^{2}");
   Psip_Mass = new RooRealVar("Psip_Mass","#psi' mass",3.3,Jpsi_MassMax,"GeV/c^{2}");
   Jpsi_Pt = new RooRealVar("Jpsi_Pt","J/#psi pt",Jpsi_PtMin,Jpsi_PtMax,"GeV/c");
-  Jpsi_Y = new RooRealVar("Jpsi_Y","J/#psi y",-Jpsi_YMax,Jpsi_YMax);
+  Jpsi_Y = new RooRealVar("Jpsi_Y","J/#psi y",Jpsi_YMin,Jpsi_YMax);
   Jpsi_Type = new RooCategory("Jpsi_Type","Category of Jpsi_");
   Jpsi_Sign = new RooCategory("Jpsi_Sign","Charge combination of Jpsi_");
   MCType = new RooCategory("MCType","Type of generated Jpsi_");
@@ -275,7 +278,7 @@ int main(int argc, char* argv[]) {
   varlistSame.add(*Gen_Pt);
   varlist2.add(*Gen_Pt);
 
-  if (isHI) {
+  if (isPbPb) {
     for (unsigned int j = 0; j <= centRegions; j++) {
       char namefile[200] = {0};
       if (j==centRegions) {
@@ -401,7 +404,7 @@ int main(int argc, char* argv[]) {
 	varlist_tmp.add(*Gen_Pt);
 	varlist2_tmp.add(*Gen_Pt);
 
-	if (isHI) {       
+	if (isPbPb) {       
 	  for (unsigned int j = 0; j <= centRegions; j++) {
 	    if ( (j==centRegions && theCentrality < centLimits[j] && theCentrality >= centLimits[0]) ||
 		 (theCentrality < centLimits[j+1] && theCentrality >= centLimits[j]) ) {
@@ -461,14 +464,14 @@ int main(int argc, char* argv[]) {
   delete canv;
 
   canv = new TCanvas("canv","canv",4000,3000);
-  if (isHI) 
+  if (isPbPb) 
     canv->Divide(1,centRegions+1);
   canv->Draw();
 
   /// *** Fill TFiles with RooDataSet
   TFile* Out[centRegions+1];
   int padnum = 1;
-  if (isHI) {
+  if (isPbPb) {
     for (unsigned int j = 0; j <= centRegions; j++) {
       if (j==centRegions) {
 	sprintf(namefile,"%s/PbPbPromptJpsiMC_DblMu0_cent%d-%d_M2234.root",argv[2],
@@ -558,7 +561,7 @@ int main(int argc, char* argv[]) {
     gPad->Update();
   }
   
-  if (isHI)
+  if (isPbPb)
     sprintf(namefile,"%s/PbPbCtauErr_centBins%d.pdf",argv[2],centRegions);
   else
     sprintf(namefile,"%s/ppCtauErr.pdf",argv[2]);

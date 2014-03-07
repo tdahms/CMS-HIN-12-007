@@ -102,8 +102,6 @@ int main(int argc, char* argv[]) {
   const double Jpsi_YMax=2.4;
   const double Jpsi_CtMin = -3.0;
   const double Jpsi_CtMax = 3.5;
-  const double Jpsi_PhiMin=-3.14;
-  const double Jpsi_PhiMax=3.14;
 
   bool isPbPb = true;
 
@@ -193,7 +191,6 @@ int main(int argc, char* argv[]) {
   RooRealVar* Jpsi_CtErr;
   //  RooRealVar* Jpsi_CtTrue;
   RooRealVar* Jpsi_Y;
-  RooRealVar* Jpsi_Phi;
   RooCategory* Jpsi_Type;
   RooCategory* Jpsi_Sign;
   //  RooCategory* MCType;
@@ -202,7 +199,6 @@ int main(int argc, char* argv[]) {
   Psip_Mass = new RooRealVar("Psip_Mass","#psi' mass",3.3,Jpsi_MassMax,"GeV/c^{2}");
   Jpsi_Pt = new RooRealVar("Jpsi_Pt","J/#psi pt",Jpsi_PtMin,Jpsi_PtMax,"GeV/c");
   Jpsi_Y = new RooRealVar("Jpsi_Y","J/#psi y",Jpsi_YMin,Jpsi_YMax);
-  Jpsi_Phi = new RooRealVar("Jpsi_Phi","J/#psi phi",Jpsi_PhiMin,Jpsi_PhiMax);
   Jpsi_Type = new RooCategory("Jpsi_Type","Category of Jpsi_");
   Jpsi_Sign = new RooCategory("Jpsi_Sign","Charge combination of Jpsi_");
   //  MCType = new RooCategory("MCType","Type of generated Jpsi_");

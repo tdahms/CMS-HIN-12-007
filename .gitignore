@@ -16,4 +16,5 @@ Fit*DDataPbPb*
 root_files
 tutorial
 2014*
+*.dSYM
 /.project
