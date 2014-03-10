@@ -33,7 +33,7 @@ void tune_lpsi2s_cut(float ptmin=0.0, float ptmax=30.0, float ymin=0.0, float ym
   TCut trigCut = Form("(HLTriggers&%u)==%u&&(Reco_QQ_trig&%u)==%u",trigBit,trigBit,trigBit,trigBit);
 
   TString fname;
-  fname = Form("20140115/psi2s_pp_eff_%3.1f_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f.pdf",efficiency,ymin,ymax,ptmin,ptmax);
+  fname = Form("20140310/psi2s_pp_eff_%3.1f_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f.pdf",efficiency,ymin,ymax,ptmin,ptmax);
 
   std::cout << fname << std::endl;
 

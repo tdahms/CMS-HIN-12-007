@@ -46,12 +46,12 @@ void tune_lJpsi_cut(bool isHI=false, float ptmin=0.0, float ptmax=30.0, float ym
   TString outfname;
   if (isHI) {
     //    fname = "PbPb_eff_" + efficiency + "_Rap_" + ymin + "-" + ymax + "_Pt_" + ptmin + "-" + ptmax + ".pdf";
-    fname = Form("20140210/Jpsi_PbPb_eff_%3.1f_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f_Cent_%d-%d.pdf",efficiency,ymin,ymax,ptmin,ptmax,int(centmin*2.5),int(centmax*2.5));
-    outfname = Form("20140210/Jpsi_PbPb_eff_%3.1f_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f_Cent_%d-%d.root",efficiency,ymin,ymax,ptmin,ptmax,int(centmin*2.5),int(centmax*2.5));
+    fname = Form("20140310/Jpsi_PbPb_eff_%3.1f_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f_Cent_%d-%d.pdf",efficiency,ymin,ymax,ptmin,ptmax,int(centmin*2.5),int(centmax*2.5));
+    outfname = Form("20140310/Jpsi_PbPb_eff_%3.1f_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f_Cent_%d-%d.root",efficiency,ymin,ymax,ptmin,ptmax,int(centmin*2.5),int(centmax*2.5));
   } 
   else {
-    fname = Form("20140210/Jpsi_pp_eff_%3.1f_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f.pdf",efficiency,ymin,ymax,ptmin,ptmax);
-    outfname = Form("20140210/Jpsi_pp_eff_%3.1f_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f.root",efficiency,ymin,ymax,ptmin,ptmax);
+    fname = Form("20140310/Jpsi_pp_eff_%3.1f_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f.pdf",efficiency,ymin,ymax,ptmin,ptmax);
+    outfname = Form("20140310/Jpsi_pp_eff_%3.1f_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f.root",efficiency,ymin,ymax,ptmin,ptmax);
   }
   std::cout << fname << std::endl;
 
