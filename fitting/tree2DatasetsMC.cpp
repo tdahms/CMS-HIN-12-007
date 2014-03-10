@@ -175,7 +175,7 @@ int main(int argc, char* argv[]) {
   TLorentzVector* m1P= new TLorentzVector;
   TLorentzVector* m2P= new TLorentzVector;
 
-  double vprob, theCt, theCtErr, theCtTrue;
+  double theCt, theCtErr, theCtTrue;
   int HLTriggers,theCat,Jq,genType;
 
   static const unsigned int centRegions = 3;
@@ -341,7 +341,7 @@ int main(int argc, char* argv[]) {
       JP = (TLorentzVector*) Reco_QQ_4mom->At(i);
       m1P = (TLorentzVector*) Reco_QQ_mupl_4mom->At(i);
       m2P = (TLorentzVector*) Reco_QQ_mumi_4mom->At(i);
-      vprob = Reco_QQ_VtxProb[i];
+      //      vprob = Reco_QQ_VtxProb[i];
       theCat = Reco_QQ_type[i];
       Jq = Reco_QQ_sign[i];
       genType = Gen_QQ_type[i];
@@ -395,7 +395,7 @@ int main(int argc, char* argv[]) {
         Gen_Pt->setVal(theGenPt); 
         if (Jq == 0){ Jpsi_Sign->setIndex(Jq,kTRUE); }
         else { Jpsi_Sign->setIndex(Jq,kTRUE); }
-	MCType->setIndex(0,kTRUE);//genType
+	MCType->setIndex(genType,kTRUE);
 
 	RooArgList varlist_tmp(*Jpsi_Mass,*Jpsi_Pt,*Jpsi_Y,*Jpsi_Type,*Jpsi_Sign,*MCType,*Jpsi_Ct,*Jpsi_CtErr,*Jpsi_CtTrue);
 	RooArgList varlist2_tmp(*Psip_Mass,*Jpsi_Pt,*Jpsi_Y,*Jpsi_Type,*Jpsi_Sign,*MCType,*Jpsi_Ct,*Jpsi_CtErr,*Jpsi_CtTrue);

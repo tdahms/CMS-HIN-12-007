@@ -521,39 +521,44 @@ int main(int argc, char* argv[]) {
   // fix CB parameters to MC
   if (fixCBtoMC) {
     if (prange=="6.5-30.0" && yrange=="0.0-2.4") {
-      ws->var("alpha_HI")->setVal(1.489);
-      ws->var("enne_HI")->setVal(1.730);
-      ws->var("wideFactor_HI")->setVal(1.901);
-      ws->var("alpha")->setVal(1.693);
-      ws->var("enne")->setVal(1.709);
+      ws->var("alpha_HI")->setVal(1.492);
+      ws->var("enne_HI")->setVal(1.733);
+      ws->var("wideFactor_HI")->setVal(1.895);
+      ws->var("alpha")->setVal(1.696);
+      ws->var("enne")->setVal(1.718);
+      ws->var("wideFactor")->setVal(1.880);
     }
     else if (prange=="6.5-30.0" && yrange=="0.0-1.6") {
-      ws->var("alpha_HI")->setVal(1.516);
-      ws->var("wideFactor_HI")->setVal(1.699);
+      ws->var("alpha_HI")->setVal(1.518);
       ws->var("enne_HI")->setVal(1.683);
-      ws->var("alpha")->setVal(1.710);
-      ws->var("enne")->setVal(1.646);
+      ws->var("wideFactor_HI")->setVal(1.698);
+      ws->var("alpha")->setVal(1.722);
+      ws->var("enne")->setVal(1.640);
+      ws->var("wideFactor")->setVal(1.719);
     }
     else if (prange=="3.0-30.0" && yrange=="1.6-2.4") {
-      ws->var("alpha_HI")->setVal(1.880);
-      ws->var("enne_HI")->setVal(1.430);
-      ws->var("wideFactor_HI")->setVal(1.503);
-      ws->var("alpha")->setVal(2.079);
-      ws->var("enne")->setVal(1.390);
+      ws->var("alpha_HI")->setVal(1.890);
+      ws->var("enne_HI")->setVal(1.440);
+      ws->var("wideFactor_HI")->setVal(1.506);
+      ws->var("alpha")->setVal(2.059);
+      ws->var("enne")->setVal(1.410);
+      ws->var("wideFactor")->setVal(1.553);
     }
     else if (prange=="3.0-6.5" && yrange=="1.6-2.4") {
       ws->var("alpha_HI")->setVal(1.860);
-      ws->var("enne_HI")->setVal(1.330);
-      ws->var("wideFactor_HI")->setVal(1.540);
-      ws->var("alpha")->setVal(2.000);
-      ws->var("enne")->setVal(1.350);
+      ws->var("enne_HI")->setVal(1.380);
+      ws->var("wideFactor_HI")->setVal(1.550);
+      ws->var("alpha")->setVal(2.040);
+      ws->var("enne")->setVal(1.310);
+      ws->var("wideFactor")->setVal(1.508);
     }
     else if (prange=="6.5-30.0" && yrange=="1.6-2.4") {
-      ws->var("alpha_HI")->setVal(2.187);
-      ws->var("enne_HI")->setVal(1.295);
+      ws->var("alpha_HI")->setVal(2.199);
+      ws->var("enne_HI")->setVal(1.276);
       ws->var("wideFactor_HI")->setVal(1.830);
-      ws->var("alpha")->setVal(2.161);
-      ws->var("enne")->setVal(1.370);
+      ws->var("alpha")->setVal(2.143);
+      ws->var("enne")->setVal(1.410);
+      ws->var("wideFactor")->setVal(1.970);
     }
     else {
       ws->var("alpha_HI")->setVal(2.0);
@@ -561,6 +566,7 @@ int main(int argc, char* argv[]) {
       ws->var("wideFactor_HI")->setVal(2.0);
       ws->var("alpha")->setVal(2.0);
       ws->var("enne")->setVal(1.4);
+      ws->var("wideFactor")->setVal(2.0);
     }
     
     if (fixAlpha) {
@@ -583,6 +589,8 @@ int main(int argc, char* argv[]) {
       ws->var("wideFactor_HI")->setConstant(kTRUE);
     else
       ws->var("wideFactor_HI")->setConstant(kFALSE);
+    // wideFactor is always free
+    ws->var("wideFactor")->setConstant(kFALSE);
   }
 
   // 20140128: seed with CB fit parameters
