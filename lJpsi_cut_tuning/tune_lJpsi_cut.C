@@ -40,7 +40,7 @@ void tune_lJpsi_cut(bool isHI=false, float ptmin=0.0, float ptmax=30.0, float ym
     trigBit=1; // DoubleMu0_HighQ
   else
     trigBit=2; // DoubleMu0_HighQ
-  TCut trigCut = Form("(HLTriggers&%u)==%u&&(Reco_QQ_trig&%u)=%u",trigBit,trigBit,trigBit,trigBit);
+  TCut trigCut = Form("(HLTriggers&%u)==%u&&(Reco_QQ_trig&%u)==%u",trigBit,trigBit,trigBit,trigBit);
 
   TString fname;
   TString outfname;
@@ -102,12 +102,12 @@ void tune_lJpsi_cut(bool isHI=false, float ptmin=0.0, float ptmax=30.0, float ym
 
   TChain *NPTree = new TChain("myTree");
   if (isHI) {
-    NPTree->Add("/data/CMS/MC/PbPb/bJpsiMuMu_JpsiPt03_Histos_cmssw445p5_RegIt.root");
-    NPTree->Add("/data/CMS/MC/PbPb/bJpsiMuMu_JpsiPt36_Histos_cmssw445p5_RegIt.root");
-    NPTree->Add("/data/CMS/MC/PbPb/bJpsiMuMu_JpsiPt69_Histos_cmssw445p5_RegIt.root");
-    NPTree->Add("/data/CMS/MC/PbPb/bJpsiMuMu_JpsiPt912_Histos_cmssw445p5_RegIt.root");
-    NPTree->Add("/data/CMS/MC/PbPb/bJpsiMuMu_JpsiPt1215_Histos_cmssw445p5_RegIt.root");
-    NPTree->Add("/data/CMS/MC/PbPb/bJpsiMuMu_JpsiPt1530_Histos_cmssw445p5_RegIt.root");
+    NPTree->Add("/data/CMS/MC/PbPb/bJpsiMuMu_JpsiPt03_Histos_cmssw445p5_RegIt_hStats.root");
+    NPTree->Add("/data/CMS/MC/PbPb/bJpsiMuMu_JpsiPt36_Histos_cmssw445p5_RegIt_hStats.root");
+    NPTree->Add("/data/CMS/MC/PbPb/bJpsiMuMu_JpsiPt69_Histos_cmssw445p5_RegIt_hStats.root");
+    NPTree->Add("/data/CMS/MC/PbPb/bJpsiMuMu_JpsiPt912_Histos_cmssw445p5_RegIt_hStats.root");
+    NPTree->Add("/data/CMS/MC/PbPb/bJpsiMuMu_JpsiPt1215_Histos_cmssw445p5_RegIt_hStats.root");
+    NPTree->Add("/data/CMS/MC/PbPb/bJpsiMuMu_JpsiPt1530_Histos_cmssw445p5_RegIt_hStats.root");
   }
   else
     // PV includes the muons
@@ -137,12 +137,12 @@ void tune_lJpsi_cut(bool isHI=false, float ptmin=0.0, float ptmax=30.0, float ym
 
   TChain *PRTree = new TChain("myTree");
   if (isHI) {
-    PRTree->Add("/data/CMS/MC/PbPb/jpsiMuMu_JpsiPt03_Histos_cmssw445p5_RegIt.root");
-    PRTree->Add("/data/CMS/MC/PbPb/jpsiMuMu_JpsiPt36_Histos_cmssw445p5_RegIt.root");
-    PRTree->Add("/data/CMS/MC/PbPb/jpsiMuMu_JpsiPt69_Histos_cmssw445p5_RegIt.root");
-    PRTree->Add("/data/CMS/MC/PbPb/jpsiMuMu_JpsiPt912_Histos_cmssw445p5_RegIt.root");
-    PRTree->Add("/data/CMS/MC/PbPb/jpsiMuMu_JpsiPt1215_Histos_cmssw445p5_RegIt.root");
-    PRTree->Add("/data/CMS/MC/PbPb/jpsiMuMu_JpsiPt1530_Histos_cmssw445p5_RegIt.root");
+    PRTree->Add("/data/CMS/MC/PbPb/jpsiMuMu_JpsiPt03_Histos_cmssw445p5_RegIt_hStats.root");
+    PRTree->Add("/data/CMS/MC/PbPb/jpsiMuMu_JpsiPt36_Histos_cmssw445p5_RegIt_hStats.root");
+    PRTree->Add("/data/CMS/MC/PbPb/jpsiMuMu_JpsiPt69_Histos_cmssw445p5_RegIt_hStats.root");
+    PRTree->Add("/data/CMS/MC/PbPb/jpsiMuMu_JpsiPt912_Histos_cmssw445p5_RegIt_hStats.root");
+    PRTree->Add("/data/CMS/MC/PbPb/jpsiMuMu_JpsiPt1215_Histos_cmssw445p5_RegIt_hStats.root");
+    PRTree->Add("/data/CMS/MC/PbPb/jpsiMuMu_JpsiPt1530_Histos_cmssw445p5_RegIt_hStats.root");
   }
   else
     // PV includes the muons

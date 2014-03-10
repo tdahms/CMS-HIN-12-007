@@ -30,7 +30,7 @@ void tune_lpsi2s_cut(float ptmin=0.0, float ptmax=30.0, float ymin=0.0, float ym
     rapCut = Form("Reco_QQ_4mom.Rapidity()>%3.1f&&Reco_QQ_4mom.Rapidity()<%3.1f",ymin,ymax);
 
   unsigned int trigBit=2; // DoubleMu0_HighQ
-  TCut trigCut = Form("(HLTriggers&%u)==%u&&(Reco_QQ_trig&%u)=%u",trigBit,trigBit,trigBit,trigBit);
+  TCut trigCut = Form("(HLTriggers&%u)==%u&&(Reco_QQ_trig&%u)==%u",trigBit,trigBit,trigBit,trigBit);
 
   TString fname;
   fname = Form("20140115/psi2s_pp_eff_%3.1f_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f.pdf",efficiency,ymin,ymax,ptmin,ptmax);
