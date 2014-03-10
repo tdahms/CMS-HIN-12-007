@@ -41,8 +41,8 @@ do
 	    for bkg in "${bkgfunctions[@]}";
 	    do
 		echo "fitting " ${cent} " " ${bkg};
-		./Fit1DDataPbPb -f ../root_files/PbPbData2011_DblMu0_cent${cent}_M22-42.root -v signalCB1 signalCB1P ${bkg} -d ${DIRECTORY}/fracLogCB  -u -p ${pt} -y ${rap} -t ${cent} -r 1 -l 1 -s 0 -b 1 &> ${DIRECTORY}/pbpb_fitCB_${bkg}_rap${rap}_pt${pt}_cent${cent}.log
-		./Fit1DDataPbPb -f ../root_files/PbPbData2011_DblMu0_cent${cent}_M22-42.root -v sigCB1G2 sigCB1G2P ${bkg} -d ${DIRECTORY}/fracLogCBG -u -p ${pt} -y ${rap} -t ${cent} -r 1 -l 1 -s 0 -b 1 &> ${DIRECTORY}/pbpb_fitCBG_${bkg}_rap${rap}_pt${pt}_cent${cent}.log
+		./Fit1DDataPbPb -f ../root_files/PbPbData2011_DblMu0_cent${cent}_M22-42.root -v signalCB1 signalCB1P ${bkg} -d ${DIRECTORY}/fracLogCB -p ${pt} -y ${rap} -t ${cent} -r 1 -l 1 -b 1 &> ${DIRECTORY}/pbpb_fitCB_${bkg}_rap${rap}_pt${pt}_cent${cent}.log
+		./Fit1DDataPbPb -f ../root_files/PbPbData2011_DblMu0_cent${cent}_M22-42.root -v sigCB1G2 sigCB1G2P ${bkg} -d ${DIRECTORY}/fracLogCBG -p ${pt} -y ${rap} -t ${cent} -r 1 -l 1 -b 1 &> ${DIRECTORY}/pbpb_fitCBG_${bkg}_rap${rap}_pt${pt}_cent${cent}.log
 		if [[ ${runSyst} -eq 1 &&
 		      ((${pt} == "6.5-30.0" && ${rap} == "0.0-2.4" && ${bkg} == "pol1" && ${cent} == "0-100") ||
 		       (${pt} == "6.5-30.0" && ${rap} == "0.0-1.6" && ${bkg} == "pol1" && ${cent} == "0-100") ||
@@ -61,9 +61,9 @@ do
 		      ) ]];
 		then
 		    echo "Running systematic fit for ${pt} ${rap} ${bkg}";
-		    ./Fit1DDataPbPb -f ../root_files/PbPbData2011_DblMu0_cent${cent}_M22-42.root -v sigCB1G2 sigCB1G2P ${bkg} -d ${DIRECTORY}/fracLogCBG -u -p ${pt} -y ${rap} -t ${cent} -r 1 -l 1 -s 0 -b 1 -a &> ${DIRECTORY}/pbpb_fitCBG_${bkg}_rap${rap}_pt${pt}_cent${cent}_freeAlpha.log
-		    ./Fit1DDataPbPb -f ../root_files/PbPbData2011_DblMu0_cent${cent}_M22-42.root -v sigCB1G2 sigCB1G2P ${bkg} -d ${DIRECTORY}/fracLogCBG -u -p ${pt} -y ${rap} -t ${cent} -r 1 -l 1 -s 0 -b 1 -n &> ${DIRECTORY}/pbpb_fitCBG_${bkg}_rap${rap}_pt${pt}_cent${cent}_freeN.log
-		    ./Fit1DDataPbPb -f ../root_files/PbPbData2011_DblMu0_cent${cent}_M22-42.root -v sigCB1G2 sigCB1G2P ${bkg} -d ${DIRECTORY}/fracLogCBG -u -p ${pt} -y ${rap} -t ${cent} -r 1 -l 1 -s 0 -b 1 -g &> ${DIRECTORY}/pbpb_fitCBG_${bkg}_rap${rap}_pt${pt}_cent${cent}_freeGwidth.log
+		    ./Fit1DDataPbPb -f ../root_files/PbPbData2011_DblMu0_cent${cent}_M22-42.root -v sigCB1G2 sigCB1G2P ${bkg} -d ${DIRECTORY}/fracLogCBG -p ${pt} -y ${rap} -t ${cent} -r 1 -l 1 -b 1 -a &> ${DIRECTORY}/pbpb_fitCBG_${bkg}_rap${rap}_pt${pt}_cent${cent}_freeAlpha.log
+		    ./Fit1DDataPbPb -f ../root_files/PbPbData2011_DblMu0_cent${cent}_M22-42.root -v sigCB1G2 sigCB1G2P ${bkg} -d ${DIRECTORY}/fracLogCBG -p ${pt} -y ${rap} -t ${cent} -r 1 -l 1 -b 1 -n &> ${DIRECTORY}/pbpb_fitCBG_${bkg}_rap${rap}_pt${pt}_cent${cent}_freeN.log
+		    ./Fit1DDataPbPb -f ../root_files/PbPbData2011_DblMu0_cent${cent}_M22-42.root -v sigCB1G2 sigCB1G2P ${bkg} -d ${DIRECTORY}/fracLogCBG -p ${pt} -y ${rap} -t ${cent} -r 1 -l 1 -b 1 -g &> ${DIRECTORY}/pbpb_fitCBG_${bkg}_rap${rap}_pt${pt}_cent${cent}_freeGwidth.log
 		fi;
 	    done;
 	done;
