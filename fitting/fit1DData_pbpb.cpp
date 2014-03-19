@@ -39,6 +39,8 @@
 
 #include <RooStats/ModelConfig.h>
 
+#include "RooMsgService.h"
+
 using namespace RooFit;
 using namespace std;
 
@@ -55,6 +57,8 @@ void defineMassSig(RooWorkspace *ws);
 
 int main(int argc, char* argv[]) {
   gROOT->Macro("./rootlogon.C");
+
+  RooMsgService::instance().setGlobalKillBelow(RooFit::WARNING);
 
   string FileName, FileNameMC1, FileNameMC2;
   string mBkgFunct, mJpsiFunct, mPsiPFunct;
@@ -479,6 +483,13 @@ int main(int argc, char* argv[]) {
     ws->import(*set);
     // set->Print("v");
     // ws->Print("v");
+
+    if (!fixAlpha)
+      ws->var("alpha")->setConstant(kFALSE);
+    if (!fixN)
+      ws->var("enne")->setConstant(kFALSE);
+    if (!fixGwidth)
+      ws->var("wideFactor")->setConstant(kFALSE);
 
     /* set it to MC instead
     // try to set wideFactor to the result from the pp fit.
@@ -1129,24 +1140,94 @@ void setWSRange(RooWorkspace *ws){
 
 
 void defineMassBkg(RooWorkspace *ws) {
+  // 0th order polynomial
+  ws->factory("Chebychev::pol0(Jpsi_Mass,{coeffPol0[0.0]})");
   // 1st order polynomial
-  ws->factory("Chebychev::pol1(Jpsi_Mass,{coeffPol1[-0.8,-1.0,1.0]})");
+  ws->factory("Chebychev::pol1(Jpsi_Mass,{coeffPol1[-0.8]})");
   // 2nd order polynomial
-  ws->factory("Chebychev::pol2(Jpsi_Mass,{coeffPol1, coeffPol2[0.0,-1.0,1.0]})");
+  ws->factory("Chebychev::pol2(Jpsi_Mass,{coeffPol1, coeffPol2[0.0]})");
   // 3rd order polynomial
-  ws->factory("Chebychev::pol3(Jpsi_Mass,{coeffPol1, coeffPol2, coeffPol3[0.0,-1.0,1.0]})");
+  ws->factory("Chebychev::pol3(Jpsi_Mass,{coeffPol1, coeffPol2, coeffPol3[0.0]})");
   // 4th order polynomial
-  ws->factory("Chebychev::pol4(Jpsi_Mass,{coeffPol1, coeffPol2, coeffPol3, coeffPol4[0.0,-1.0,1.0]})");
+  ws->factory("Chebychev::pol4(Jpsi_Mass,{coeffPol1, coeffPol2, coeffPol3, coeffPol4[0.0]})");
   // 5th order polynomial
-  ws->factory("Chebychev::pol5(Jpsi_Mass,{coeffPol1, coeffPol2, coeffPol3, coeffPol4, coeffPol5[0.0,-1.0,1.0]})");
+  ws->factory("Chebychev::pol5(Jpsi_Mass,{coeffPol1, coeffPol2, coeffPol3, coeffPol4, coeffPol5[0.0]})");
   // 6th order polynomial
-  ws->factory("Chebychev::pol6(Jpsi_Mass,{coeffPol1, coeffPol2, coeffPol3, coeffPol4, coeffPol5, coeffPol6[0.0,-1.0,1.0]})");
+  ws->factory("Chebychev::pol6(Jpsi_Mass,{coeffPol1, coeffPol2, coeffPol3, coeffPol4, coeffPol5, coeffPol6[0.0]})");
+  // 7th order polynomial
+  ws->factory("Chebychev::pol7(Jpsi_Mass,{coeffPol1, coeffPol2, coeffPol3, coeffPol4, coeffPol5, coeffPol6, coeffPol7[0.0]})");
+  ws->var("coeffPol0")->setConstant(true);
+  ws->var("coeffPol1")->setConstant(false);
+  ws->var("coeffPol2")->setConstant(false);
+  ws->var("coeffPol3")->setConstant(false);
+  ws->var("coeffPol4")->setConstant(false);
+  ws->var("coeffPol5")->setConstant(false);
+  ws->var("coeffPol6")->setConstant(false);
+  ws->var("coeffPol7")->setConstant(false);
 
   // expo
-  ws->factory("Exponential::expFunct(Jpsi_Mass,coeffExp[-0.1,-3.0,1.0])");
+  //  ws->factory("Exponential::expFunct(Jpsi_Mass,coeffExp[-0.1,-3.0,1.0])");
 
   // gauss
-  ws->factory("Gaussian::gausBkg(Jpsi_Mass,meanBkg[0.0,0.0,10.0],sigmaBkg[1.0,0.5,5.0])");
+  //  ws->factory("Gaussian::gausBkg(Jpsi_Mass,meanBkg[0.0,0.0,10.0],sigmaBkg[1.0,0.5,5.0])");
+
+  // 2nd gauss
+  // ws->factory("Gaussian::gausBkg2(Jpsi_Mass,meanBkg2[0.0,0.0,10.0],sigmaBkg2[1.0,0.5,5.0])");
+
+  // // two gauss
+  // ws->factory("SUM::bkgTwoGaus(coeffBkgGaus[0.1,0.0,1.0]*gausBkg2,gausBkg)");
+
+  // // 3rd gauss
+  // ws->factory("Gaussian::gausBkg3(Jpsi_Mass,meanBkg3[0.0,0.0,10.0],sigmaBkg3[1.0,0.5,5.0])");
+
+  // // three gauss
+  // ws->factory("SUM::bkgThreeGaus(coeffBkgGaus2[0.1,0.0,1.0]*gausBkg3,bkgTwoGaus)");
+
+  // 1st order polynomial in exponential function
+  ws->factory("Chebychev::expPol1Arg(Jpsi_Mass,{expCoeffPol1[-0.1]})");
+  ws->factory("Exponential::expPol1(expPol1Arg,expCoeffPol0[1.0])");
+
+  // 2nd order polynomial in exponential function
+  ws->factory("Chebychev::expPol2Arg(Jpsi_Mass,{expCoeffPol1, expCoeffPol2[0.0]})");
+  ws->factory("Exponential::expPol2(expPol2Arg,expCoeffPol0)");
+
+  // 3rd order polynomial in exponential function
+  ws->factory("Chebychev::expPol3Arg(Jpsi_Mass,{expCoeffPol1, expCoeffPol2, expCoeffPol3[0.0]})");
+  ws->factory("Exponential::expPol3(expPol3Arg,expCoeffPol0)");
+
+  // 3rd order polynomial in exponential function
+  ws->factory("Chebychev::expPol4Arg(Jpsi_Mass,{expCoeffPol1, expCoeffPol2, expCoeffPol3, expCoeffPol4[0.0]})");
+  ws->factory("Exponential::expPol4(expPol4Arg,expCoeffPol0)");
+
+  ws->var("expCoeffPol0")->setConstant(true);
+  ws->var("expCoeffPol1")->setConstant(false);
+  ws->var("expCoeffPol2")->setConstant(false);
+  ws->var("expCoeffPol3")->setConstant(false);
+  ws->var("expCoeffPol4")->setConstant(false);
+
+  // RooFormulaVar Jpsi_Mass2("Jpsi_Mass2","pow(@0,2)",RooArgList(*ws->var("Jpsi_Mass")));
+  // ws->import(Jpsi_Mass2);
+  // RooFormulaVar Jpsi_Mass3("Jpsi_Mass3","pow(@0,3)",RooArgList(*ws->var("Jpsi_Mass")));
+  // ws->import(Jpsi_Mass3);
+  // ws->factory("Exponential::expFunct1(Jpsi_Mass,expCoeffPol1[0.0,-1.0,1.0])");
+  // ws->factory("Exponential::expFunct2(Jpsi_Mass2,expCoeffPol2[0.0,-1.0,1.0])");
+  // ws->factory("Exponential::expFunct3(Jpsi_Mass3,expCoeffPol3[0.0,-1.0,1.0])");
+  // ws->factory("PROD::expPol2(expFunct1,expFunct2)");
+  // ws->factory("PROD::expPol3(expPol2,expFunct3)");
+  //  ws->var("expCoeffPol0")->setConstant(true);
+
+  // Log-normal
+  //  ws->factory("Lognormal::LogNormal(Jpsi_Mass,LogMean[0.0,0.0,10.0],LogSigma[0.02,0.0,10.0])");
+
+  // erf*exp
+  // RooRealVar m0("m0","m0",1.0,0.0,3.0);
+  // ws->import(m0);
+  // RooRealVar s0("s0","s0",20.0,0.0,100.0);
+  // ws->import(s0);
+  // RooFormulaVar erf("erf","0.5*(TMath::Erf((@0-@1)/@2)+1)",RooArgList(*ws->var("Jpsi_Mass"),*ws->var("m0"),*ws->var("s0")));
+  // ws->import(erf);
+  // RooGenericPdf erfExp("erfExp","erfExp","@0*@1",RooArgList(*ws->function("expFunct"),*ws->function("erf")));
+  // ws->import(erfExp);
 
   return;
 }

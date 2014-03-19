@@ -2,7 +2,7 @@
 TODAY=`date +%Y%m%d`
 echo "Today is ${TODAY}"
 
-SUFFIX="SimFits_M2242_FixCBtail_NoSumw2_DblMu0_NoMinos_finalCBtailFits_fixWideFactorPbPbMC_corrPsi2SError"
+SUFFIX="SimFits_M2242_DblMu0"
 
 DIRECTORY="${TODAY}_${SUFFIX}"
 
@@ -36,51 +36,51 @@ do
 		bkg="pol2_HI pol1";
 	    elif [[ ${cent} == "0-100" && ${pt} == "6.5-30.0" && ${rap} == "1.6-2.4" ]];
 	    then
-		bkg="pol3_HI pol5"
+		bkg="pol3_HI pol1"
 	    elif [[ ${pt} == "6.5-30.0" && ${rap} == "0.0-2.4" ]];
 	    then
 		if [[ ${cent} == "0-100" ]];
 		then
-		bkg="pol1_HI pol5";
+		bkg="pol1_HI pol1";
 		elif [[ ${cent} == "0-20" ]];
 		then
-		bkg="pol1_HI pol5";
+		bkg="pol1_HI pol1";
 		elif [[ ${cent} == "20-40" ]];
 		then
-		bkg="pol2_HI pol5";
+		bkg="pol0_HI pol1";
 		elif [[ ${cent} == "40-100" ]];
 		then
-		bkg="pol1_HI pol5";
+		bkg="pol0_HI pol1";
 		fi;
 	    elif [[ ${pt} == "6.5-30.0" && ${rap} == "0.0-1.6" ]];
 	    then
 		if [[ ${cent} == "0-100" ]];
 		then
-		bkg="pol1_HI pol3";
+		bkg="pol1_HI pol1";
 		elif [[ ${cent} == "0-20" ]];
 		then
-		bkg="pol1_HI pol3";
+		bkg="pol1_HI pol1";
 		elif [[ ${cent} == "20-40" ]];
 		then
-		bkg="pol1_HI pol3";
+		bkg="pol1_HI pol1";
 		elif [[ ${cent} == "40-100" ]];
 		then
-		bkg="pol1_HI pol3";
+		bkg="pol0_HI pol1";
 		fi;
 	    elif [[ ${pt} == "3.0-30.0" && ${rap} == "1.6-2.4" ]];
 	    then
 		if [[ ${cent} == "0-100" ]];
 		then
-		bkg="pol3_HI pol5";
+		bkg="pol3_HI pol1";
 		elif [[ ${cent} == "0-20" ]];
 		then
-		bkg="pol3_HI pol5";
+		bkg="pol3_HI pol1";
 		elif [[ ${cent} == "20-40" ]];
 		then
-		bkg="pol2_HI pol5";
+		bkg="pol2_HI pol1";
 		elif [[ ${cent} == "40-100" ]];
 		then
-		bkg="pol1_HI pol5";
+		bkg="pol1_HI pol1";
 		fi;
 	    else
 		echo "skipping " ${rap} " " ${pt} " " ${cent};

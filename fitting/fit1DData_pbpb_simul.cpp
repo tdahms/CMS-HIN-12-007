@@ -40,6 +40,8 @@
 
 #include <RooStats/ModelConfig.h>
 
+#include "RooMsgService.h"
+
 using namespace RooFit;
 using namespace std;
 
@@ -58,6 +60,8 @@ void defineMassSigHI(RooWorkspace *ws);
 
 int main(int argc, char* argv[]) {
   gROOT->Macro("./rootlogon.C");
+
+  RooMsgService::instance().setGlobalKillBelow(RooFit::WARNING);
 
   vector<string> FileName;
   vector<string> mBkgFunct;
@@ -482,14 +486,41 @@ int main(int argc, char* argv[]) {
       NPsiP_mix[i]  = new RooFormulaVar(("NPsiP_mix_"+varSuffix.at(i)).c_str(),"@0*@1",RooArgList(*(ws->var(("NJpsi_"+varSuffix.back()).c_str())),*(ws->function(("fracP_"+varSuffix.at(i)).c_str()))));   ws->import(*NPsiP_mix[i]);
     }
 
+    if (shareShape || i == (int)nFiles-1)
+      sprintf(funct,"SUM::sigMassPDF_%s(NJpsi_%s*%s,NPsiP_%s*%s,NBkg_%s*%s)",
+	      varSuffix.at(i).c_str(),
+	      varSuffix.at(i).c_str(),
+	      mJpsiFunct.c_str(),
+	      varSuffix.at(i).c_str(),
+	      mPsiPFunct.c_str(),
+	      varSuffix.at(i).c_str(),
+	      mBkgFunct.at(i).c_str());
+    else
+      sprintf(funct,"SUM::sigMassPDF_%s(NJpsi_%s*%s_%s,NPsiP_%s*%s_%s,NBkg_%s*%s)",
+	      varSuffix.at(i).c_str(),
+	      varSuffix.at(i).c_str(),
+	      mJpsiFunct.c_str(),"HI",
+	      varSuffix.at(i).c_str(),
+	      mPsiPFunct.c_str(),"HI",
+	      varSuffix.at(i).c_str(),
+	      mBkgFunct.at(i).c_str());
     
-    sprintf(funct,"SUM::sigMassPDF_%s(NJpsi_%s*%s,NPsiP_%s*%s,NBkg_%s*%s)",varSuffix.at(i).c_str(),varSuffix.at(i).c_str(),mJpsiFunct.c_str(),varSuffix.at(i).c_str(),mPsiPFunct.c_str(),varSuffix.at(i).c_str(),mBkgFunct.at(i).c_str());
-
     cout << funct << endl;
     ws->factory(funct);
     
     if (i < (int)nFiles-1) {
-      sprintf(funct,"SUM::sigMassPDF_mix_%s(NJpsi_pp*%s,NPsiP_mix_%s*%s,NBkg_pp*%s)",varSuffix.at(i).c_str(),mJpsiFunct.c_str(),varSuffix.at(i).c_str(),mPsiPFunct.c_str(),mBkgFunct.back().c_str());
+      // for testing: use PbPb shape
+      // sprintf(funct,"SUM::sigMassPDF_mix_%s(NJpsi_pp*%s_%s,NPsiP_pp*%s_%s,NBkg_pp*%s)",
+      // 	      varSuffix.at(i).c_str(),
+      // 	      mJpsiFunct.c_str(),"HI",
+      // 	      mPsiPFunct.c_str(),"HI",
+      // 	      mBkgFunct.back().c_str());
+      sprintf(funct,"SUM::sigMassPDF_mix_%s(NJpsi_pp*%s,NPsiP_mix_%s*%s,NBkg_pp*%s)",
+       	      varSuffix.at(i).c_str(),
+       	      mJpsiFunct.c_str(),
+       	      varSuffix.at(i).c_str(),
+       	      mPsiPFunct.c_str(),
+       	      mBkgFunct.back().c_str());
       ws->factory(funct);
       cout << funct << endl;
     }
@@ -1329,6 +1360,8 @@ void setWSRange(RooWorkspace *ws){
 
 
 void defineMassBkg(RooWorkspace *ws) {
+  // 0th order polynomial
+  ws->factory("Chebychev::pol0(Jpsi_Mass,{coeffPol0[0.0]})");
   // 1st order polynomial
   ws->factory("Chebychev::pol1(Jpsi_Mass,{coeffPol1[-0.8,-1.0,1.0]})");
   // 2nd order polynomial
@@ -1341,12 +1374,38 @@ void defineMassBkg(RooWorkspace *ws) {
   ws->factory("Chebychev::pol5(Jpsi_Mass,{coeffPol1, coeffPol2, coeffPol3, coeffPol4, coeffPol5[0.0,-1.0,1.0]})");
   // 6th order polynomial
   ws->factory("Chebychev::pol6(Jpsi_Mass,{coeffPol1, coeffPol2, coeffPol3, coeffPol4, coeffPol5, coeffPol6[0.0,-1.0,1.0]})");
+  // 7th order polynomial
+  ws->factory("Chebychev::pol7(Jpsi_Mass,{coeffPol1, coeffPol2, coeffPol3, coeffPol4, coeffPol5, coeffPol6, coeffPol7[0.0,-1.0,1.0]})");
+  ws->var("coeffPol0")->setConstant(true);
+  ws->var("coeffPol1")->setConstant(false);
+  ws->var("coeffPol2")->setConstant(false);
+  ws->var("coeffPol3")->setConstant(false);
+  ws->var("coeffPol4")->setConstant(false);
+  ws->var("coeffPol5")->setConstant(false);
+  ws->var("coeffPol6")->setConstant(false);
+  ws->var("coeffPol7")->setConstant(false);
+  
+  // 1st order polynomial in exponential function
+  ws->factory("Chebychev::expPol1Arg(Jpsi_Mass,{expCoeffPol1[-0.1]})");
+  ws->factory("Exponential::expPol1(expPol1Arg,expCoeffPol0[1.0])");
 
-  // expo
-  ws->factory("Exponential::expFunct(Jpsi_Mass,coeffExp[-0.1,-3.0,1.0])");
+  // 2nd order polynomial in exponential function
+  ws->factory("Chebychev::expPol2Arg(Jpsi_Mass,{expCoeffPol1, expCoeffPol2[0.0]})");
+  ws->factory("Exponential::expPol2(expPol2Arg,expCoeffPol0)");
 
-  // gauss
-  ws->factory("Gaussian::gausBkg(Jpsi_Mass,meanBkg[0.0,0.0,10.0],sigmaBkg[1.0,0.5,5.0])");
+  // 3rd order polynomial in exponential function
+  ws->factory("Chebychev::expPol3Arg(Jpsi_Mass,{expCoeffPol1, expCoeffPol2, expCoeffPol3[0.0]})");
+  ws->factory("Exponential::expPol3(expPol3Arg,expCoeffPol0)");
+
+  // 3rd order polynomial in exponential function
+  ws->factory("Chebychev::expPol4Arg(Jpsi_Mass,{expCoeffPol1, expCoeffPol2, expCoeffPol3, expCoeffPol4[0.0]})");
+  ws->factory("Exponential::expPol4(expPol4Arg,expCoeffPol0)");
+
+  ws->var("expCoeffPol0")->setConstant(true);
+  ws->var("expCoeffPol1")->setConstant(false);
+  ws->var("expCoeffPol2")->setConstant(false);
+  ws->var("expCoeffPol3")->setConstant(false);
+  ws->var("expCoeffPol4")->setConstant(false);
 
   return;
 }
@@ -1387,86 +1446,199 @@ void defineMassSig(RooWorkspace *ws) {
 
 
 void defineMassBkgHI(RooWorkspace *ws) {
+  // 0th order polynomial
+  ws->factory("Chebychev::pol0_HI(Jpsi_Mass,{coeffPol0_HI[0.0]})");
   // 1st order polynomial
-  ws->factory("Chebychev::pol1_HI(Jpsi_Mass,{coeffPol1_HI[-0.8,-1.0,1.0]})");
+  ws->factory("Chebychev::pol1_HI(Jpsi_Mass,{coeffPol1_HI[-0.8]})");
   // 2nd order polynomial
-  ws->factory("Chebychev::pol2_HI(Jpsi_Mass,{coeffPol1_HI, coeffPol2_HI[0.0,-1.0,1.0]})");
+  ws->factory("Chebychev::pol2_HI(Jpsi_Mass,{coeffPol1_HI, coeffPol2_HI[0.0]})");
   // 3rd order polynomial
-  ws->factory("Chebychev::pol3_HI(Jpsi_Mass,{coeffPol1_HI, coeffPol2_HI, coeffPol3_HI[0.0,-1.0,1.0]})");
+  ws->factory("Chebychev::pol3_HI(Jpsi_Mass,{coeffPol1_HI, coeffPol2_HI, coeffPol3_HI[0.0]})");
   // 4th order polynomial
-  ws->factory("Chebychev::pol4_HI(Jpsi_Mass,{coeffPol1_HI, coeffPol2_HI, coeffPol3_HI, coeffPol4_HI[0.0,-1.0,1.0]})");
+  ws->factory("Chebychev::pol4_HI(Jpsi_Mass,{coeffPol1_HI, coeffPol2_HI, coeffPol3_HI, coeffPol4_HI[0.0]})");
   // 5th order polynomial
-  ws->factory("Chebychev::pol5_HI(Jpsi_Mass,{coeffPol1_HI, coeffPol2_HI, coeffPol3_HI, coeffPol4_HI, coeffPol5_HI[0.0,-1.0,1.0]})");
+  ws->factory("Chebychev::pol5_HI(Jpsi_Mass,{coeffPol1_HI, coeffPol2_HI, coeffPol3_HI, coeffPol4_HI, coeffPol5_HI[0.0]})");
   // 6th order polynomial
-  ws->factory("Chebychev::pol6_HI(Jpsi_Mass,{coeffPol1_HI, coeffPol2_HI, coeffPol3_HI, coeffPol4_HI, coeffPol5_HI, coeffPol6_HI[0.0,-1.0,1.0]})");
+  ws->factory("Chebychev::pol6_HI(Jpsi_Mass,{coeffPol1_HI, coeffPol2_HI, coeffPol3_HI, coeffPol4_HI, coeffPol5_HI, coeffPol6_HI[0.0]})");
+  // 7th order polynomial
+  ws->factory("Chebychev::pol7_HI(Jpsi_Mass,{coeffPol1_HI, coeffPol2_HI, coeffPol3_HI, coeffPol4_HI, coeffPol5_HI, coeffPol6_HI, coeffPol7_HI[0.0]})");
+  ws->var("coeffPol0_HI")->setConstant(true);
+  ws->var("coeffPol1_HI")->setConstant(false);
+  ws->var("coeffPol2_HI")->setConstant(false);
+  ws->var("coeffPol3_HI")->setConstant(false);
+  ws->var("coeffPol4_HI")->setConstant(false);
+  ws->var("coeffPol5_HI")->setConstant(false);
+  ws->var("coeffPol6_HI")->setConstant(false);
+  ws->var("coeffPol7_HI")->setConstant(false);
 
-  // expo
-  ws->factory("Exponential::expFunct_HI(Jpsi_Mass,coeffExp_HI[-0.1,-3.0,1.0])");
+  // 1st order polynomial in exponential function
+  ws->factory("Chebychev::expPol1Arg_HI(Jpsi_Mass,{expCoeffPol1_HI[-0.1]})");
+  ws->factory("Exponential::expPol1_HI(expPol1Arg_HI,expCoeffPol0_HI[1.0])");
 
-  // gauss
-  ws->factory("Gaussian::gausBkg_HI(Jpsi_Mass,meanBkg_HI[0.0,0.0,10.0],sigmaBkg_HI[1.0,0.5,5.0])");
+  // 2nd order polynomial in exponential function
+  ws->factory("Chebychev::expPol2Arg_HI(Jpsi_Mass,{expCoeffPol1_HI, expCoeffPol2_HI[0.0]})");
+  ws->factory("Exponential::expPol2_HI(expPol2Arg_HI,expCoeffPol0_HI)");
+
+  // 3rd order polynomial in exponential function
+  ws->factory("Chebychev::expPol3Arg_HI(Jpsi_Mass,{expCoeffPol1_HI, expCoeffPol2_HI, expCoeffPol3_HI[0.0]})");
+  ws->factory("Exponential::expPol3_HI(expPol3Arg_HI,expCoeffPol0_HI)");
+
+  // 3rd order polynomial in exponential function
+  ws->factory("Chebychev::expPol4Arg_HI(Jpsi_Mass,{expCoeffPol1_HI, expCoeffPol2_HI, expCoeffPol3_HI, expCoeffPol4_HI[0.0]})");
+  ws->factory("Exponential::expPol4_HI(expPol4Arg_HI,expCoeffPol0_HI)");
+
+  ws->var("expCoeffPol0_HI")->setConstant(true);
+  ws->var("expCoeffPol1_HI")->setConstant(false);
+  ws->var("expCoeffPol2_HI")->setConstant(false);
+  ws->var("expCoeffPol3_HI")->setConstant(false);
+  ws->var("expCoeffPol4_HI")->setConstant(false);
+
 
   // 0-20%
+  // 0th order polynomial
+  ws->factory("Chebychev::pol0_HI020(Jpsi_Mass,{coeffPol0_HI020[0.0]})");
   // 1st order polynomial
-  ws->factory("Chebychev::pol1_HI020(Jpsi_Mass,{coeffPol1_HI020[-0.8,-1.0,1.0]})");
+  ws->factory("Chebychev::pol1_HI020(Jpsi_Mass,{coeffPol1_HI020[-0.8]})");
   // 2nd order polynomial
-  ws->factory("Chebychev::pol2_HI020(Jpsi_Mass,{coeffPol1_HI020, coeffPol2_HI020[0.0,-1.0,1.0]})");
+  ws->factory("Chebychev::pol2_HI020(Jpsi_Mass,{coeffPol1_HI020, coeffPol2_HI020[0.0]})");
   // 3rd order polynomial
-  ws->factory("Chebychev::pol3_HI020(Jpsi_Mass,{coeffPol1_HI020, coeffPol2_HI020, coeffPol3_HI020[0.0,-1.0,1.0]})");
+  ws->factory("Chebychev::pol3_HI020(Jpsi_Mass,{coeffPol1_HI020, coeffPol2_HI020, coeffPol3_HI020[0.0]})");
   // 4th order polynomial
-  ws->factory("Chebychev::pol4_HI020(Jpsi_Mass,{coeffPol1_HI020, coeffPol2_HI020, coeffPol3_HI020, coeffPol4_HI020[0.0,-1.0,1.0]})");
+  ws->factory("Chebychev::pol4_HI020(Jpsi_Mass,{coeffPol1_HI020, coeffPol2_HI020, coeffPol3_HI020, coeffPol4_HI020[0.0]})");
   // 5th order polynomial
-  ws->factory("Chebychev::pol5_HI020(Jpsi_Mass,{coeffPol1_HI020, coeffPol2_HI020, coeffPol3_HI020, coeffPol4_HI020, coeffPol5_HI020[0.0,-1.0,1.0]})");
+  ws->factory("Chebychev::pol5_HI020(Jpsi_Mass,{coeffPol1_HI020, coeffPol2_HI020, coeffPol3_HI020, coeffPol4_HI020, coeffPol5_HI020[0.0]})");
   // 6th order polynomial
-  ws->factory("Chebychev::pol6_HI020(Jpsi_Mass,{coeffPol1_HI020, coeffPol2_HI020, coeffPol3_HI020, coeffPol4_HI020, coeffPol5_HI020, coeffPol6_HI020[0.0,-1.0,1.0]})");
+  ws->factory("Chebychev::pol6_HI020(Jpsi_Mass,{coeffPol1_HI020, coeffPol2_HI020, coeffPol3_HI020, coeffPol4_HI020, coeffPol5_HI020, coeffPol6_HI020[0.0]})");
+  // 7th order polynomial
+  ws->factory("Chebychev::pol7_HI020(Jpsi_Mass,{coeffPol1_HI020, coeffPol2_HI020, coeffPol3_HI020, coeffPol4_HI020, coeffPol5_HI020, coeffPol6_HI020, coeffPol7_HI020[0.0]})");
+  ws->var("coeffPol0_HI020")->setConstant(true);
+  ws->var("coeffPol1_HI020")->setConstant(false);
+  ws->var("coeffPol2_HI020")->setConstant(false);
+  ws->var("coeffPol3_HI020")->setConstant(false);
+  ws->var("coeffPol4_HI020")->setConstant(false);
+  ws->var("coeffPol5_HI020")->setConstant(false);
+  ws->var("coeffPol6_HI020")->setConstant(false);
+  ws->var("coeffPol7_HI020")->setConstant(false);
 
-  // expo
-  ws->factory("Exponential::expFunct_HI020(Jpsi_Mass,coeffExp_HI020[-0.1,-3.0,1.0])");
+  // 1st order polynomial in exponential function
+  ws->factory("Chebychev::expPol1Arg_HI020(Jpsi_Mass,{expCoeffPol1_HI020[-0.1]})");
+  ws->factory("Exponential::expPol1_HI020(expPol1Arg_HI020,expCoeffPol0_HI020[1.0])");
 
-  // gauss
-  ws->factory("Gaussian::gausBkg_HI020(Jpsi_Mass,meanBkg_HI020[0.0,0.0,10.0],sigmaBkg_HI020[1.0,0.5,5.0])");
+  // 2nd order polynomial in exponential function
+  ws->factory("Chebychev::expPol2Arg_HI020(Jpsi_Mass,{expCoeffPol1_HI020, expCoeffPol2_HI020[0.0]})");
+  ws->factory("Exponential::expPol2_HI020(expPol2Arg_HI020,expCoeffPol0_HI020)");
+
+  // 3rd order polynomial in exponential function
+  ws->factory("Chebychev::expPol3Arg_HI020(Jpsi_Mass,{expCoeffPol1_HI020, expCoeffPol2_HI020, expCoeffPol3_HI020[0.0]})");
+  ws->factory("Exponential::expPol3_HI020(expPol3Arg_HI020,expCoeffPol0_HI020)");
+
+  // 3rd order polynomial in exponential function
+  ws->factory("Chebychev::expPol4Arg_HI020(Jpsi_Mass,{expCoeffPol1_HI020, expCoeffPol2_HI020, expCoeffPol3_HI020, expCoeffPol4_HI020[0.0]})");
+  ws->factory("Exponential::expPol4_HI020(expPol4Arg_HI020,expCoeffPol0_HI020)");
+
+  ws->var("expCoeffPol0_HI020")->setConstant(true);
+  ws->var("expCoeffPol1_HI020")->setConstant(false);
+  ws->var("expCoeffPol2_HI020")->setConstant(false);
+  ws->var("expCoeffPol3_HI020")->setConstant(false);
+  ws->var("expCoeffPol4_HI020")->setConstant(false);
 
 
   // 20-40%
+  // 0th order polynomial
+  ws->factory("Chebychev::pol0_HI2040(Jpsi_Mass,{coeffPol0_HI2040[0.0]})");
   // 1st order polynomial
-  ws->factory("Chebychev::pol1_HI2040(Jpsi_Mass,{coeffPol1_HI2040[-0.8,-1.0,1.0]})");
+  ws->factory("Chebychev::pol1_HI2040(Jpsi_Mass,{coeffPol1_HI2040[-0.8]})");
   // 2nd order polynomial
-  ws->factory("Chebychev::pol2_HI2040(Jpsi_Mass,{coeffPol1_HI2040, coeffPol2_HI2040[0.0,-1.0,1.0]})");
+  ws->factory("Chebychev::pol2_HI2040(Jpsi_Mass,{coeffPol1_HI2040, coeffPol2_HI2040[0.0]})");
   // 3rd order polynomial
-  ws->factory("Chebychev::pol3_HI2040(Jpsi_Mass,{coeffPol1_HI2040, coeffPol2_HI2040, coeffPol3_HI2040[0.0,-1.0,1.0]})");
+  ws->factory("Chebychev::pol3_HI2040(Jpsi_Mass,{coeffPol1_HI2040, coeffPol2_HI2040, coeffPol3_HI2040[0.0]})");
   // 4th order polynomial
-  ws->factory("Chebychev::pol4_HI2040(Jpsi_Mass,{coeffPol1_HI2040, coeffPol2_HI2040, coeffPol3_HI2040, coeffPol4_HI2040[0.0,-1.0,1.0]})");
+  ws->factory("Chebychev::pol4_HI2040(Jpsi_Mass,{coeffPol1_HI2040, coeffPol2_HI2040, coeffPol3_HI2040, coeffPol4_HI2040[0.0]})");
   // 5th order polynomial
-  ws->factory("Chebychev::pol5_HI2040(Jpsi_Mass,{coeffPol1_HI2040, coeffPol2_HI2040, coeffPol3_HI2040, coeffPol4_HI2040, coeffPol5_HI2040[0.0,-1.0,1.0]})");
+  ws->factory("Chebychev::pol5_HI2040(Jpsi_Mass,{coeffPol1_HI2040, coeffPol2_HI2040, coeffPol3_HI2040, coeffPol4_HI2040, coeffPol5_HI2040[0.0]})");
   // 6th order polynomial
-  ws->factory("Chebychev::pol6_HI2040(Jpsi_Mass,{coeffPol1_HI2040, coeffPol2_HI2040, coeffPol3_HI2040, coeffPol4_HI2040, coeffPol5_HI2040, coeffPol6_HI2040[0.0,-1.0,1.0]})");
+  ws->factory("Chebychev::pol6_HI2040(Jpsi_Mass,{coeffPol1_HI2040, coeffPol2_HI2040, coeffPol3_HI2040, coeffPol4_HI2040, coeffPol5_HI2040, coeffPol6_HI2040[0.0]})");
+  // 7th order polynomial
+  ws->factory("Chebychev::pol7_HI2040(Jpsi_Mass,{coeffPol1_HI2040, coeffPol2_HI2040, coeffPol3_HI2040, coeffPol4_HI2040, coeffPol5_HI2040, coeffPol6_HI2040, coeffPol7_HI2040[0.0]})");
+  ws->var("coeffPol0_HI2040")->setConstant(true);
+  ws->var("coeffPol1_HI2040")->setConstant(false);
+  ws->var("coeffPol2_HI2040")->setConstant(false);
+  ws->var("coeffPol3_HI2040")->setConstant(false);
+  ws->var("coeffPol4_HI2040")->setConstant(false);
+  ws->var("coeffPol5_HI2040")->setConstant(false);
+  ws->var("coeffPol6_HI2040")->setConstant(false);
+  ws->var("coeffPol7_HI2040")->setConstant(false);
 
-  // expo
-  ws->factory("Exponential::expFunct_HI2040(Jpsi_Mass,coeffExp_HI2040[-0.1,-3.0,1.0])");
+  // 1st order polynomial in exponential function
+  ws->factory("Chebychev::expPol1Arg_HI2040(Jpsi_Mass,{expCoeffPol1_HI2040[-0.1]})");
+  ws->factory("Exponential::expPol1_HI2040(expPol1Arg_HI2040,expCoeffPol0_HI2040[1.0])");
 
-  // gauss
-  ws->factory("Gaussian::gausBkg_HI2040(Jpsi_Mass,meanBkg_HI2040[0.0,0.0,10.0],sigmaBkg_HI2040[1.0,0.5,5.0])");
+  // 2nd order polynomial in exponential function
+  ws->factory("Chebychev::expPol2Arg_HI2040(Jpsi_Mass,{expCoeffPol1_HI2040, expCoeffPol2_HI2040[0.0]})");
+  ws->factory("Exponential::expPol2_HI2040(expPol2Arg_HI2040,expCoeffPol0_HI2040)");
+
+  // 3rd order polynomial in exponential function
+  ws->factory("Chebychev::expPol3Arg_HI2040(Jpsi_Mass,{expCoeffPol1_HI2040, expCoeffPol2_HI2040, expCoeffPol3_HI2040[0.0]})");
+  ws->factory("Exponential::expPol3_HI2040(expPol3Arg_HI2040,expCoeffPol0_HI2040)");
+
+  // 3rd order polynomial in exponential function
+  ws->factory("Chebychev::expPol4Arg_HI2040(Jpsi_Mass,{expCoeffPol1_HI2040, expCoeffPol2_HI2040, expCoeffPol3_HI2040, expCoeffPol4_HI2040[0.0]})");
+  ws->factory("Exponential::expPol4_HI2040(expPol4Arg_HI2040,expCoeffPol0_HI2040)");
+
+  ws->var("expCoeffPol0_HI2040")->setConstant(true);
+  ws->var("expCoeffPol1_HI2040")->setConstant(false);
+  ws->var("expCoeffPol2_HI2040")->setConstant(false);
+  ws->var("expCoeffPol3_HI2040")->setConstant(false);
+  ws->var("expCoeffPol4_HI2040")->setConstant(false);
 
 
   // 40-100%
+  // 0th order polynomial
+  ws->factory("Chebychev::pol0_HI40100(Jpsi_Mass,{coeffPol0_HI40100[0.0]})");
   // 1st order polynomial
-  ws->factory("Chebychev::pol1_HI40100(Jpsi_Mass,{coeffPol1_HI40100[-0.8,-1.0,1.0]})");
+  ws->factory("Chebychev::pol1_HI40100(Jpsi_Mass,{coeffPol1_HI40100[-0.8]})");
   // 2nd order polynomial
-  ws->factory("Chebychev::pol2_HI40100(Jpsi_Mass,{coeffPol1_HI40100, coeffPol2_HI40100[0.0,-1.0,1.0]})");
+  ws->factory("Chebychev::pol2_HI40100(Jpsi_Mass,{coeffPol1_HI40100, coeffPol2_HI40100[0.0]})");
   // 3rd order polynomial
-  ws->factory("Chebychev::pol3_HI40100(Jpsi_Mass,{coeffPol1_HI40100, coeffPol2_HI40100, coeffPol3_HI40100[0.0,-1.0,1.0]})");
+  ws->factory("Chebychev::pol3_HI40100(Jpsi_Mass,{coeffPol1_HI40100, coeffPol2_HI40100, coeffPol3_HI40100[0.0]})");
   // 4th order polynomial
-  ws->factory("Chebychev::pol4_HI40100(Jpsi_Mass,{coeffPol1_HI40100, coeffPol2_HI40100, coeffPol3_HI40100, coeffPol4_HI40100[0.0,-1.0,1.0]})");
+  ws->factory("Chebychev::pol4_HI40100(Jpsi_Mass,{coeffPol1_HI40100, coeffPol2_HI40100, coeffPol3_HI40100, coeffPol4_HI40100[0.0]})");
   // 5th order polynomial
-  ws->factory("Chebychev::pol5_HI40100(Jpsi_Mass,{coeffPol1_HI40100, coeffPol2_HI40100, coeffPol3_HI40100, coeffPol4_HI40100, coeffPol5_HI40100[0.0,-1.0,1.0]})");
+  ws->factory("Chebychev::pol5_HI40100(Jpsi_Mass,{coeffPol1_HI40100, coeffPol2_HI40100, coeffPol3_HI40100, coeffPol4_HI40100, coeffPol5_HI40100[0.0]})");
   // 6th order polynomial
-  ws->factory("Chebychev::pol6_HI40100(Jpsi_Mass,{coeffPol1_HI40100, coeffPol2_HI40100, coeffPol3_HI40100, coeffPol4_HI40100, coeffPol5_HI40100, coeffPol6_HI40100[0.0,-1.0,1.0]})");
+  ws->factory("Chebychev::pol6_HI40100(Jpsi_Mass,{coeffPol1_HI40100, coeffPol2_HI40100, coeffPol3_HI40100, coeffPol4_HI40100, coeffPol5_HI40100, coeffPol6_HI40100[0.0]})");
+  // 7th order polynomial
+  ws->factory("Chebychev::pol7_HI40100(Jpsi_Mass,{coeffPol1_HI40100, coeffPol2_HI40100, coeffPol3_HI40100, coeffPol4_HI40100, coeffPol5_HI40100, coeffPol6_HI40100, coeffPol7_HI40100[0.0]})");
+  ws->var("coeffPol0_HI40100")->setConstant(true);
+  ws->var("coeffPol1_HI40100")->setConstant(false);
+  ws->var("coeffPol2_HI40100")->setConstant(false);
+  ws->var("coeffPol3_HI40100")->setConstant(false);
+  ws->var("coeffPol4_HI40100")->setConstant(false);
+  ws->var("coeffPol5_HI40100")->setConstant(false);
+  ws->var("coeffPol6_HI40100")->setConstant(false);
+  ws->var("coeffPol7_HI40100")->setConstant(false);
 
-  // expo
-  ws->factory("Exponential::expFunct_HI40100(Jpsi_Mass,coeffExp_HI40100[-0.1,-3.0,1.0])");
+  // 1st order polynomial in exponential function
+  ws->factory("Chebychev::expPol1Arg_HI40100(Jpsi_Mass,{expCoeffPol1_HI40100[-0.1]})");
+  ws->factory("Exponential::expPol1_HI40100(expPol1Arg_HI40100,expCoeffPol0_HI40100[1.0])");
 
-  // gauss
-  ws->factory("Gaussian::gausBkg_HI40100(Jpsi_Mass,meanBkg_HI40100[0.0,0.0,10.0],sigmaBkg_HI40100[1.0,0.5,5.0])");
+  // 2nd order polynomial in exponential function
+  ws->factory("Chebychev::expPol2Arg_HI40100(Jpsi_Mass,{expCoeffPol1_HI40100, expCoeffPol2_HI40100[0.0]})");
+  ws->factory("Exponential::expPol2_HI40100(expPol2Arg_HI40100,expCoeffPol0_HI40100)");
+
+  // 3rd order polynomial in exponential function
+  ws->factory("Chebychev::expPol3Arg_HI40100(Jpsi_Mass,{expCoeffPol1_HI40100, expCoeffPol2_HI40100, expCoeffPol3_HI40100[0.0]})");
+  ws->factory("Exponential::expPol3_HI40100(expPol3Arg_HI40100,expCoeffPol0_HI40100)");
+
+  // 3rd order polynomial in exponential function
+  ws->factory("Chebychev::expPol4Arg_HI40100(Jpsi_Mass,{expCoeffPol1_HI40100, expCoeffPol2_HI40100, expCoeffPol3_HI40100, expCoeffPol4_HI40100[0.0]})");
+  ws->factory("Exponential::expPol4_HI40100(expPol4Arg_HI40100,expCoeffPol0_HI40100)");
+
+  ws->var("expCoeffPol0_HI40100")->setConstant(true);
+  ws->var("expCoeffPol1_HI40100")->setConstant(false);
+  ws->var("expCoeffPol2_HI40100")->setConstant(false);
+  ws->var("expCoeffPol3_HI40100")->setConstant(false);
+  ws->var("expCoeffPol4_HI40100")->setConstant(false);
 
   return;
 }
