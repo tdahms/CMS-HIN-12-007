@@ -23,6 +23,7 @@
 #include <RooCategory.h>
 #include "RooGenericPdf.h"
 
+#include "RooAbsReal.h"
 #include "RooAbsPdf.h"
 #include "RooDataHist.h"
 
@@ -79,6 +80,7 @@ int main(int argc, char* argv[]) {
   bool fixN = true;
   bool fixGwidth = true; // only used in PbPb
   bool shareShape = false;
+  bool fitCentIntegrated = false;
 
   // *** Check options
   for (int i=1; i<argc; ++i) {
@@ -157,6 +159,10 @@ int main(int argc, char* argv[]) {
       case 's':
 	shareShape = atoi(argv[i+1]);
 	cout << "Use same shape for pp and PbPb: " << shareShape << endl;
+	break;
+      case 'x':
+	fitCentIntegrated = true;
+	cout << "Fit with double ratio in 0-100% centrality instead of 0-20%: " << fitCentIntegrated << endl;
 	break;
       case 'z':
 	isPaper = atoi(argv[i+1]);
@@ -398,7 +404,7 @@ int main(int argc, char* argv[]) {
   defineMassBkgHI(ws);
   defineMassSigHI(ws);
 
-  char funct[125];
+  char funct[250];
   string partTit, partFile;
   if (isGG == 0) { partTit = "glb-glb"; partFile = "GG"; }
   else if (isGG == 1) { partTit = "glb-trk"; partFile = "GT"; }
@@ -464,27 +470,128 @@ int main(int argc, char* argv[]) {
   RooRealVar *doubleRatio[nFiles-1];
   RooFormulaVar *fracP_HI[nFiles-1];
   RooFormulaVar *NPsiP_mix[nFiles-1];
+  RooRealVar *xi_shape[nFiles-1];
+  RooRealVar *xi_eff[nFiles-1];
+  RooRealVar *xi_pol[nFiles-1];
+  RooRealVar *xi_b[nFiles-1];
+  //  RooFormulaVar *xi[nFiles-1];
+
+  // formulate uncertainty as constraints
+  RooRealVar sigma_shape("sigma_shape","#sigma_{shape}",1.0);
+  RooRealVar sigma_eff("sigma_eff","#sigma_{eff}",1.0);
+  RooRealVar sigma_pol("sigma_pol","#sigma_{pol}",1.0);
+  RooRealVar sigma_b("sigma_b","#sigma_{b}",1.0);
+  // TODO: add conditions for pt and y bins
+  sigma_shape.setConstant(true);
+  sigma_eff.setConstant(true);
+  sigma_pol.setConstant(true);
+  sigma_b.setConstant(true);
+  sigma_shape.setVal(0.1);
+  sigma_eff.setVal(0.01);
+  sigma_pol.setVal(0.01);
+  sigma_b.setVal(0.1);
+  ws->import(sigma_shape);
+  ws->import(sigma_eff);
+  ws->import(sigma_pol);
+  ws->import(sigma_b);
+
+  RooFormulaVar *doubleRatio_HI020 = NULL;
 
   for (int i=nFiles-1; i>=0; --i) {
     NJpsi[i]  = new RooRealVar(("NJpsi_"+varSuffix.at(i)).c_str(),("J/psi yield in "+varSuffix.at(i)).c_str(),0.5*binData[i]->sumEntries(),0.0,2.0*binData[i]->sumEntries()); ws->import(*NJpsi[i]);
     
-    NBkg[i]  = new RooRealVar(("NBkg_"+varSuffix.at(i)).c_str(),("Brackground yield in "+varSuffix.at(i)).c_str(), 0.5*binData[i]->sumEntries(),0.0,2.0*binData[i]->sumEntries()); ws->import(*NBkg[i]);
+    NBkg[i]  = new RooRealVar(("NBkg_"+varSuffix.at(i)).c_str(),("Background yield in "+varSuffix.at(i)).c_str(), 0.5*binData[i]->sumEntries(),0.0,2.0*binData[i]->sumEntries()); ws->import(*NBkg[i]);
 
     if (i == (int)nFiles-1) {
       fracP_pp = new RooRealVar(("fracP_"+varSuffix.at(i)).c_str(),("psi(2S) fraction in "+varSuffix.at(i)).c_str(),0.01);
       fracP_pp->setConstant(false); ws->import(*fracP_pp);
-      NPsiP[i] = new RooFormulaVar(("NPsiP_"+varSuffix.at(i)).c_str(), "@0*@1", RooArgList(*(ws->var(("NJpsi_"+varSuffix.at(i)).c_str())),*(ws->var(("fracP_"+varSuffix.at(i)).c_str()))));  ws->import(*NPsiP[i]);
+      NPsiP[i] = new RooFormulaVar(("NPsiP_"+varSuffix.at(i)).c_str(), "@0*@1",
+				   RooArgList(*(ws->var(("NJpsi_"+varSuffix.at(i)).c_str())),
+					      *(ws->var(("fracP_"+varSuffix.at(i)).c_str()))));
+      ws->import(*NPsiP[i]);
     }
     else {
-      doubleRatio[i] = new RooRealVar(("doubleRatio_"+varSuffix.at(i)).c_str(),("psi(2S) double ratio in "+varSuffix.at(i)).c_str(),1.0);
-      doubleRatio[i]->setConstant(false); ws->import(*doubleRatio[i]);
+      if (fitCentIntegrated && i == 0 && nFiles==4) {
+	// 0-100%
+	doubleRatio[i] = new RooRealVar("doubleRatio_HI0100","psi(2S) double ratio in HI0100",1.0);
+	doubleRatio[i]->setConstant(false); ws->import(*doubleRatio[i]);
+	// we won't fit the double ratio for 0-20%...
+      }
+      else {
+	doubleRatio[i] = new RooRealVar(("doubleRatio_"+varSuffix.at(i)).c_str(),("psi(2S) double ratio in "+varSuffix.at(i)).c_str(),1.0);
+	doubleRatio[i]->setConstant(false); ws->import(*doubleRatio[i]);
+      }
+      // define "constant" nuisance parameters, which will be used to include systematic uncertainties for the CL calculations
+      xi_shape[i] = new RooRealVar(("xi_shape_"+varSuffix.at(i)).c_str(),("Nuisance parameter for shape uncertainty in "+varSuffix.at(i)).c_str(),1.0);
+      xi_shape[i]->setConstant(true); ws->import(*xi_shape[i]);
+      xi_eff[i] = new RooRealVar(("xi_eff_"+varSuffix.at(i)).c_str(),("Nuisance parameter for efficiency uncertainty in "+varSuffix.at(i)).c_str(),1.0);
+      xi_eff[i]->setConstant(true); ws->import(*xi_eff[i]);
+      xi_pol[i] = new RooRealVar(("xi_pol_"+varSuffix.at(i)).c_str(),("Nuisance parameter for polarisation uncertainty in "+varSuffix.at(i)).c_str(),1.0);
+      xi_pol[i]->setConstant(true); ws->import(*xi_pol[i]);
+      xi_b[i] = new RooRealVar(("xi_b_"+varSuffix.at(i)).c_str(),("Nuisance parameter for b contamination uncertainty in "+varSuffix.at(i)).c_str(),1.0);
+      xi_b[i]->setConstant(true); ws->import(*xi_b[i]);
 
-      fracP_HI[i] = new RooFormulaVar(("fracP_"+varSuffix.at(i)).c_str(), "@0*@1", RooArgList(*(ws->var(("doubleRatio_"+varSuffix.at(i)).c_str())),*(ws->var("fracP_pp")))); ws->import(*fracP_HI[i]);
+      // xi[i] = new RooFormulaVar(("xi_"+varSuffix.at(i)).c_str(), "@0*@1*@2*@3",
+      // 				RooArgList(*(ws->var(("xi_shape_"+varSuffix.at(i)).c_str())),
+      // 					   *(ws->var(("xi_eff_"+varSuffix.at(i)).c_str())),
+      // 					   *(ws->var(("xi_pol_"+varSuffix.at(i)).c_str())),
+      // 					   *(ws->var(("xi_b_"+varSuffix.at(i)).c_str()))));
+      // ws->import(*xi[i]);
 
-      NPsiP[i] = new RooFormulaVar(("NPsiP_"+varSuffix.at(i)).c_str(), "@0*@1", RooArgList(*(ws->var(("NJpsi_"+varSuffix.at(i)).c_str())),*(ws->function(("fracP_"+varSuffix.at(i)).c_str()))));  ws->import(*NPsiP[i]);
+      if (fitCentIntegrated && i==0 && nFiles==4) {
+	// Define quantities for 0-100%
+	RooFormulaVar *fracP_HI0100 = new RooFormulaVar("fracP_HI0100", "@0*@1",
+							RooArgList(*(ws->var("doubleRatio_HI0100")),
+								   *(ws->var("fracP_pp"))));
+	ws->import(*fracP_HI0100);
 
-      NPsiP_mix[i]  = new RooFormulaVar(("NPsiP_mix_"+varSuffix.at(i)).c_str(),"@0*@1",RooArgList(*(ws->var(("NJpsi_"+varSuffix.back()).c_str())),*(ws->function(("fracP_"+varSuffix.at(i)).c_str()))));   ws->import(*NPsiP_mix[i]);
+	RooFormulaVar *NJpsi_HI0100 = new RooFormulaVar("NJpsi_HI0100","(@0+@1+@2)",
+							RooArgList(*(ws->var(("NJpsi_"+varSuffix.at(0)).c_str())),
+								   *(ws->var(("NJpsi_"+varSuffix.at(1)).c_str())),
+								   *(ws->var(("NJpsi_"+varSuffix.at(2)).c_str()))));
+	ws->import(*NJpsi_HI0100);
+
+	RooFormulaVar *NPsiP_HI0100 = new RooFormulaVar("NPsiP_HI0100", "@0*@1",
+							RooArgList(*(ws->function("NJpsi_HI0100")),
+								   *(ws->function("fracP_HI0100"))));
+	ws->import(*NPsiP_HI0100);
+
+	// Now calculate all numbers for 0-20%
+	NPsiP[i] = new RooFormulaVar(("NPsiP_"+varSuffix.at(i)).c_str(), "@0-(@1+@2)",
+				     RooArgList(*(ws->function("NPsiP_HI0100")),
+						*(ws->function(("NPsiP_"+varSuffix.at(1)).c_str())),
+						*(ws->function(("NPsiP_"+varSuffix.at(2)).c_str()))));
+	ws->import(*NPsiP[i]);
+
+	fracP_HI[i] = new RooFormulaVar(("fracP_"+varSuffix.at(i)).c_str(), "@0/@1",
+					RooArgList(*(ws->function(("NPsiP_"+varSuffix.at(i)).c_str())),
+						   *(ws->var(("NJpsi_"+varSuffix.at(i)).c_str()))));
+	ws->import(*fracP_HI[i]);
+	
+	doubleRatio_HI020 = new RooFormulaVar("doubleRatio_HI020","@0/@1",
+					      RooArgList(*(ws->function(("fracP_"+varSuffix.at(i)).c_str())),
+							 *(ws->var("fracP_pp"))));
+	ws->import(*doubleRatio_HI020);
+      }
+      else {
+	fracP_HI[i] = new RooFormulaVar(("fracP_"+varSuffix.at(i)).c_str(), "@0*@1",
+					RooArgList(*(ws->var(("doubleRatio_"+varSuffix.at(i)).c_str())),
+						   // *(ws->function(("xi_"+varSuffix.at(i)).c_str())),
+						   *(ws->var("fracP_pp"))));
+	ws->import(*fracP_HI[i]);
+
+	NPsiP[i] = new RooFormulaVar(("NPsiP_"+varSuffix.at(i)).c_str(), "@0*@1",
+				     RooArgList(*(ws->var(("NJpsi_"+varSuffix.at(i)).c_str())),
+						*(ws->function(("fracP_"+varSuffix.at(i)).c_str()))));
+	ws->import(*NPsiP[i]);
+      }
+
+      NPsiP_mix[i]  = new RooFormulaVar(("NPsiP_mix_"+varSuffix.at(i)).c_str(),"@0*@1",
+					RooArgList(*(ws->var(("NJpsi_"+varSuffix.back()).c_str())),
+						   *(ws->function(("fracP_"+varSuffix.at(i)).c_str()))));
+      ws->import(*NPsiP_mix[i]);
     }
+
 
     if (shareShape || i == (int)nFiles-1)
       sprintf(funct,"SUM::sigMassPDF_%s(NJpsi_%s*%s,NPsiP_%s*%s,NBkg_%s*%s)",
@@ -495,8 +602,17 @@ int main(int argc, char* argv[]) {
 	      mPsiPFunct.c_str(),
 	      varSuffix.at(i).c_str(),
 	      mBkgFunct.at(i).c_str());
+    else if (shareShape && i < (int)nFiles-1)
+      sprintf(funct,"SUM::pdf_%s(NJpsi_%s*%s,NPsiP_%s*%s,NBkg_%s*%s)",
+	      varSuffix.at(i).c_str(),
+	      varSuffix.at(i).c_str(),
+	      mJpsiFunct.c_str(),
+	      varSuffix.at(i).c_str(),
+	      mPsiPFunct.c_str(),
+	      varSuffix.at(i).c_str(),
+	      mBkgFunct.at(i).c_str());
     else
-      sprintf(funct,"SUM::sigMassPDF_%s(NJpsi_%s*%s_%s,NPsiP_%s*%s_%s,NBkg_%s*%s)",
+      sprintf(funct,"SUM::pdf_%s(NJpsi_%s*%s_%s,NPsiP_%s*%s_%s,NBkg_%s*%s)",
 	      varSuffix.at(i).c_str(),
 	      varSuffix.at(i).c_str(),
 	      mJpsiFunct.c_str(),"HI",
@@ -507,8 +623,32 @@ int main(int argc, char* argv[]) {
     
     cout << funct << endl;
     ws->factory(funct);
-    
+
     if (i < (int)nFiles-1) {
+      sigma_shape.setVal(0.1);
+      sigma_eff.setVal(0.01);
+      sigma_pol.setVal(0.01);
+      sigma_b.setVal(0.1);
+
+      sprintf(funct,"Gaussian:constraint_shape_%s(xi_shape_%s,1.0,sigma_shape)", varSuffix.at(i).c_str(), varSuffix.at(i).c_str());
+      ws->factory(funct);
+      sprintf(funct,"Gaussian:constraint_eff_%s(xi_eff_%s,1.0,sigma_eff)", varSuffix.at(i).c_str(), varSuffix.at(i).c_str());
+      ws->factory(funct);
+      sprintf(funct,"Gaussian:constraint_pol_%s(xi_pol_%s,1.0,sigma_pol)", varSuffix.at(i).c_str(), varSuffix.at(i).c_str());
+      ws->factory(funct);
+      sprintf(funct,"Gaussian:constraint_b_%s(xi_b_%s,1.0,sigma_b)", varSuffix.at(i).c_str(), varSuffix.at(i).c_str());
+      ws->factory(funct);
+
+      sprintf(funct,"PROD:sigMassPDF_%s(pdf_%s,constraint_shape_%s,constraint_eff_%s,constraint_pol_%s,constraint_b_%s)",
+	      varSuffix.at(i).c_str(),
+	      varSuffix.at(i).c_str(),
+	      varSuffix.at(i).c_str(),
+	      varSuffix.at(i).c_str(),
+	      varSuffix.at(i).c_str(),
+	      varSuffix.at(i).c_str());
+      cout << funct << endl;
+      ws->factory(funct);
+
       // for testing: use PbPb shape
       // sprintf(funct,"SUM::sigMassPDF_mix_%s(NJpsi_pp*%s_%s,NPsiP_pp*%s_%s,NBkg_pp*%s)",
       // 	      varSuffix.at(i).c_str(),
@@ -646,6 +786,19 @@ int main(int argc, char* argv[]) {
     set->readFromFile(inputFNcb.c_str());
     cout << "Import variable values from: " << inputFNcb << endl;
     ws->import(*set);
+
+    if (!fixAlpha) {
+      ws->var("alpha")->setConstant(kFALSE);
+      ws->var("alpha_HI")->setConstant(kFALSE);
+    }
+    if (!fixN) {
+      ws->var("enne")->setConstant(kFALSE);
+      ws->var("enne_HI")->setConstant(kFALSE);
+    }
+    if (!fixGwidth) {
+      ws->var("wideFactor")->setConstant(kFALSE);
+      ws->var("wideFactor_HI")->setConstant(kFALSE);
+    }
   }
 
   fitM = ws->pdf("sigMassPDFSim")->fitTo(*redDataSim,Extended(1),Hesse(1),Minos(0),Save(1),SumW2Error(0),NumCPU(8),PrintEvalErrors(0),Verbose(0));
@@ -997,18 +1150,23 @@ int main(int argc, char* argv[]) {
     mframe[i]->addObject(lNJpsi,"");
 
     if (isPbPb) {
+      // if (!(fitCentIntegrated && i==0)) {
       name = "doubleRatio_"+varSuffix.at(i);
       
-      double DoubleRatio = ws->var(name.c_str())->getVal();
-      double fracP_pp = ws->var("fracP_pp")->getVal();
-      double errDoubleRatio = ws->var(name.c_str())->getError();
-      double errFracP_pp = ws->var("fracP_pp")->getError();
-      double corr = fitM->correlation( *ws->var(name.c_str()) , *ws->var("fracP_pp") );
-      std::cout << "Correlation between double ratio and fracP_pp: " << corr << std::endl;
+      // double DoubleRatio = ws->var(name.c_str())->getVal();
+      // double fracP_pp = ws->var("fracP_pp")->getVal();
+      // double errDoubleRatio = ws->var(name.c_str())->getError();
+      // double errFracP_pp = ws->var("fracP_pp")->getError();
+      // double corr = fitM->correlation( *ws->var(name.c_str()) , *ws->var("fracP_pp") );
+      // std::cout << "Correlation between double ratio and fracP_pp: " << corr << std::endl;
       double fracP_HI = ws->function( ("fracP_"+varSuffix.at(i)).c_str())->getVal();
-      double errFracP_HI = sqrt( pow(errDoubleRatio/DoubleRatio,2) + pow(errFracP_pp/fracP_pp,2) + 2*errDoubleRatio*errFracP_pp*corr/fracP_HI )*fracP_HI;
+      //	double errFracP_HI = sqrt( pow(errDoubleRatio/DoubleRatio,2) + pow(errFracP_pp/fracP_pp,2) + 2*errDoubleRatio*errFracP_pp*corr/fracP_HI )*fracP_HI;
+      double errFracP_HI = ws->function( ("fracP_"+varSuffix.at(i)).c_str())->getPropagatedError(*fitM);
 
       sprintf(reduceDS,"R_{#psi(2S)} = %0.3f #pm %0.3f",fracP_HI,errFracP_HI);
+      // }
+      // else
+      // 	sprintf(reduceDS,"R_{#psi(2S)} = %0.3f",ws->function( ("fracP_"+varSuffix.at(i)).c_str())->getVal());
     }
     else {
       name = "fracP_pp";
@@ -1022,21 +1180,25 @@ int main(int argc, char* argv[]) {
     mframe[i]->addObject(lRpsi,"");
 
     if (!isPbPb) {
-      double NJpsi = ws->var("NJpsi_pp")->getVal();
-      double fracP = ws->var("fracP_pp")->getVal();
-      double errNJpsi = ws->var("NJpsi_pp")->getError();
-      double errFracP = ws->var("fracP_pp")->getError();
-      double corr = fitM->correlation( *ws->var("NJpsi_pp") , *ws->var("fracP_pp") );
-      std::cout << "Correlation between NJpsi and fracP_pp: " << corr << std::endl;
+      // double NJpsi = ws->var("NJpsi_pp")->getVal();
+      // double fracP = ws->var("fracP_pp")->getVal();
+      // double errNJpsi = ws->var("NJpsi_pp")->getError();
+      // double errFracP = ws->var("fracP_pp")->getError();
+      // double corr = fitM->correlation( *ws->var("NJpsi_pp") , *ws->var("fracP_pp") );
+      // std::cout << "Correlation between NJpsi and fracP_pp: " << corr << std::endl;
       double Npsi2S = ws->function("NPsiP_pp")->getVal();
-      double errNpsi2S = sqrt( pow(errNJpsi/NJpsi,2) + pow(errFracP/fracP,2) + 2*errNJpsi*errFracP*corr/Npsi2S )*Npsi2S;
+      //      double errNpsi2S = sqrt( pow(errNJpsi/NJpsi,2) + pow(errFracP/fracP,2) + 2*errNJpsi*errFracP*corr/Npsi2S )*Npsi2S;
+      double errNpsi2S = ws->function("NPsiP_pp")->getPropagatedError(*fitM);
       // if (ws->var("fracP")->hasAsymError() && abs(-1.0*ws->var("fracP")->getErrorLo()/ws->var("fracP")->getErrorHi() - 1)>0.1)
       //   sprintf(reduceDS,"N_{#psi(2S)} = %0.1f^{+%0.1f}_{%0.1f}",ws->function("NPsiP")->getVal(),ws->var("fracP")->getErrorHi()*ws->var("NJpsi")->getVal(),ws->var("fracP")->getErrorLo()*ws->var("NJpsi")->getVal());
       // else
       sprintf(reduceDS,"N_{#psi(2S)} = %0.1f #pm %0.1f",Npsi2S,errNpsi2S);
     }
     else {
-      sprintf(reduceDS,"#chi_{#psi(2S)} = %0.3f #pm %0.3f",ws->var(("doubleRatio_"+varSuffix.at(i)).c_str())->getVal(),ws->var(("doubleRatio_"+varSuffix.at(i)).c_str())->getError());
+      if (!(fitCentIntegrated && i==0))
+	sprintf(reduceDS,"#chi_{#psi(2S)} = %0.3f #pm %0.3f",ws->var(("doubleRatio_"+varSuffix.at(i)).c_str())->getVal(),ws->var(("doubleRatio_"+varSuffix.at(i)).c_str())->getError());
+      else
+	sprintf(reduceDS,"#chi_{#psi(2S)} = %0.3f #pm %0.3f",ws->function(("doubleRatio_"+varSuffix.at(i)).c_str())->getVal(),ws->function(("doubleRatio_"+varSuffix.at(i)).c_str())->getPropagatedError(*fitM));
     }
     lNpsiP->SetText(0.62,0.70,reduceDS);
     mframe[i]->addObject(lNpsiP,"");
@@ -1238,7 +1400,11 @@ int main(int argc, char* argv[]) {
   for (unsigned int i=0;i<nFiles-1;++i) {
     model[i] = new RooStats::ModelConfig(("model_"+varSuffix.at(i)).c_str(),ws);
     model[i]->SetPdf(*ws->pdf("sigMassPDFSim"));
-    model[i]->SetParametersOfInterest(*ws->var(("doubleRatio_"+varSuffix.at(i)).c_str()));
+    if (!(fitCentIntegrated && i==0))
+      model[i]->SetParametersOfInterest(*ws->var(("doubleRatio_"+varSuffix.at(i)).c_str()));
+    else
+      model[i]->SetParametersOfInterest(*ws->var("doubleRatio_HI0100"));
+
     model[i]->SetObservables(RooArgSet(*ws->var("Jpsi_Mass"),*ws->cat("sample")));
 
     RooArgSet *pars = ws->pdf("sigMassPDFSim")->getParameters(redData[nFiles-1]);
@@ -1246,19 +1412,34 @@ int main(int argc, char* argv[]) {
     cout << "All Parameters:" << endl;
     pars->Print("v");
     nuisances[i] = new RooArgSet(*pars);
-    nuisances[i]->remove(*ws->var(("doubleRatio_"+varSuffix.at(i)).c_str()));
+    if (!(fitCentIntegrated && i==0))
+      nuisances[i]->remove(*ws->var(("doubleRatio_"+varSuffix.at(i)).c_str()));
+    else
+      nuisances[i]->remove(*ws->var("doubleRatio_HI0100"));
+
     nuisances[i]->remove(*ws->cat("sample"));
+    nuisances[i]->remove(*ws->var(("xi_shape_"+varSuffix.at(i)).c_str()));
+    nuisances[i]->remove(*ws->var(("xi_eff_"+varSuffix.at(i)).c_str()));
+    nuisances[i]->remove(*ws->var(("xi_pol_"+varSuffix.at(i)).c_str()));
+    nuisances[i]->remove(*ws->var(("xi_b_"+varSuffix.at(i)).c_str()));
+
     cout << "Nuisance Parameters:" << endl;
     nuisances[i]->Print("v");
     ws->defineSet(("nuisParameters_"+varSuffix.at(i)).c_str(),*nuisances[i]);
     model[i]->SetNuisanceParameters(*ws->set(("nuisParameters_"+varSuffix.at(i)).c_str()));
+
+    // these are the systematic uncertainties
+    model[i]->SetGlobalObservables(RooArgSet(*ws->var(("xi_shape_"+varSuffix.at(i)).c_str()),
+					     *ws->var(("xi_eff_"+varSuffix.at(i)).c_str()),
+					     *ws->var(("xi_pol_"+varSuffix.at(i)).c_str()),
+					     *ws->var(("xi_b_"+varSuffix.at(i)).c_str())));
+
     RooRealVar* poi = (RooRealVar*) model[i]->GetParametersOfInterest()->first();
     double tmp_poi = poi->getVal();
     model[i]->SetSnapshot(*poi);
 
     ws->import(*model[i]);
-
-
+    
     bmodel[i] = (RooStats::ModelConfig*)model[i]->Clone(("bmodel_"+varSuffix.at(i)).c_str());
     bmodel[i]->SetName(("B_only_model_"+varSuffix.at(i)).c_str());
     poi->setVal(1.0);
@@ -1301,16 +1482,29 @@ int main(int argc, char* argv[]) {
     ErrNBkg_fin[i] = ws->var(name.c_str())->getError();
 
     if (i<nFiles-1) {
-      name = "doubleRatio_"+varSuffix.at(i);
+      if (!(fitCentIntegrated && i==0))
+	name = "doubleRatio_"+varSuffix.at(i);
+      else
+	name = "doubleRatio_HI0100";
+
       DoubleRatio_fin[i] = ws->var(name.c_str())->getVal();
       ErrDoubleRatio_fin[i] = ws->var(name.c_str())->getError();
       name = "fracP_"+varSuffix.at(i);
 
-      double fracP_pp = ws->var("fracP_pp")->getVal();
-      double errFracP_pp = ws->var("fracP_pp")->getError();
-      double corr = fitM->correlation( *ws->var(("doubleRatio_"+varSuffix.at(i)).c_str()) , *ws->var("fracP_pp") );
+      // double fracP_pp = ws->var("fracP_pp")->getVal();
+      // double errFracP_pp = ws->var("fracP_pp")->getError();
+      // double corr;
+      // if (!(fitCentIntegrated && i==0)) {
+      // 	corr = fitM->correlation( *ws->var(("doubleRatio_"+varSuffix.at(i)).c_str()) , *ws->var("fracP_pp") );
+      // 	fracP_fin[i] = ws->function(("fracP_"+varSuffix.at(i)).c_str())->getVal();
+      // }
+      // else {
+      // 	corr = fitM->correlation( *ws->var("doubleRatio_HI0100"), *ws->var("fracP_pp") );
+      // 	fracP_fin[i] = ws->function("fracP_HI0100")->getVal();
+      // }
+      //      ErrFracP_fin[i] = sqrt( pow(ErrDoubleRatio_fin[i]/DoubleRatio_fin[i],2) + pow(errFracP_pp/fracP_pp,2) + 2*ErrDoubleRatio_fin[i]*errFracP_pp*corr/fracP_fin[i] )*fracP_fin[i];
       fracP_fin[i] = ws->function(("fracP_"+varSuffix.at(i)).c_str())->getVal();
-      ErrFracP_fin[i] = sqrt( pow(ErrDoubleRatio_fin[i]/DoubleRatio_fin[i],2) + pow(errFracP_pp/fracP_pp,2) + 2*ErrDoubleRatio_fin[i]*errFracP_pp*corr/fracP_fin[i] )*fracP_fin[i];
+      ErrFracP_fin[i] = ws->function(("fracP_"+varSuffix.at(i)).c_str())->getPropagatedError(*fitM);
     }
     else {
       name = "fracP_pp";
@@ -1321,17 +1515,30 @@ int main(int argc, char* argv[]) {
   
   // To check values of fit parameters
   cout << endl << "J/psi yields:\n" << endl;
+  if (fitCentIntegrated) {
+    cout << "HI0100:" << endl;
+    cout << "---------------------" << endl;
+    cout << "NJpsi: " << ws->function("NJpsi_HI0100")->getVal() << " +/- " << ws->function("NJpsi_HI0100")->getPropagatedError(*fitM) << endl;
+    cout << "R_psi(2S): " << ws->function("fracP_HI0100")->getVal() << " +/- " << ws->function("fracP_HI0100")->getPropagatedError(*fitM) << endl;
+    cout << "Double Ratio: " << ws->var("doubleRatio_HI0100")->getVal() << " +/- " << ws->var("doubleRatio_HI0100")->getError() << endl;
+    cout << endl;
+  }
+
   for (unsigned int i=0; i<nFiles; i++) {
     cout << varSuffix.at(i) << ":"<< endl;
     cout << "---------------------" << endl;
     cout << "NBkg: "  << NBkg_fin[i] << " +/- " << ErrNBkg_fin[i] << endl;
     cout << "NJpsi: " << NJpsi_fin[i] << " +/- " << ErrNJpsi_fin[i] << endl;
     cout << "R_psi(2S) Fit: "  << fracP_fin[i] << " +/- " << ErrFracP_fin[i] << endl;
-    if (i<nFiles-1)
-      cout << "Double Ratio: " << DoubleRatio_fin[i] << " +/- " << ErrDoubleRatio_fin[i] << endl;
+    if (i<nFiles-1) {
+      if (fitCentIntegrated && i==0)
+	cout << "Double Ratio: " << ws->function("doubleRatio_HI020")->getVal() << " +/- " << ws->function("doubleRatio_HI020")->getPropagatedError(*fitM) << endl;
+      else
+	cout << "Double Ratio: " << DoubleRatio_fin[i] << " +/- " << ErrDoubleRatio_fin[i] << endl;
+    }
     cout << endl;
   }
- 
+  
   for (unsigned int i=0; i<nFiles; ++i) {
     fInData[i]->Close();
   }
@@ -1388,24 +1595,33 @@ void defineMassBkg(RooWorkspace *ws) {
   // 1st order polynomial in exponential function
   ws->factory("Chebychev::expPol1Arg(Jpsi_Mass,{expCoeffPol1[-0.1]})");
   ws->factory("Exponential::expPol1(expPol1Arg,expCoeffPol0[1.0])");
-
   // 2nd order polynomial in exponential function
   ws->factory("Chebychev::expPol2Arg(Jpsi_Mass,{expCoeffPol1, expCoeffPol2[0.0]})");
   ws->factory("Exponential::expPol2(expPol2Arg,expCoeffPol0)");
-
   // 3rd order polynomial in exponential function
   ws->factory("Chebychev::expPol3Arg(Jpsi_Mass,{expCoeffPol1, expCoeffPol2, expCoeffPol3[0.0]})");
   ws->factory("Exponential::expPol3(expPol3Arg,expCoeffPol0)");
-
-  // 3rd order polynomial in exponential function
+  // 4th order polynomial in exponential function
   ws->factory("Chebychev::expPol4Arg(Jpsi_Mass,{expCoeffPol1, expCoeffPol2, expCoeffPol3, expCoeffPol4[0.0]})");
   ws->factory("Exponential::expPol4(expPol4Arg,expCoeffPol0)");
+  // 5th order polynomial in exponential function
+  ws->factory("Chebychev::expPol5Arg(Jpsi_Mass,{expCoeffPol1, expCoeffPol2, expCoeffPol3, expCoeffPol4, expCoeffPol5[0.0]})");
+  ws->factory("Exponential::expPol5(expPol5Arg,expCoeffPol0)");
+  // 6th order polynomial in exponential function
+  ws->factory("Chebychev::expPol6Arg(Jpsi_Mass,{expCoeffPol1, expCoeffPol2, expCoeffPol3, expCoeffPol4, expCoeffPol5, expCoeffPol6[0.0]})");
+  ws->factory("Exponential::expPol6(expPol6Arg,expCoeffPol0)");
+  // 7th order polynomial in exponential function
+  ws->factory("Chebychev::expPol7Arg(Jpsi_Mass,{expCoeffPol1, expCoeffPol2, expCoeffPol3, expCoeffPol4, expCoeffPol5, expCoeffPol6, expCoeffPol7[0.0]})");
+  ws->factory("Exponential::expPol7(expPol7Arg,expCoeffPol0)");
 
   ws->var("expCoeffPol0")->setConstant(true);
   ws->var("expCoeffPol1")->setConstant(false);
   ws->var("expCoeffPol2")->setConstant(false);
   ws->var("expCoeffPol3")->setConstant(false);
   ws->var("expCoeffPol4")->setConstant(false);
+  ws->var("expCoeffPol5")->setConstant(false);
+  ws->var("expCoeffPol6")->setConstant(false);
+  ws->var("expCoeffPol7")->setConstant(false);
 
   return;
 }
@@ -1474,24 +1690,33 @@ void defineMassBkgHI(RooWorkspace *ws) {
   // 1st order polynomial in exponential function
   ws->factory("Chebychev::expPol1Arg_HI(Jpsi_Mass,{expCoeffPol1_HI[-0.1]})");
   ws->factory("Exponential::expPol1_HI(expPol1Arg_HI,expCoeffPol0_HI[1.0])");
-
   // 2nd order polynomial in exponential function
   ws->factory("Chebychev::expPol2Arg_HI(Jpsi_Mass,{expCoeffPol1_HI, expCoeffPol2_HI[0.0]})");
   ws->factory("Exponential::expPol2_HI(expPol2Arg_HI,expCoeffPol0_HI)");
-
   // 3rd order polynomial in exponential function
   ws->factory("Chebychev::expPol3Arg_HI(Jpsi_Mass,{expCoeffPol1_HI, expCoeffPol2_HI, expCoeffPol3_HI[0.0]})");
   ws->factory("Exponential::expPol3_HI(expPol3Arg_HI,expCoeffPol0_HI)");
-
-  // 3rd order polynomial in exponential function
+  // 4th order polynomial in exponential function
   ws->factory("Chebychev::expPol4Arg_HI(Jpsi_Mass,{expCoeffPol1_HI, expCoeffPol2_HI, expCoeffPol3_HI, expCoeffPol4_HI[0.0]})");
   ws->factory("Exponential::expPol4_HI(expPol4Arg_HI,expCoeffPol0_HI)");
+  // 5th order polynomial in exponential function
+  ws->factory("Chebychev::expPol5Arg_HI(Jpsi_Mass,{expCoeffPol1_HI, expCoeffPol2_HI, expCoeffPol3_HI, expCoeffPol4_HI, expCoeffPol5_HI[0.0]})");
+  ws->factory("Exponential::expPol5_HI(expPol5Arg_HI,expCoeffPol0_HI)");
+  // 6th order polynomial in exponential function
+  ws->factory("Chebychev::expPol6Arg_HI(Jpsi_Mass,{expCoeffPol1_HI, expCoeffPol2_HI, expCoeffPol3_HI, expCoeffPol4_HI, expCoeffPol5_HI, expCoeffPol6_HI[0.0]})");
+  ws->factory("Exponential::expPol6_HI(expPol6Arg_HI,expCoeffPol0_HI)");
+  // 7th order polynomial in exponential function
+  ws->factory("Chebychev::expPol7Arg_HI(Jpsi_Mass,{expCoeffPol1_HI, expCoeffPol2_HI, expCoeffPol3_HI, expCoeffPol4_HI, expCoeffPol5_HI, expCoeffPol6_HI, expCoeffPol7_HI[0.0]})");
+  ws->factory("Exponential::expPol7_HI(expPol7Arg_HI,expCoeffPol0_HI)");
 
   ws->var("expCoeffPol0_HI")->setConstant(true);
   ws->var("expCoeffPol1_HI")->setConstant(false);
   ws->var("expCoeffPol2_HI")->setConstant(false);
   ws->var("expCoeffPol3_HI")->setConstant(false);
   ws->var("expCoeffPol4_HI")->setConstant(false);
+  ws->var("expCoeffPol5_HI")->setConstant(false);
+  ws->var("expCoeffPol6_HI")->setConstant(false);
+  ws->var("expCoeffPol7_HI")->setConstant(false);
 
 
   // 0-20%
@@ -1523,25 +1748,33 @@ void defineMassBkgHI(RooWorkspace *ws) {
   // 1st order polynomial in exponential function
   ws->factory("Chebychev::expPol1Arg_HI020(Jpsi_Mass,{expCoeffPol1_HI020[-0.1]})");
   ws->factory("Exponential::expPol1_HI020(expPol1Arg_HI020,expCoeffPol0_HI020[1.0])");
-
   // 2nd order polynomial in exponential function
   ws->factory("Chebychev::expPol2Arg_HI020(Jpsi_Mass,{expCoeffPol1_HI020, expCoeffPol2_HI020[0.0]})");
   ws->factory("Exponential::expPol2_HI020(expPol2Arg_HI020,expCoeffPol0_HI020)");
-
   // 3rd order polynomial in exponential function
   ws->factory("Chebychev::expPol3Arg_HI020(Jpsi_Mass,{expCoeffPol1_HI020, expCoeffPol2_HI020, expCoeffPol3_HI020[0.0]})");
   ws->factory("Exponential::expPol3_HI020(expPol3Arg_HI020,expCoeffPol0_HI020)");
-
-  // 3rd order polynomial in exponential function
+  // 4th order polynomial in exponential function
   ws->factory("Chebychev::expPol4Arg_HI020(Jpsi_Mass,{expCoeffPol1_HI020, expCoeffPol2_HI020, expCoeffPol3_HI020, expCoeffPol4_HI020[0.0]})");
   ws->factory("Exponential::expPol4_HI020(expPol4Arg_HI020,expCoeffPol0_HI020)");
+  // 5th order polynomial in exponential function
+  ws->factory("Chebychev::expPol5Arg_HI020(Jpsi_Mass,{expCoeffPol1_HI020, expCoeffPol2_HI020, expCoeffPol3_HI020, expCoeffPol4_HI020, expCoeffPol5_HI020[0.0]})");
+  ws->factory("Exponential::expPol5_HI020(expPol5Arg_HI020,expCoeffPol0_HI020)");
+  // 6th order polynomial in exponential function
+  ws->factory("Chebychev::expPol6Arg_HI020(Jpsi_Mass,{expCoeffPol1_HI020, expCoeffPol2_HI020, expCoeffPol3_HI020, expCoeffPol4_HI020, expCoeffPol5_HI020, expCoeffPol6_HI020[0.0]})");
+  ws->factory("Exponential::expPol6_HI020(expPol6Arg_HI020,expCoeffPol0_HI020)");
+  // 7th order polynomial in exponential function
+  ws->factory("Chebychev::expPol7Arg_HI020(Jpsi_Mass,{expCoeffPol1_HI020, expCoeffPol2_HI020, expCoeffPol3_HI020, expCoeffPol4_HI020, expCoeffPol5_HI020, expCoeffPol6_HI020, expCoeffPol7_HI020[0.0]})");
+  ws->factory("Exponential::expPol7_HI020(expPol7Arg_HI020,expCoeffPol0_HI020)");
 
   ws->var("expCoeffPol0_HI020")->setConstant(true);
   ws->var("expCoeffPol1_HI020")->setConstant(false);
   ws->var("expCoeffPol2_HI020")->setConstant(false);
   ws->var("expCoeffPol3_HI020")->setConstant(false);
   ws->var("expCoeffPol4_HI020")->setConstant(false);
-
+  ws->var("expCoeffPol5_HI020")->setConstant(false);
+  ws->var("expCoeffPol6_HI020")->setConstant(false);
+  ws->var("expCoeffPol7_HI020")->setConstant(false);
 
   // 20-40%
   // 0th order polynomial
@@ -1572,24 +1805,33 @@ void defineMassBkgHI(RooWorkspace *ws) {
   // 1st order polynomial in exponential function
   ws->factory("Chebychev::expPol1Arg_HI2040(Jpsi_Mass,{expCoeffPol1_HI2040[-0.1]})");
   ws->factory("Exponential::expPol1_HI2040(expPol1Arg_HI2040,expCoeffPol0_HI2040[1.0])");
-
   // 2nd order polynomial in exponential function
   ws->factory("Chebychev::expPol2Arg_HI2040(Jpsi_Mass,{expCoeffPol1_HI2040, expCoeffPol2_HI2040[0.0]})");
   ws->factory("Exponential::expPol2_HI2040(expPol2Arg_HI2040,expCoeffPol0_HI2040)");
-
   // 3rd order polynomial in exponential function
   ws->factory("Chebychev::expPol3Arg_HI2040(Jpsi_Mass,{expCoeffPol1_HI2040, expCoeffPol2_HI2040, expCoeffPol3_HI2040[0.0]})");
   ws->factory("Exponential::expPol3_HI2040(expPol3Arg_HI2040,expCoeffPol0_HI2040)");
-
-  // 3rd order polynomial in exponential function
+  // 4th order polynomial in exponential function
   ws->factory("Chebychev::expPol4Arg_HI2040(Jpsi_Mass,{expCoeffPol1_HI2040, expCoeffPol2_HI2040, expCoeffPol3_HI2040, expCoeffPol4_HI2040[0.0]})");
   ws->factory("Exponential::expPol4_HI2040(expPol4Arg_HI2040,expCoeffPol0_HI2040)");
+  // 5th order polynomial in exponential function
+  ws->factory("Chebychev::expPol5Arg_HI2040(Jpsi_Mass,{expCoeffPol1_HI2040, expCoeffPol2_HI2040, expCoeffPol3_HI2040, expCoeffPol4_HI2040, expCoeffPol5_HI2040[0.0]})");
+  ws->factory("Exponential::expPol5_HI2040(expPol5Arg_HI2040,expCoeffPol0_HI2040)");
+  // 6th order polynomial in exponential function
+  ws->factory("Chebychev::expPol6Arg_HI2040(Jpsi_Mass,{expCoeffPol1_HI2040, expCoeffPol2_HI2040, expCoeffPol3_HI2040, expCoeffPol4_HI2040, expCoeffPol5_HI2040, expCoeffPol6_HI2040[0.0]})");
+  ws->factory("Exponential::expPol6_HI2040(expPol6Arg_HI2040,expCoeffPol0_HI2040)");
+  // 7th order polynomial in exponential function
+  ws->factory("Chebychev::expPol7Arg_HI2040(Jpsi_Mass,{expCoeffPol1_HI2040, expCoeffPol2_HI2040, expCoeffPol3_HI2040, expCoeffPol4_HI2040, expCoeffPol5_HI2040, expCoeffPol6_HI2040, expCoeffPol7_HI2040[0.0]})");
+  ws->factory("Exponential::expPol7_HI2040(expPol7Arg_HI2040,expCoeffPol0_HI2040)");
 
   ws->var("expCoeffPol0_HI2040")->setConstant(true);
   ws->var("expCoeffPol1_HI2040")->setConstant(false);
   ws->var("expCoeffPol2_HI2040")->setConstant(false);
   ws->var("expCoeffPol3_HI2040")->setConstant(false);
   ws->var("expCoeffPol4_HI2040")->setConstant(false);
+  ws->var("expCoeffPol5_HI2040")->setConstant(false);
+  ws->var("expCoeffPol6_HI2040")->setConstant(false);
+  ws->var("expCoeffPol7_HI2040")->setConstant(false);
 
 
   // 40-100%
@@ -1621,24 +1863,33 @@ void defineMassBkgHI(RooWorkspace *ws) {
   // 1st order polynomial in exponential function
   ws->factory("Chebychev::expPol1Arg_HI40100(Jpsi_Mass,{expCoeffPol1_HI40100[-0.1]})");
   ws->factory("Exponential::expPol1_HI40100(expPol1Arg_HI40100,expCoeffPol0_HI40100[1.0])");
-
   // 2nd order polynomial in exponential function
   ws->factory("Chebychev::expPol2Arg_HI40100(Jpsi_Mass,{expCoeffPol1_HI40100, expCoeffPol2_HI40100[0.0]})");
   ws->factory("Exponential::expPol2_HI40100(expPol2Arg_HI40100,expCoeffPol0_HI40100)");
-
   // 3rd order polynomial in exponential function
   ws->factory("Chebychev::expPol3Arg_HI40100(Jpsi_Mass,{expCoeffPol1_HI40100, expCoeffPol2_HI40100, expCoeffPol3_HI40100[0.0]})");
   ws->factory("Exponential::expPol3_HI40100(expPol3Arg_HI40100,expCoeffPol0_HI40100)");
-
-  // 3rd order polynomial in exponential function
+  // 4th order polynomial in exponential function
   ws->factory("Chebychev::expPol4Arg_HI40100(Jpsi_Mass,{expCoeffPol1_HI40100, expCoeffPol2_HI40100, expCoeffPol3_HI40100, expCoeffPol4_HI40100[0.0]})");
   ws->factory("Exponential::expPol4_HI40100(expPol4Arg_HI40100,expCoeffPol0_HI40100)");
+  // 5th order polynomial in exponential function
+  ws->factory("Chebychev::expPol5Arg_HI40100(Jpsi_Mass,{expCoeffPol1_HI40100, expCoeffPol2_HI40100, expCoeffPol3_HI40100, expCoeffPol4_HI40100, expCoeffPol5_HI40100[0.0]})");
+  ws->factory("Exponential::expPol5_HI40100(expPol5Arg_HI40100,expCoeffPol0_HI40100)");
+  // 6th order polynomial in exponential function
+  ws->factory("Chebychev::expPol6Arg_HI40100(Jpsi_Mass,{expCoeffPol1_HI40100, expCoeffPol2_HI40100, expCoeffPol3_HI40100, expCoeffPol4_HI40100, expCoeffPol5_HI40100, expCoeffPol6_HI40100[0.0]})");
+  ws->factory("Exponential::expPol6_HI40100(expPol6Arg_HI40100,expCoeffPol0_HI40100)");
+  // 7th order polynomial in exponential function
+  ws->factory("Chebychev::expPol7Arg_HI40100(Jpsi_Mass,{expCoeffPol1_HI40100, expCoeffPol2_HI40100, expCoeffPol3_HI40100, expCoeffPol4_HI40100, expCoeffPol5_HI40100, expCoeffPol6_HI40100, expCoeffPol7_HI40100[0.0]})");
+  ws->factory("Exponential::expPol7_HI40100(expPol7Arg_HI40100,expCoeffPol0_HI40100)");
 
   ws->var("expCoeffPol0_HI40100")->setConstant(true);
   ws->var("expCoeffPol1_HI40100")->setConstant(false);
   ws->var("expCoeffPol2_HI40100")->setConstant(false);
   ws->var("expCoeffPol3_HI40100")->setConstant(false);
   ws->var("expCoeffPol4_HI40100")->setConstant(false);
+  ws->var("expCoeffPol5_HI40100")->setConstant(false);
+  ws->var("expCoeffPol6_HI40100")->setConstant(false);
+  ws->var("expCoeffPol7_HI40100")->setConstant(false);
 
   return;
 }

@@ -1,12 +1,12 @@
 #! /bin/bash
 
-TODAY="20140318"
+TODAY="20140320"
 SUFFIX="M2242_DblMu0"
 
 DIRECTORY="${TODAY}_${SUFFIX}"
 
 
-bkgfunctions=(pol0 pol1 pol2 pol3 pol4 pol5 pol6 expPol1 expPol2 expPol3 expPol4)
+bkgfunctions=(pol0 pol1 pol2 pol3 pol4 pol5 pol6 expPol1 expPol2 expPol3 expPol4 expPol5 expPol6 expPol7)
 ptbins=(65-30 3-30 3-65)
 rapbins=(0-24 0-16 16-24)
 centbins=(0-100 0-20 20-40 40-100)
@@ -33,7 +33,7 @@ do
 	    fi;
 	    for bkg in "${bkgfunctions[@]}";
 	    do
-		if [[ ((${pt} == "65-30" && ${rap} == "0-24"  && (${bkg} == "pol1") && ${cent} == "0-100") ||
+		if [[ ((${pt} == "65-30" && ${rap} == "0-24"  && (${bkg} == "pol3") && ${cent} == "0-100") ||
 		       (${pt} == "65-30" && ${rap} == "0-16"  && (${bkg} == "pol1") && ${cent} == "0-100") ||
 		       (${pt} == "65-30" && ${rap} == "16-24" && (${bkg} == "pol3") && ${cent} == "0-100") ||
 		       (${pt} == "3-30" && ${rap} == "16-24"  && (${bkg} == "pol3") && ${cent} == "0-100") ||
@@ -41,7 +41,7 @@ do
 		       (${pt} == "65-30" && ${rap} == "0-24"  && (${bkg} == "pol1") && ${cent} == "0-20")  ||
 		       (${pt} == "65-30" && ${rap} == "0-16"  && (${bkg} == "pol1") && ${cent} == "0-20")  ||
 		       (${pt} == "3-30" && ${rap} == "16-24"  && (${bkg} == "pol3") && ${cent} == "0-20")  ||
-		       (${pt} == "65-30" && ${rap} == "0-24"  && (${bkg} == "pol0") && ${cent} == "20-40") ||
+		       (${pt} == "65-30" && ${rap} == "0-24"  && (${bkg} == "pol2") && ${cent} == "20-40") ||
 		       (${pt} == "65-30" && ${rap} == "0-16"  && (${bkg} == "pol1") && ${cent} == "20-40") ||
 		       (${pt} == "3-30" && ${rap} == "16-24"  && (${bkg} == "pol2") && ${cent} == "20-40") ||
 		       (${pt} == "65-30" && ${rap} == "0-24"  && (${bkg} == "pol0") && ${cent} == "40-100")||
@@ -79,8 +79,8 @@ do
 	do
 	    for bkg in "${bkgfunctions[@]}";
 	    do
-		if [[ ((${pt} == "65-30" && ${rap} == "0-24"  && (${bkg} == "pol1") && ${cent} == "0-100") ||
-		       (${pt} == "65-30" && ${rap} == "0-16"  && (${bkg} == "pol1") && ${cent} == "0-100") ||
+		if [[ ((${pt} == "65-30" && ${rap} == "0-24"  && (${bkg} == "pol7") && ${cent} == "0-100") ||
+		       (${pt} == "65-30" && ${rap} == "0-16"  && (${bkg} == "pol3") && ${cent} == "0-100") ||
 		       (${pt} == "65-30" && ${rap} == "16-24" && (${bkg} == "pol1") && ${cent} == "0-100") ||
 		       (${pt} == "3-30"  && ${rap} == "16-24" && (${bkg} == "pol1") && ${cent} == "0-100") ||
 		       (${pt} == "3-65"  && ${rap} == "16-24" && (${bkg} == "pol1") && ${cent} == "0-100")
@@ -88,11 +88,11 @@ do
 		then
 		    echo ${DIRECTORY}/ppFracLogCBG_${bkg}_rap${rap}_pT${pt}_cent${cent}_allVars.txt
 		   grep 'fracP =' ${DIRECTORY}/ppFracLogCBG_${bkg}_rap${rap}_pT${pt}_cent${cent}_allVars.txt | awk '{print $3; print $5}'
-		   if [[ ${bkg} == "pol1" ]];
-		   then
+#		   if [[ ${bkg} == "pol1" ]];
+#		   then
 		   grep 'fracP =' ${DIRECTORY}/ppFracLogCBG_${bkg}_rap${rap}_pT${pt}_cent${cent}_freeAlpha_allVars.txt | awk '{print $3; print $5}'
 		   grep 'fracP =' ${DIRECTORY}/ppFracLogCBG_${bkg}_rap${rap}_pT${pt}_cent${cent}_freeN_allVars.txt | awk '{print $3; print $5}'
-		   fi;
+#		   fi;
 		   # echo ${bkg} ${ratio}
 		fi;
 	    done;

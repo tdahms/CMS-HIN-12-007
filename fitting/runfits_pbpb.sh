@@ -15,7 +15,7 @@ else
     echo "Continuing anyways, will overwrite files!"
 fi
 
-runSyst=0
+runSyst=1
 bkgfunctions=(pol0 pol1 pol2 pol3 pol4 pol5 pol6 pol7 expPol1 expPol2 expPol3 expPol4)
 ptbins=(6.5-30.0 3.0-30.0 3.0-6.5)
 rapbins=(0.0-2.4 0.0-1.6 1.6-2.4)
@@ -44,7 +44,7 @@ do
 		./Fit1DDataPbPb -f ../root_files/PbPbData2011_DblMu0_cent${cent}_M22-42.root -v signalCB1 signalCB1P ${bkg} -d ${DIRECTORY}/fracLogCB -p ${pt} -y ${rap} -t ${cent} -r 1 -l 1 -b 1 &> ${DIRECTORY}/pbpb_fitCB_${bkg}_rap${rap}_pt${pt}_cent${cent}.log
 		./Fit1DDataPbPb -f ../root_files/PbPbData2011_DblMu0_cent${cent}_M22-42.root -v sigCB1G2 sigCB1G2P ${bkg} -d ${DIRECTORY}/fracLogCBG -p ${pt} -y ${rap} -t ${cent} -r 1 -l 1 -b 1 &> ${DIRECTORY}/pbpb_fitCBG_${bkg}_rap${rap}_pt${pt}_cent${cent}.log
 		if [[ ${runSyst} -eq 1 &&
-		      ((${pt} == "6.5-30.0" && ${rap} == "0.0-2.4" && ${bkg} == "pol1" && ${cent} == "0-100") ||
+		      ((${pt} == "6.5-30.0" && ${rap} == "0.0-2.4" && ${bkg} == "pol3" && ${cent} == "0-100") ||
 		       (${pt} == "6.5-30.0" && ${rap} == "0.0-1.6" && ${bkg} == "pol1" && ${cent} == "0-100") ||
 		       (${pt} == "6.5-30.0" && ${rap} == "1.6-2.4" && ${bkg} == "pol3" && ${cent} == "0-100") ||
 		       (${pt} == "3.0-30.0" && ${rap} == "1.6-2.4" && ${bkg} == "pol3" && ${cent} == "0-100") ||
@@ -55,8 +55,8 @@ do
 		       (${pt} == "6.5-30.0" && ${rap} == "0.0-2.4" && ${bkg} == "pol2" && ${cent} == "20-40") ||
 		       (${pt} == "6.5-30.0" && ${rap} == "0.0-1.6" && ${bkg} == "pol1" && ${cent} == "20-40") ||
 		       (${pt} == "3.0-30.0" && ${rap} == "1.6-2.4" && ${bkg} == "pol2" && ${cent} == "20-40") ||
-		       (${pt} == "6.5-30.0" && ${rap} == "0.0-2.4" && ${bkg} == "pol1" && ${cent} == "40-100")||
-		       (${pt} == "6.5-30.0" && ${rap} == "0.0-1.6" && ${bkg} == "pol1" && ${cent} == "40-100")||
+		       (${pt} == "6.5-30.0" && ${rap} == "0.0-2.4" && ${bkg} == "pol0" && ${cent} == "40-100")||
+		       (${pt} == "6.5-30.0" && ${rap} == "0.0-1.6" && ${bkg} == "pol0" && ${cent} == "40-100")||
 		       (${pt} == "3.0-30.0" && ${rap} == "1.6-2.4" && ${bkg} == "pol1" && ${cent} == "40-100")
 		      ) ]];
 		then
