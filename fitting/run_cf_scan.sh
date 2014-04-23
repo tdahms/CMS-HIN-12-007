@@ -1,10 +1,10 @@
 #! /bin/bash
 
-DATEIN="20140326"
+DATEIN="20140423"
 SUFFIXIN="SimFits_M2242_DblMu0_AllCent_WithSyst_final"
 DIRECTORYIN="${DATEIN}_${SUFFIXIN}"
 
-DATEOUT="20140331"
+DATEOUT="20140423"
 SUFFIXOUT="CFscan_WithSyst"
 DIRECTORYOUT="${DATEOUT}_${SUFFIXOUT}"
 
@@ -27,7 +27,7 @@ fi
 
 ptbins=(3-30 65-30)
 #rapbins=(0-16 16-24)
-rapbins=(16-24)
+rapbins=(0-16)
 #centbins=(HI020 HI2040 HI40100)
 centbins=(HI020)
 
@@ -53,7 +53,7 @@ do
 	    nsteps=11
 	    rmin=0.0
 	    rmax=2.0
-	elif [[ ${rap} == "0-16" && ${rap} == "0-16" ]];
+	elif [[ ${rap} == "0-16" && ${pt} == "65-30" ]];
 	then
 	    ntoys=1000
 	    nsteps=11
@@ -67,15 +67,15 @@ do
 		if [[ ${cent} == "HI020" ]];
 		then
 		    ntoys=1000
-		    nsteps=5
-		    rmin=3.2
+		    nsteps=15
+		    rmin=0.8
 		    rmax=3.6
 		elif [[ ${cent} == "HI2040" ]];
 		then
 		    ntoys=1000
-		    nsteps=11
+		    nsteps=12
 		    rmin=0.0
-		    rmax=2.0
+		    rmax=2.2
 		elif [[ ${cent} == "HI40100" ]];
 		then
 		    ntoys=1000

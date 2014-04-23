@@ -555,20 +555,30 @@ int main(int argc, char* argv[]) {
   min = ws->var("NBkg")->getVal()/(double(nbins)) * 0.7;
   RooHist *hpull; 
 
+  // plot shaded areas
   ws->pdf("sigMassPDF")->plotOn(mframe,VisualizeError(*fitM,1,kFALSE),FillColor(kAzure-9),Precision(1e-4));//,Normalization(redData->sumEntries(),RooAbsReal::NumEvent));
+
+  if (!isPaper && found!=string::npos) { 
+    ws->pdf("sigMassPDF")->plotOn(mframe,VisualizeError(*fitM,1,kFALSE),FillColor(kOrange-9),Components((mBkgFunct+",signalCB1,signalCB1P").c_str()),Precision(1e-4));
+    ws->pdf("sigMassPDF")->plotOn(mframe,VisualizeError(*fitM,1,kFALSE),FillColor(kGreen-9),Components((mBkgFunct+",signalG2,signalG2P").c_str()),Precision(1e-4));
+  }
+
+  ws->pdf("sigMassPDF")->plotOn(mframe,Components(mBkgFunct.c_str()),VisualizeError(*fitM,1,kFALSE),FillColor(kGray),Precision(1e-4));//,Normalization(redData->sumEntries(),RooAbsReal::NumEvent));
+  // replot data on top of shaded bands
+  redData->plotOn(mframe,DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(rbm));
+  
+  // plot lines
   ws->pdf("sigMassPDF")->plotOn(mframe,LineColor(kBlue),LineWidth(2),Precision(1e-4));//,Normalization(redData->sumEntries(),RooAbsReal::NumEvent));
 
   hpull = mframe->pullHist(0,0,true); hpull->SetName("hpullhist");
     
-  ws->pdf("sigMassPDF")->plotOn(mframe,Components(mBkgFunct.c_str()),VisualizeError(*fitM,1,kFALSE),FillColor(kGray),Precision(1e-4));//,Normalization(redData->sumEntries(),RooAbsReal::NumEvent));
-  ws->pdf("sigMassPDF")->plotOn(mframe,Components(mBkgFunct.c_str()),LineColor(kBlack),LineStyle(kDashed),LineWidth(2),Precision(1e-4));//,Normalization(redData->sumEntries(),RooAbsReal::NumEvent));
-
   if (!isPaper && found!=string::npos) { 
-    ws->pdf("sigMassPDF")->plotOn(mframe,VisualizeError(*fitM,1,kFALSE),FillColor(kOrange-9),Components((mBkgFunct+",signalCB1,signalCB1P").c_str()),Precision(1e-4));
     ws->pdf("sigMassPDF")->plotOn(mframe,Components((mBkgFunct+",signalCB1,signalCB1P").c_str()),LineColor(kOrange+2),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
-    ws->pdf("sigMassPDF")->plotOn(mframe,VisualizeError(*fitM,1,kFALSE),FillColor(kGreen-9),Components((mBkgFunct+",signalG2,signalG2P").c_str()),Precision(1e-4));
     ws->pdf("sigMassPDF")->plotOn(mframe,Components((mBkgFunct+",signalG2,signalG2P").c_str()),LineColor(kGreen+2),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
   }
+
+  ws->pdf("sigMassPDF")->plotOn(mframe,Components(mBkgFunct.c_str()),LineColor(kBlack),LineStyle(kDashed),LineWidth(2),Precision(1e-4));//,Normalization(redData->sumEntries(),RooAbsReal::NumEvent));
+
   //  redData->plotOn(mframe,DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(rbm));
 
   TH1 *hdata = redData->createHistogram("hdata",*ws->var("Jpsi_Mass"),Binning(rbm));
@@ -614,7 +624,7 @@ int main(int argc, char* argv[]) {
     mframepull->SetMinimum(-(mframepull->GetMaximum())); 
   else
     mframepull->SetMaximum(-(mframepull->GetMinimum())); 
-  mframepull->GetXaxis()->SetTitle("m_{#mu#mu} (GeV/c^{2})");
+  mframepull->GetXaxis()->SetTitle("m_{#mu^{+}#mu^{-}} (GeV/c^{2})");
   mframepull->GetXaxis()->CenterTitle(1);
 
   TF1 *f0 = new TF1("f0","0",2.2,4.2);
