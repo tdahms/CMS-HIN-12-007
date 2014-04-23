@@ -4,7 +4,7 @@ ptbins=(65-30 3-30 3-65)
 rapbins=(0-24 0-16 16-24)
 centbins=(0-100 0-20 20-40 40-100)
 
-DIRECTORY="20140311_M2242_DblMu0/"
+DIRECTORY="20140320_M2242_DblMu0/"
 echo "pp"
 for pt in "${ptbins[@]}";
 do

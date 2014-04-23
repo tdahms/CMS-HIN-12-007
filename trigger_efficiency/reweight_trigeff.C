@@ -5,17 +5,25 @@
 #include "TGraphAsymmErrors.h"
 
 
-void reweight_trigeff()
+void reweight_trigeff(bool isPbPb=true)
 {
   TGraphAsymmErrors *grEffRD;
   TGraphAsymmErrors *grEffMC;
 
-  TFile *tnpRD = new TFile("MC/Jpsi_RD_2012_Trg_L1_Eff_cbExpo.root","READ");
+  TFile *tnpRD;
+  if (isPbPb)
+    tnpRD = new TFile("../root_files/Jpsi_RegIt_RD_2013_Trg3_Eff.root","READ");
+  else  
+    tnpRD = new TFile("../root_files/Jpsi_pp_RD_2014_Trg3_Eff.root","READ");
   grEffRD = (TGraphAsymmErrors*) Trg_pt_All->Clone("grEffRD");
   tnpRD->Close();
   grEffRD->SetMarkerColor(kBlue);
   grEffRD->SetMarkerStyle(21);
-  TFile *tnpMC = new TFile("MC/Jpsi_MC_2012_Trg_L1_Eff.root","READ");
+  TFile *tnpMC;
+  if (isPbPb)
+    tnpMC = new TFile("../root_files/Jpsi_RegIt_MC_2013_Trg3_Eff.root","READ");
+  else
+    tnpMC = new TFile("../root_files/Jpsi_pp_MC_2014_Trg3_Eff.root","READ");
   grEffMC = (TGraphAsymmErrors*) Trg_pt_All->Clone("grEffMC");
   tnpMC->Close();
   grEffMC->SetMarkerColor(kRed);
@@ -27,11 +35,12 @@ void reweight_trigeff()
   TF1 *f1 = new TF1("f1","[0]*TMath::Erf((x-[1])/[2])",1.5,20);
 
   f1->SetParNames("eff0","x0","m");
-  f1->SetParameters(1.0,0.5,1);
+  f1->SetParameters(0.8,0.5,2.5);
   f1->SetLineWidth(2);
 
   grEffRD->Fit(f1,"RME");
-  grEffMC->Fit(f1,"RME");
+  f1->SetParameters(0.9,0.5,2.5);
+  grEffMC->Fit(f1,"WRME");
 
   grEffRD->GetFunction("f1")->SetLineColor(kBlue);
   grEffMC->GetFunction("f1")->SetLineColor(kRed);
@@ -43,14 +52,14 @@ void reweight_trigeff()
   TH1F * hMuPt_psi2s;
   TH1F * hMuPt_Jpsi;
 
-  TFile *infPsi2s = new TFile("SingleMuPt_fwd_Psi2SMC.root","READ");
+  TFile *infPsi2s = new TFile("20140324/MC_psi2s_pp_mupt_Rap_1.6-2.4_Pt_3.0-30.0.root","READ");
   hMuPt_psi2s = (TH1F*) hMuPtRec->Clone("hMuPt_psi2s");
   hMuPt_psi2s->SetDirectory(0);
   infPsi2s->Close();
   TH1F *hMuPtTrgRD_psi2s = (TH1F*)hMuPt_psi2s->Clone("hMuPtTrgRD_psi2s");
   TH1F *hMuPtTrgMC_psi2s = (TH1F*)hMuPt_psi2s->Clone("hMuPtTrgMC_psi2s");
 
-  TFile *infJpsi = new TFile("SingleMuPt_fwd_JpsiMC.root","READ");
+  TFile *infJpsi = new TFile("20140324/MC_Jpsi_pp_mupt_Rap_1.6-2.4_Pt_3.0-30.0.root","READ");
   hMuPt_Jpsi = (TH1F*) hMuPtRec->Clone("hMuPt_Jpsi");
   hMuPt_Jpsi->SetDirectory(0);
   infJpsi->Close();
@@ -88,8 +97,8 @@ void reweight_trigeff()
   TH1F *hMuPtTrgMC_Jpsi_rebin = (TH1F*) hMuPtTrgMC_Jpsi->Rebin(9,"hMuPtTrgMC_Jpsi_rebin",ptbins);
 
   hMuPt_psi2s_rebin->GetXaxis()->SetRangeUser(0,9);
-  hMuPt_psi2s_rebin->GetXaxis()->SetTitle("p_{T}^{#mu} [GeV/c]");
-  hMuPt_psi2s_rebin->GetYaxis()->SetTitle("counts [arb. units]");
+  hMuPt_psi2s_rebin->GetXaxis()->SetTitle("p_{T}^{#mu} (GeV/c)");
+  hMuPt_psi2s_rebin->GetYaxis()->SetTitle("counts (arb. units)");
 
 
   TCanvas *c2 = new TCanvas("c2","c2");
@@ -103,7 +112,7 @@ void reweight_trigeff()
 
 
   int max = hMuPt_Jpsi->GetXaxis()->FindBin(4.0-0.0001);
-  cout << "In 0.0<pt<4 GeV/c:" << endl;
+  cout << "In 0.0<pt(mu)<4 GeV/c:" << endl;
   cout << "Trigger efficiency RD (J/psi): " << hMuPtTrgRD_Jpsi->Integral(1,max)/hMuPt_Jpsi->Integral(1,max) << endl;
   cout << "Trigger efficiency RD (psi(2S)): " << hMuPtTrgRD_psi2s->Integral(1,max)/hMuPt_psi2s->Integral(1,max) << endl;
   cout << "Trigger efficiency MC (J/psi): " << hMuPtTrgMC_Jpsi->Integral(1,max)/hMuPt_Jpsi->Integral(1,max) << endl;
@@ -148,7 +157,7 @@ void reweight_trigeff()
 
   effPsi2S_RD->GetXaxis()->SetRangeUser(0,9);
   effPsi2S_RD->GetYaxis()->SetRangeUser(0.3,1.0);
-  effPsi2S_RD->GetXaxis()->SetTitle("p_{T}^{#mu} [GeV/c]");
+  effPsi2S_RD->GetXaxis()->SetTitle("p_{T}^{#mu} (GeV/c)");
   effPsi2S_RD->GetYaxis()->SetTitle("Trigger efficiency (Data)");
 
   effJpsi_RD->Draw("P");
@@ -169,7 +178,7 @@ void reweight_trigeff()
 
   effPsi2S_MC->GetXaxis()->SetRangeUser(0,9);
   effPsi2S_MC->GetYaxis()->SetRangeUser(0.3,1.0);
-  effPsi2S_MC->GetXaxis()->SetTitle("p_{T}^{#mu} [GeV/c]");
+  effPsi2S_MC->GetXaxis()->SetTitle("p_{T}^{#mu} (GeV/c)");
   effPsi2S_MC->GetYaxis()->SetTitle("Trigger efficiency (MC)");
 
   effJpsi_MC->Draw("P");

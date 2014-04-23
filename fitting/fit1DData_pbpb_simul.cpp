@@ -488,7 +488,10 @@ int main(int argc, char* argv[]) {
   sigma_b->setConstant(true);
   if (useSystematics) {
     sigma_pol->setVal(0.01);
-    sigma_b->setVal(0.10);
+    if (prange=="3.0-30.0" || prange=="3.0-6.5")
+      sigma_b->setVal(0.08);
+    else
+      sigma_b->setVal(0.10);
   }
   else {
     sigma_pol->setVal(0.0);
@@ -661,11 +664,11 @@ int main(int argc, char* argv[]) {
 	      sigma_eff[i]->setVal(0.05);
 	    }
 	    else if (prange=="3.0-6.5" && yrange=="1.6-2.4") {
-	      sigma_fit[i]->setVal(0.02);
+	      sigma_fit[i]->setVal(0.27);
 	      sigma_eff[i]->setVal(0.09);
 	    }
 	    else if (prange=="6.5-30.0" && yrange=="1.6-2.4") {
-	      sigma_fit[i]->setVal(0.02);
+	      sigma_fit[i]->setVal(0.22);
 	      sigma_eff[i]->setVal(0.03);
 	    }
 	  }

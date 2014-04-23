@@ -374,7 +374,7 @@ int main(int argc, char* argv[]) {
 	    if ( (j==centRegions && theCentrality < centLimits[j] && theCentrality >= centLimits[0]) ||
 		 (theCentrality < centLimits[j+1] && theCentrality >= centLimits[j]) ) {
 	      if (Jq == 0) {
-		if (theMass < 4.5) {
+		if (theMass < Jpsi_MassMax) {
 		  dataJpsi[j]->add(varlist_tmp);
 		  PassingEvent[j] = PassingEvent[j] + 1;
 		}
@@ -386,7 +386,7 @@ int main(int argc, char* argv[]) {
 		else if (theMass < 2.9 || theMass > 3.35)
 		  hBkg[j]->Fill(theCtErr);
 	      } else {
-		if (theMass < 4.5) {
+		if (theMass < Jpsi_MassMax) {
 		  dataJpsiSame[j]->add(varlist_tmp);
 		}
 	      }
@@ -396,7 +396,7 @@ int main(int argc, char* argv[]) {
 	else {
 	  unsigned int j=0;
 	  if (Jq == 0) {
-	    if (theMass < 4.5) {
+	    if (theMass < Jpsi_MassMax) {
 	      dataJpsi[j]->add(varlist_tmp);
 	      PassingEvent[j] = PassingEvent[j] + 1;
 	    }
@@ -408,7 +408,7 @@ int main(int argc, char* argv[]) {
 	    else if (theMass < 2.9 || theMass > 3.35)
 	      hBkg[j]->Fill(theCtErr);
 	  } else {
-	    if (theMass < 4.5) {
+	    if (theMass < Jpsi_MassMax) {
 	      dataJpsiSame[j]->add(varlist_tmp);
 	    }
 	  }
