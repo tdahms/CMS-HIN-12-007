@@ -322,19 +322,16 @@ int main(int argc, char* argv[]) {
   lFG->SetNDC(); lFG->SetTextAlign(12);
 
   Double_t fx[2], fy[2], fex[2], fey[2];
-  TGraphErrors *gfake1 = new TGraphErrors(2,fx,fy,fex,fey);
-  gfake1->SetMarkerStyle(20); gfake1->SetMarkerSize(0.8);
-  TH1F hfake11 = TH1F("hfake1","hfake1",100,200,300);
-  hfake11.SetLineColor(kBlue); hfake11.SetLineWidth(4); hfake11.SetLineStyle(7); hfake11.SetFillColor(kAzure-9); hfake11.SetFillStyle(1001);
-  TH1F hfake21 = TH1F("hfake21","hfake21",100,200,300);
-  hfake21.SetLineColor(kBlack); hfake21.SetLineWidth(4); hfake21.SetFillColor(kBlack); hfake21.SetFillStyle(3354);
-  TH1F hfake22 = TH1F("hfake22","hfake22",100,200,300);
-  hfake22.SetLineColor(kRed); hfake22.SetLineWidth(4); hfake22.SetLineStyle(2);
-  TH1F hfake23 = TH1F("hfake23","hfake23",100,200,300);
-  hfake23.SetLineColor(kGreen+2); hfake23.SetLineWidth(4); hfake23.SetFillColor(kGreen); hfake23.SetFillStyle(3354);
-  TH1F hfake31 = TH1F("hfake3","hfake3",100,200,300);
-  hfake31.SetLineColor(kRed); hfake31.SetMarkerStyle(kCircle); hfake31.SetLineWidth(4); hfake31.SetMarkerColor(kRed); hfake31.SetLineStyle(9); hfake31.SetFillColor(kRed-7); hfake31.SetFillStyle(3444);
-
+  TGraphErrors *gDataLegend = new TGraphErrors(2,fx,fy,fex,fey);
+  gDataLegend->SetName("gDataLegend");
+  gDataLegend->SetTitle("gDataLegend");
+  gDataLegend->SetMarkerStyle(20); gDataLegend->SetMarkerSize(0.8);
+  TH1F *hBkgLegend = new TH1F("hBkgLegend","hBkgLegend",100,0,1);
+  hBkgLegend->SetLineColor(kBlack); hBkgLegend->SetLineWidth(2); hBkgLegend->SetLineStyle(kDashed); hBkgLegend->SetFillColor(kGray);
+  TH1F *hTotalLegend = new TH1F("hTotalLegend","hTotalLegend",100,0,1);
+  hTotalLegend->SetLineColor(kBlue); hTotalLegend->SetLineWidth(2); hTotalLegend->SetFillColor(kAzure-9);
+  TH1F *hMixLegend = new TH1F("hMixLegend","hMixLegend",100,0,1);
+  hMixLegend->SetLineColor(kRed); hMixLegend->SetLineWidth(2); hMixLegend->SetLineStyle(kDashed);hMixLegend->SetFillColor(kYellow);
 
   RooFitResult *fitM;
 
@@ -546,7 +543,10 @@ int main(int argc, char* argv[]) {
   // *** Draw mass plot
   RooPlot *mframe = ws->var("Jpsi_Mass")->frame();
   redData->plotOn(mframe,DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(rbm));
-  titlestr = "2D fit for" + partTit + "muons (mass projection), p_{T} = " + prange + " GeV/c and |y| = " + yrange;
+  mframe->SetName("mframe");
+  mframe->SetTitle("A RooPlot of \"J/#psi mass\"");
+
+  mframe->GetYaxis()->SetTitle("Events");
   mframe->GetXaxis()->SetTitle("m_{#mu^{+}#mu^{-}} (GeV/c^{2})");
   mframe->GetXaxis()->CenterTitle(1);
   double max = mframe->GetMaximum() * 1.3;
@@ -555,23 +555,26 @@ int main(int argc, char* argv[]) {
   min = ws->var("NBkg")->getVal()/(double(nbins)) * 0.7;
   RooHist *hpull; 
 
-  ws->pdf("sigMassPDF")->plotOn(mframe,VisualizeError(*fitM,1,kFALSE),FillColor(kGray),Normalization(redData->sumEntries(),RooAbsReal::NumEvent));
-  ws->pdf("sigMassPDF")->plotOn(mframe,LineColor(kBlack),LineWidth(2),Normalization(redData->sumEntries(),RooAbsReal::NumEvent));
+  ws->pdf("sigMassPDF")->plotOn(mframe,VisualizeError(*fitM,1,kFALSE),FillColor(kAzure-9),Precision(1e-4));//,Normalization(redData->sumEntries(),RooAbsReal::NumEvent));
+  ws->pdf("sigMassPDF")->plotOn(mframe,LineColor(kBlue),LineWidth(2),Precision(1e-4));//,Normalization(redData->sumEntries(),RooAbsReal::NumEvent));
 
   hpull = mframe->pullHist(0,0,true); hpull->SetName("hpullhist");
     
-  ws->pdf("sigMassPDF")->plotOn(mframe,Components(mBkgFunct.c_str()),VisualizeError(*fitM,1,kFALSE),FillColor(kCyan),Normalization(redData->sumEntries(),RooAbsReal::NumEvent));
-  ws->pdf("sigMassPDF")->plotOn(mframe,Components(mBkgFunct.c_str()),LineColor(kBlue),LineStyle(kDashed),LineWidth(2),Normalization(redData->sumEntries(),RooAbsReal::NumEvent));
+  ws->pdf("sigMassPDF")->plotOn(mframe,Components(mBkgFunct.c_str()),VisualizeError(*fitM,1,kFALSE),FillColor(kGray),Precision(1e-4));//,Normalization(redData->sumEntries(),RooAbsReal::NumEvent));
+  ws->pdf("sigMassPDF")->plotOn(mframe,Components(mBkgFunct.c_str()),LineColor(kBlack),LineStyle(kDashed),LineWidth(2),Precision(1e-4));//,Normalization(redData->sumEntries(),RooAbsReal::NumEvent));
 
   if (!isPaper && found!=string::npos) { 
-    ws->pdf("sigMassPDF")->plotOn(mframe,VisualizeError(*fitM,1,kFALSE),FillColor(kRed-9),Components((mBkgFunct+",signalCB1,signalCB1P").c_str()));
-    ws->pdf("sigMassPDF")->plotOn(mframe,Components((mBkgFunct+",signalCB1,signalCB1P").c_str()),LineColor(kRed),LineStyle(kDashed),LineWidth(2));
-    ws->pdf("sigMassPDF")->plotOn(mframe,VisualizeError(*fitM,1,kFALSE),FillColor(kGreen-9),Components((mBkgFunct+",signalG2,signalG2P").c_str()));
-    ws->pdf("sigMassPDF")->plotOn(mframe,Components((mBkgFunct+",signalG2,signalG2P").c_str()),LineColor(kGreen+2),LineStyle(kDashed),LineWidth(2));
+    ws->pdf("sigMassPDF")->plotOn(mframe,VisualizeError(*fitM,1,kFALSE),FillColor(kOrange-9),Components((mBkgFunct+",signalCB1,signalCB1P").c_str()),Precision(1e-4));
+    ws->pdf("sigMassPDF")->plotOn(mframe,Components((mBkgFunct+",signalCB1,signalCB1P").c_str()),LineColor(kOrange+2),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
+    ws->pdf("sigMassPDF")->plotOn(mframe,VisualizeError(*fitM,1,kFALSE),FillColor(kGreen-9),Components((mBkgFunct+",signalG2,signalG2P").c_str()),Precision(1e-4));
+    ws->pdf("sigMassPDF")->plotOn(mframe,Components((mBkgFunct+",signalG2,signalG2P").c_str()),LineColor(kGreen+2),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
   }
-  redData->plotOn(mframe,DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(rbm));
+  //  redData->plotOn(mframe,DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(rbm));
 
   TH1 *hdata = redData->createHistogram("hdata",*ws->var("Jpsi_Mass"),Binning(rbm));
+  TH1 *hdata_KStest = redData->createHistogram("hdata_KStest",*ws->var("Jpsi_Mass"),Binning(1000));
+  TH1 *hfit_KStest = ws->pdf("sigMassPDF")->createHistogram("hfit_KStest",*ws->var("Jpsi_Mass"),Binning(1000));
+  double KStest = hdata_KStest->KolmogorovTest(hfit_KStest);
 
   // *** Calculate chi2/nDof for mass fitting
   unsigned int nBins = hdata->GetNbinsX();
@@ -737,7 +740,7 @@ int main(int argc, char* argv[]) {
   if (isPbPb)
     lLumi->SetText(0.17,0.83,"L_{int} = 150 #mub^{-1}");
   else
-    lLumi->SetText(0.17,0.83,"L_{int} = 5.3 pb^{-1}");
+    lLumi->SetText(0.17,0.83,"L_{int} = 5.4 pb^{-1}");
   mframe->addObject(lLumi,"");
 
   lRap->SetTextSize(0.035);
@@ -915,14 +918,24 @@ int main(int argc, char* argv[]) {
     mframe->addObject(lN,"");
   }
 
-  TLegend *leg1 = new TLegend(0.63,0.53,0.92,0.68,NULL,"brNDC");
+  TLegend *leg1;
+  if (isPbPb)
+    leg1 = new TLegend(0.62,0.7125,0.92,0.853,NULL,"brNDC");
+  else
+    leg1 = new TLegend(0.62,0.6625,0.92,0.853,NULL,"brNDC");
 
-  leg1->SetFillStyle(0); leg1->SetBorderSize(0); leg1->SetShadowColor(0); leg1->SetMargin(0.2);
-  leg1->AddEntry(gfake1,"data","p");
-  leg1->AddEntry(&hfake21,"total fit","lf");
-  leg1->AddEntry(&hfake11,"background","lf");
-  // if (!isPbPb)
-  //   leg1->AddEntry(&hfake22,"with R_{#psi(2S)}^{0-20%}(PbPb)","lf");
+  leg1->SetFillStyle(0);
+  leg1->SetFillColor(0);
+  leg1->SetBorderSize(0);
+  leg1->SetMargin(0.15);
+  leg1->SetTextSize(0.035);
+  leg1->AddEntry(gDataLegend,"data","P");
+  leg1->AddEntry(hTotalLegend,"total fit","L");
+  leg1->AddEntry(hBkgLegend,"background","L");
+  // if (!isPbPb) {
+  //   //      leg1->AddEntry(hMixLegend,"total with","L");
+  //   leg1->AddEntry(hMixLegend,"R_{#psi(2S)}(PbPb 0-20%)","L");
+  // }
 
   if (!zoom && isPaper)
     mframe->addObject(leg1,"sa,e");
@@ -1028,6 +1041,7 @@ int main(int argc, char* argv[]) {
   }
   else
     cout << "NPsiP:       Fit: "  << NPsiP_fin << " +/- " << ErrNPsiP_fin << endl;
+  cout << "KS test result: " << KStest << endl;
 
   titlestr = dirPre + "_" + mBkgFunct + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + fix_str + "fitResult.txt";
 
@@ -1105,6 +1119,7 @@ int main(int argc, char* argv[]) {
     << "enne "         << ws->var("enne")->getVal()         << " " << ws->var("enne")->getError() << "\n"
     << "Mean(Pull) "   << hpull_proj->GetMean()             << "\n"
     << "RMS(Pull) "    << hpull_proj->GetRMS()              << "\n"
+    << "KS test "      << KStest                            << "\n"
     << "chi2 "         << UnNormChi2                        << "\n"
     << "DOF "          << Dof                               << "\n"
     << "NLL "          << theNLL                            << endl;

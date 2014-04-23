@@ -14,21 +14,34 @@ else
     echo "Continuing anyways, will overwrite files!"
 fi
 
-runSyst=1
-bkgfunctions=(pol0 pol1 pol2 pol3 pol4 pol5 pol6 pol7 expPol1 expPol2 expPol3 expPol4 expPol5 expPol6 expPol7)
-ptbins=(6.5-30.0 3.0-30.0 3.0-6.5)
-rapbins=(0.0-2.4 0.0-1.6 1.6-2.4)
+runSyst=0
+#bkgfunctions=(pol0 pol1 pol2 pol3 pol4 pol5 pol6 pol7 expPol1 expPol2 expPol3 expPol4 expPol5 expPol6 expPol7)
+bkgfunctions=(pol0 pol1 pol2 pol3 pol4 pol5 pol6 pol7)
+#ptbins=(6.5-30.0 3.0-30.0 3.0-6.5)
+#rapbins=(0.0-2.4 0.0-1.6 1.6-2.4)
+ptbins=(6.5-30.0 3.0-30.0)
+rapbins=(0.0-1.6 1.6-2.4)
 centbins=(0-100)
 
 for pt in "${ptbins[@]}";
 do
     for rap in "${rapbins[@]}";
     do
-	if [[ ${rap} != "1.6-2.4" && ${pt} != "6.5-30.0" ]];
+	if [[ ${rap} == "0.0-1.6" && ${pt} != "6.5-30.0" ]];
 	then
 	    echo "skipping " ${rap} " " ${pt};
 	    continue;
 	fi;
+	if [[ ${rap} == "1.6-2.4" && ${pt} != "3.0-30.0" ]];
+	then
+	    echo "skipping " ${rap} " " ${pt};
+	    continue;
+	fi;
+#	if [[ ${rap} != "1.6-2.4" && ${pt} != "6.5-30.0" ]];
+#	then
+#	    echo "skipping " ${rap} " " ${pt};
+#	    continue;
+#	fi;
 	echo "fitting " ${rap} " " ${pt};
 	for bkg in "${bkgfunctions[@]}";
 	do

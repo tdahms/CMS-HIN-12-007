@@ -66,20 +66,20 @@ void fitMC_CBG(bool isHI=false, double ptmin=0.0, double ptmax=30.0, double ymin
   Jpsi_CtTrue.setBins(1);
   Gen_Pt.setBins(60);
 
-  RooRealVar mean("mean","mean", 3.0969,3.05,3.15);
-  RooRealVar sigma1("sigma1","sigma1", 0.03,0.005,0.080);
+  RooRealVar mean("mean","mean", 3.0969,3.05,3.15,"GeV/c^{2}");
+  RooRealVar sigma1("#sigma_{CB}","#sigma_{CB}", 0.03,0.005,0.080,"GeV/c^{2}");
   RooGaussian gaussS("gaussS","gaussS",Jpsi_Mass,mean,sigma1);
 
-  RooRealVar alpha("alpha","alpha", 1.0,0.0,3.0);
+  RooRealVar alpha("#alpha","#alpha", 1.0,0.0,3.0);
   RooRealVar n("n","n", 5,1.0,50.0);
   RooCBShape cballS("cballS","cballS",Jpsi_Mass,mean,sigma1,alpha,n);
   RooCBShape cball("cball","cball",Jpsi_Mass,mean,sigma1,alpha,n);
 
-  RooRealVar wideFactor("wideFactor","wideFactor",2.0,1.0,6.0);
-  RooFormulaVar sigma2("sigma2","@0*@1",RooArgList(sigma1,wideFactor));
+  RooRealVar wideFactor("n_{G}","n_{G}",2.0,1.0,6.0);
+  RooFormulaVar sigma2("#sigma_{G}","@0*@1",RooArgList(sigma1,wideFactor));
   RooGaussian gauss2("gauss","gauss",Jpsi_Mass,mean,sigma2);
 
-  RooRealVar coeffGauss("coeffGauss","coeffGauss",0.1,0.0,1.0);
+  RooRealVar coeffGauss("f_{G}","f_{G}",0.1,0.0,1.0);
   RooAddPdf cbg("cbg","cbg",RooArgList(gauss2,cball),coeffGauss);
 
   RooRealVar a0("a0","a0",0.0,-1.0,1.0);
@@ -183,21 +183,21 @@ void fitMC_CBG(bool isHI=false, double ptmin=0.0, double ptmax=30.0, double ymin
   RooDataHist* binnedData = redData->binnedClone("binnedData","binnedData");
   binnedData->Print("v");
 
-  if (isHI) {
-    model_g.fitTo(*binnedData,Extended(1),Minos(0),Save(1),SumW2Error(kTRUE),NumCPU(4));
-    //   model_cb.fitTo(*binnedData,Extended(1),Minos(0),Save(1),SumW2Error(kTRUE),NumCPU(4));
-  }
-  else {
-    model_g.fitTo(*redData,Extended(1),Minos(0),Save(1),SumW2Error(kFALSE),NumCPU(4));
-    //   model_cb.fitTo(*redData,Extended(1),Minos(0),Save(1),SumW2Error(kFALSE),NumCPU(4));
-  }
+  // if (isHI) {
+  //   model_g.fitTo(*binnedData,Extended(1),Minos(0),Save(1),SumW2Error(kTRUE),NumCPU(4));
+  //   //   model_cb.fitTo(*binnedData,Extended(1),Minos(0),Save(1),SumW2Error(kTRUE),NumCPU(4));
+  // }
+  // else {
+  //   model_g.fitTo(*redData,Extended(1),Minos(0),Save(1),SumW2Error(kFALSE),NumCPU(4));
+  //   //   model_cb.fitTo(*redData,Extended(1),Minos(0),Save(1),SumW2Error(kFALSE),NumCPU(4));
+  // }
 
   TString *CBalpha = new TString();
-  CBalpha = alpha.format(2,"NEA");
+  CBalpha = alpha.format(1,"LNEA");
   TString *CBn = new TString();
-  CBn = n.format(2,"NEA");
+  CBn = n.format(1,"LNEA");
   TString *CBsigma = new TString();
-  CBsigma = sigma1.format(2,"NEA");
+  CBsigma = sigma1.format(1,"LNEAU");
   RooFitResult *fitM;
 
   if (fitChi2) {
@@ -206,7 +206,7 @@ void fitMC_CBG(bool isHI=false, double ptmin=0.0, double ptmax=30.0, double ymin
     RooMinuit m(chi2);
     m.migrad();
     m.hesse();
-    m.hesse();
+    //    m.hesse();
     //    m.minos();
     fitM = m.save();
   }
@@ -219,15 +219,15 @@ void fitMC_CBG(bool isHI=false, double ptmin=0.0, double ptmax=30.0, double ymin
 
   fitM->printMultiline(std::cout,1,1,"");
   TString *CBGalpha = new TString();
-  CBGalpha = alpha.format(2,"NEA");
+  CBGalpha = alpha.format(2,"LNEA");
   TString *CBGn = new TString();
-  CBGn = n.format(2,"NEA");
+  CBGn = n.format(2,"LNEA");
   TString *CBGsigma = new TString();
-  CBGsigma = sigma1.format(2,"NEA");
+  CBGsigma = sigma1.format(1,"LNEAU");
   TString *CBGwideFactor = new TString();
-  CBGwideFactor = wideFactor.format(2,"NEA");
+  CBGwideFactor = wideFactor.format(1,"LNEA");
   TString *CBGcoeffGauss = new TString();
-  CBGcoeffGauss = coeffGauss.format(2,"NEA");
+  CBGcoeffGauss = coeffGauss.format(2,"LNEA");
 
   RooPlot* xframe = Jpsi_Mass.frame(Title("data"));
   if (isHI)
@@ -362,15 +362,15 @@ void fitMC_CBG(bool isHI=false, double ptmin=0.0, double ptmax=30.0, double ymin
   TString outfname;
   if (fitChi2) {
     if (isHI)
-      outfname = Form("MC_plots/Jpsi_PbPb_MCshape_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f_M2234_chi2.pdf",ymin,ymax,ptmin,ptmax);
+      outfname = Form("20140326_MC_plots/Jpsi_PbPb_MCshape_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f_M2234_chi2.pdf",ymin,ymax,ptmin,ptmax);
     else
-      outfname = Form("MC_plots/Jpsi_pp_MCshape_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f_M2234_chi2.pdf",ymin,ymax,ptmin,ptmax);
+      outfname = Form("20140326_MC_plots/Jpsi_pp_MCshape_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f_M2234_chi2.pdf",ymin,ymax,ptmin,ptmax);
   }
   else {
     if (isHI)
-      outfname = Form("MC_plots/Jpsi_PbPb_MCshape_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f_M2234.pdf",ymin,ymax,ptmin,ptmax);
+      outfname = Form("20140326_MC_plots/Jpsi_PbPb_MCshape_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f_M2234.pdf",ymin,ymax,ptmin,ptmax);
     else
-      outfname = Form("MC_plots/Jpsi_pp_MCshape_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f_M2234.pdf",ymin,ymax,ptmin,ptmax);
+      outfname = Form("20140326_MC_plots/Jpsi_pp_MCshape_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f_M2234.pdf",ymin,ymax,ptmin,ptmax);
   }
 
   if (savePlot) {

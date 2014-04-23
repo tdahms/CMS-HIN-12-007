@@ -1,71 +1,121 @@
 #! /bin/bash
 
+DATEIN="20140326"
+SUFFIXIN="SimFits_M2242_DblMu0_AllCent_WithSyst_final"
+DIRECTORYIN="${DATEIN}_${SUFFIXIN}"
 
-DATE="20140221"
-SUFFIX="M2242_FixCBtail_NoSumw2_DblMu0_NoMinos_finalCBtailFits_fixWideFactorPbPbMC_corrPsi2SError"
+DATEOUT="20140331"
+SUFFIXOUT="CFscan_WithSyst"
+DIRECTORYOUT="${DATEOUT}_${SUFFIXOUT}"
 
-DIRECTORY="${DATE}_${SUFFIX}"
-
-if [ ! -d  ${DIRECTORY} ];
+if [ ! -d  ${DIRECTORYIN} ];
 then
-    echo "${DIRECTORY} does not exist."
+    echo "${DIRECTORYIN} does not exist."
     exit 1
 else
-    echo "Reading results in ${DIRECTORY}"
+    echo "Reading results in ${DIRECTORYIN}"
 fi
 
-bkgfunctions=(pol1 pol2 pol3 pol4 pol5 pol6 expFunct gausBkg)
-ptbins=(65-30 3-30 3-65)
-rapbins=(0-16 16-24)
-centbins=(0-100 0-20 20-40 40-100)
+if [ ! -d  ${DIRECTORYOUT} ];
+then
+    echo "Creating ${DIRECTORYOUT}:"
+    mkdir ${DIRECTORYOUT}
+else
+    echo "${DIRECTORYOUT} already exist, change name of output directory!"
+    exit 1
+fi
+
+ptbins=(3-30 65-30)
+#rapbins=(0-16 16-24)
+rapbins=(16-24)
+#centbins=(HI020 HI2040 HI40100)
+centbins=(HI020)
 
 for pt in "${ptbins[@]}";
 do
     for rap in "${rapbins[@]}";
     do
-	if [[ ${rap} != "16-24" && ${pt} != "65-30" ]];
+	if [[ ${pt} == "65-30" && ${rap} == "0-16" ]];
 	then
+	    bkg="PbPbpol1_HI020_pol1_HI2040_pol0_HI40100_pppol3";
+	elif [[ ${pt} == "3-30" && ${rap} == "16-24" ]];
+	then
+	    bkg="PbPbpol3_HI020_pol2_HI2040_pol1_HI40100_pppol1";
+	else
+	    echo "skipping " ${rap} " " ${pt};
 	    continue;
+	fi;
+	nsteps=10
+	rmax=0.1
+	if [[ ${rap} == "16-24" && ${pt} == "3-30" ]];
+	then
+	    ntoys=1000
+	    nsteps=11
+	    rmin=0.0
+	    rmax=2.0
+	elif [[ ${rap} == "0-16" && ${rap} == "0-16" ]];
+	then
+	    ntoys=1000
+	    nsteps=11
+	    rmin=0.0
+	    rmax=1.0
 	fi;
 	for cent in "${centbins[@]}";
 	do
-	    if [[ ${cent} != "0-100" && ${pt} != "3-30" && ${rap} == "16-24" ]];
+	    if [[ ${rap} == "16-24" && ${pt} == "3-30" ]];
 	    then
-		continue;
-	    fi;
-	    for bkg in "${bkgfunctions[@]}";
-	    do
-		if [[ (${pt} == "65-30" && ${rap} == "0-24" && ${bkg} == "pol1" && ${cent} == "0-100") ||
-		       (${pt} == "65-30" && ${rap} == "0-16" && ${bkg} == "pol1" && ${cent} == "0-100") ||
-		       (${pt} == "65-30" && ${rap} == "16-24" && ${bkg} == "pol3" && ${cent} == "0-100") ||
-		       (${pt} == "3-30" && ${rap} == "16-24" && ${bkg} == "pol3" && ${cent} == "0-100") ||
-		       (${pt} == "3-65"  && ${rap} == "16-24" && ${bkg} == "pol2" && ${cent} == "0-100") ||
-		       (${pt} == "65-30" && ${rap} == "0-24" && ${bkg} == "pol1" && ${cent} == "0-20")  ||
-		       (${pt} == "65-30" && ${rap} == "0-16" && ${bkg} == "pol1" && ${cent} == "0-20")  ||
-		       (${pt} == "3-30" && ${rap} == "16-24" && ${bkg} == "pol3" && ${cent} == "0-20")  ||
-		       (${pt} == "65-30" && ${rap} == "0-24" && ${bkg} == "pol2" && ${cent} == "20-40") ||
-		       (${pt} == "65-30" && ${rap} == "0-16" && ${bkg} == "pol1" && ${cent} == "20-40") ||
-		       (${pt} == "3-30" && ${rap} == "16-24" && ${bkg} == "pol2" && ${cent} == "20-40") ||
-		       (${pt} == "65-30" && ${rap} == "0-24" && ${bkg} == "pol1" && ${cent} == "40-100")||
-		       (${pt} == "65-30" && ${rap} == "0-16" && ${bkg} == "pol1" && ${cent} == "40-100")||
-		       (${pt} == "3-30" && ${rap} == "16-24" && ${bkg} == "pol1" && ${cent} == "40-100")
-		       ]];
+		if [[ ${cent} == "HI020" ]];
 		then
-		    echo "Running C&F scan for ${pt} ${rap} ${cent} ${bkg}";
-		    nsteps=20
-		    rmax=0.1
-		    if [[ (${pt} == "3-30") || (${pt} == "3-65") ]];
-		    then
-			nsteps=30
-			rmax=0.15
-		    elif [[ (${rap} == "0-24") || (${rap} == "0-16") ]];
-		    then
-			nsteps=10
-			rmax=0.05
-		    fi;
-		    root -b -q StandardHypoTestInvDemo.C+\(\"${DIRECTORY}/fracLogCBG_${bkg}_rap${rap}_pT${pt}_cent${cent}_Workspace.root\",\"workspace\",\"model\",\"\",\"data\",0,2,false,${nsteps},0,${rmax},1000,false\)
+		    ntoys=1000
+		    nsteps=5
+		    rmin=3.2
+		    rmax=3.6
+		elif [[ ${cent} == "HI2040" ]];
+		then
+		    ntoys=1000
+		    nsteps=11
+		    rmin=0.0
+		    rmax=2.0
+		elif [[ ${cent} == "HI40100" ]];
+		then
+		    ntoys=1000
+		    nsteps=11
+		    rmin=0.0
+		    rmax=2.0
+		fi
+	    elif [[ ${rap} == "0-16" && ${pt} == "65-30" ]];
+	    then
+		if [[  ${cent} == "HI020" ]];
+		then
+		    ntoys=1000
+		    nsteps=21
+		    rmin=0.0
+		    rmax=1.0
+		elif [[  ${cent} == "HI2040" ]];
+		then
+		    ntoys=1000
+		    nsteps=15
+		    rmin=0.0
+		    rmax=1.4
+		elif [[ ${cent} == "HI40100" ]];
+		then
+		    ntoys=1000
+		    nsteps=13
+		    rmin=0.0
+		    rmax=0.6
 		fi;
-	    done;
+	    fi;
+	    if [ ! -d  ${DIRECTORYOUT}/${cent} ];
+	    then	    
+		mkdir "${DIRECTORYOUT}/${cent}"
+	    fi;
+	    echo "Running F-C scan for rap${rap} pT${pt} ${bkg} ${cent}."
+	    echo "Scanning with: ntoys = ${ntoys} in ${nsteps} steps from ${rmin} to ${rmax}:"
+	    root -b -q StandardHypoTestInvDemo.C+\(\"${DIRECTORYIN}/fracLogCBG_${bkg}_rap${rap}_pT${pt}_centMult_Workspace.root\",\"workspace\",\"model_${cent}\",\"B_only_model_${cent}\",\"redDataSim\",0,2,false,${nsteps},${rmin},${rmax},${ntoys},false\) &> ${DIRECTORYOUT}/rap${rap}_pt${pt}_cent${cent}.log 
+	    gzip "${DIRECTORYOUT}/rap${rap}_pt${pt}_cent${cent}.log"
+	    mv ${DIRECTORYOUT}/*.* ${DIRECTORYOUT}/${cent}/
+	    echo "Done with F-C scan for rap${rap} pT${pt} ${bkg} ${cent}."
+	    sleep 30
 	done;
     done;
 done;

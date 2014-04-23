@@ -82,6 +82,7 @@ int main(int argc, char* argv[]) {
   bool shareShape = false;
   bool fitCentIntegrated = false;
   bool useSystematics = false;
+  bool twoCB=false;
 
   // *** Check options
   for (int i=1; i<argc; ++i) {
@@ -177,7 +178,10 @@ int main(int argc, char* argv[]) {
     }
     }
   }// End check options
- 
+
+  if (mJpsiFunct.find("CB2")!=string::npos)
+    twoCB=true;
+
   float pmin=0, pmax=0, ymin=0, ymax=0, cmin=0, cmax=0;
   getOptRange(prange,&pmin,&pmax);
   getOptRange(yrange,&ymin,&ymax);
@@ -368,6 +372,7 @@ int main(int argc, char* argv[]) {
 
   // Binning for invariant mass distribution
   RooBinning rbm(2.2,4.2);
+  RooBinning rbmZoom(2.2,4.2);
   int nbins = 100;
   // RooBinning rbm(2.0,4.5);
   // int nbins = 150;
@@ -385,6 +390,12 @@ int main(int argc, char* argv[]) {
     rbm.addUniform(4,3.600,3.720); // 30 MeV
     rbm.addUniform(8,3.720,4.2); // 60 MeV
   }
+  rbmZoom.addUniform(11,2.2,2.860); // 60 MeV
+  rbmZoom.addUniform(19,2.860,3.240); // 20 MeV
+  rbmZoom.addUniform(1,3.240,3.300); // 60 MeV
+  rbmZoom.addUniform(5,3.300,3.600); // 60 MeV
+  rbmZoom.addUniform(4,3.600,3.720); // 30 MeV
+  rbmZoom.addUniform(8,3.720,4.2); // 60 MeV
 
   ws->var("Jpsi_Mass")->setBinning(rbm);
 
@@ -806,53 +817,81 @@ int main(int argc, char* argv[]) {
 
   // fix CB parameters to MC
   if (fixCBtoMC) {
-    if (prange=="6.5-30.0" && yrange=="0.0-2.4") {
-      ws->var("alpha_HI")->setVal(1.492);
-      ws->var("enne_HI")->setVal(1.733);
-      ws->var("wideFactor_HI")->setVal(1.895);
-      ws->var("alpha")->setVal(1.696);
-      ws->var("enne")->setVal(1.718);
-      ws->var("wideFactor")->setVal(1.880);
-    }
-    else if (prange=="6.5-30.0" && yrange=="0.0-1.6") {
-      ws->var("alpha_HI")->setVal(1.518);
-      ws->var("enne_HI")->setVal(1.683);
-      ws->var("wideFactor_HI")->setVal(1.698);
-      ws->var("alpha")->setVal(1.722);
-      ws->var("enne")->setVal(1.640);
-      ws->var("wideFactor")->setVal(1.719);
-    }
-    else if (prange=="3.0-30.0" && yrange=="1.6-2.4") {
-      ws->var("alpha_HI")->setVal(1.890);
-      ws->var("enne_HI")->setVal(1.440);
-      ws->var("wideFactor_HI")->setVal(1.506);
-      ws->var("alpha")->setVal(2.059);
-      ws->var("enne")->setVal(1.410);
-      ws->var("wideFactor")->setVal(1.553);
-    }
-    else if (prange=="3.0-6.5" && yrange=="1.6-2.4") {
-      ws->var("alpha_HI")->setVal(1.860);
-      ws->var("enne_HI")->setVal(1.380);
-      ws->var("wideFactor_HI")->setVal(1.550);
-      ws->var("alpha")->setVal(2.040);
-      ws->var("enne")->setVal(1.310);
-      ws->var("wideFactor")->setVal(1.508);
-    }
-    else if (prange=="6.5-30.0" && yrange=="1.6-2.4") {
-      ws->var("alpha_HI")->setVal(2.199);
-      ws->var("enne_HI")->setVal(1.276);
-      ws->var("wideFactor_HI")->setVal(1.830);
-      ws->var("alpha")->setVal(2.143);
-      ws->var("enne")->setVal(1.410);
-      ws->var("wideFactor")->setVal(1.970);
+    if (twoCB) {
+      if (prange=="6.5-30.0" && yrange=="0.0-1.6") {
+	ws->var("alpha_HI")->setVal(1.518);
+	ws->var("enne_HI")->setVal(1.683);
+	ws->var("wideFactor_HI")->setVal(1.698);
+	ws->var("alpha")->setVal(1.935);
+	ws->var("enne")->setVal(1.689);
+	ws->var("wideFactor")->setVal(1.75);
+      }
+      else if (prange=="3.0-30.0" && yrange=="1.6-2.4") {
+	ws->var("alpha_HI")->setVal(1.890);
+	ws->var("enne_HI")->setVal(1.440);
+	ws->var("wideFactor_HI")->setVal(1.506);
+	ws->var("alpha")->setVal(2.152);
+	ws->var("enne")->setVal(1.510);
+	ws->var("wideFactor")->setVal(1.553);
+      }
+      else {
+	ws->var("alpha_HI")->setVal(2.0);
+	ws->var("enne_HI")->setVal(1.4);
+	ws->var("wideFactor_HI")->setVal(2.0);
+	ws->var("alpha")->setVal(2.0);
+	ws->var("enne")->setVal(1.4);
+	ws->var("wideFactor")->setVal(2.0);
+      }
     }
     else {
-      ws->var("alpha_HI")->setVal(2.0);
-      ws->var("enne_HI")->setVal(1.4);
-      ws->var("wideFactor_HI")->setVal(2.0);
-      ws->var("alpha")->setVal(2.0);
-      ws->var("enne")->setVal(1.4);
-      ws->var("wideFactor")->setVal(2.0);
+      if (prange=="6.5-30.0" && yrange=="0.0-2.4") {
+	ws->var("alpha_HI")->setVal(1.492);
+	ws->var("enne_HI")->setVal(1.733);
+	ws->var("wideFactor_HI")->setVal(1.895);
+	ws->var("alpha")->setVal(1.696);
+	ws->var("enne")->setVal(1.718);
+	ws->var("wideFactor")->setVal(1.880);
+      }
+      else if (prange=="6.5-30.0" && yrange=="0.0-1.6") {
+	ws->var("alpha_HI")->setVal(1.518);
+	ws->var("enne_HI")->setVal(1.683);
+	ws->var("wideFactor_HI")->setVal(1.698);
+	ws->var("alpha")->setVal(1.722);
+	ws->var("enne")->setVal(1.640);
+	ws->var("wideFactor")->setVal(1.719);
+      }
+      else if (prange=="3.0-30.0" && yrange=="1.6-2.4") {
+	ws->var("alpha_HI")->setVal(1.890);
+	ws->var("enne_HI")->setVal(1.440);
+	ws->var("wideFactor_HI")->setVal(1.506);
+	ws->var("alpha")->setVal(2.059);
+	ws->var("enne")->setVal(1.410);
+	ws->var("wideFactor")->setVal(1.553);
+      }
+      else if (prange=="3.0-6.5" && yrange=="1.6-2.4") {
+	ws->var("alpha_HI")->setVal(1.860);
+	ws->var("enne_HI")->setVal(1.380);
+	ws->var("wideFactor_HI")->setVal(1.550);
+	ws->var("alpha")->setVal(2.040);
+	ws->var("enne")->setVal(1.310);
+	ws->var("wideFactor")->setVal(1.508);
+      }
+      else if (prange=="6.5-30.0" && yrange=="1.6-2.4") {
+	ws->var("alpha_HI")->setVal(2.199);
+	ws->var("enne_HI")->setVal(1.276);
+	ws->var("wideFactor_HI")->setVal(1.830);
+	ws->var("alpha")->setVal(2.143);
+	ws->var("enne")->setVal(1.410);
+	ws->var("wideFactor")->setVal(1.970);
+      }
+      else {
+	ws->var("alpha_HI")->setVal(2.0);
+	ws->var("enne_HI")->setVal(1.4);
+	ws->var("wideFactor_HI")->setVal(2.0);
+	ws->var("alpha")->setVal(2.0);
+	ws->var("enne")->setVal(1.4);
+	ws->var("wideFactor")->setVal(2.0);
+      }
     }
     
     if (fixAlpha) {
@@ -955,6 +994,7 @@ int main(int argc, char* argv[]) {
 
   // *** Draw mass plot
   RooPlot *mframe[nFiles];
+  RooPlot *mframezoom[nFiles];
   RooPlot *mframepull[nFiles];
   RooHist *hpull[nFiles]; 
   TH1 *hdata[nFiles];
@@ -1022,10 +1062,18 @@ int main(int argc, char* argv[]) {
     mframe[i]->SetTitle(("A RooPlot of \"J/#psi mass\" in "+varSuffix.at(i)).c_str());
     mframe[i]->GetYaxis()->SetTitle("Events");
 
+    mframezoom[i] = ws->var("Jpsi_Mass")->frame(3.3,4.1);
+    mframezoom[i]->SetName(("frame_"+varSuffix.at(i)).c_str());
+    mframezoom[i]->SetTitle(("A RooPlot of \"J/#psi mass\" in "+varSuffix.at(i)).c_str());
+    mframezoom[i]->GetYaxis()->SetTitle("Events");
+
     redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(rbm));
+    redData[i]->plotOn(mframezoom[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(rbmZoom));
     titlestr = "2D fit for" + partTit + "muons (mass projection), p_{T} = " + prange + " GeV/c and |y| = " + yrange;
     mframe[i]->GetXaxis()->SetTitle("m_{#mu^{+}#mu^{-}} (GeV/c^{2})");
     mframe[i]->GetXaxis()->CenterTitle(1);
+    mframezoom[i]->GetXaxis()->SetTitle("m_{#mu^{+}#mu^{-}} (GeV/c^{2})");
+    mframezoom[i]->GetXaxis()->CenterTitle(1);
     double max = mframe[i]->GetMaximum() * 1.3;
     double min = 0.0;
     mframe[i]->SetMaximum(max);
@@ -1033,37 +1081,89 @@ int main(int argc, char* argv[]) {
     name = "NBkg_"+varSuffix.at(i);
     min = ws->var(name.c_str())->getVal()/(double(nbins)) * 0.7;
 
-    ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],VisualizeError(*fitM,1,kFALSE),FillColor(kAzure-9),LineWidth(2),Precision(1e-4));//,Normalization(redData[i]->sumEntries(),RooAbsReal::NumEvent));
-    ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],LineColor(kBlue),LineWidth(2),Precision(1e-4));//,Normalization(redData[i]->sumEntries(),RooAbsReal::NumEvent));
+    // plot shaded areas
+    ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],VisualizeError(*fitM,1,kFALSE),FillColor(kAzure-9),LineWidth(2),Precision(1e-4));
+    ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframezoom[i],VisualizeError(*fitM,1,kFALSE),FillColor(kAzure-9),LineWidth(2),Precision(1e-4));
 
-    hpull[i] = mframe[i]->pullHist(0,0,true);
-    hpull[i]->SetName(("hpullhist_"+varSuffix.at(i)).c_str());
-    hpull[i]->SetTitle(("hpullhist_"+varSuffix.at(i)).c_str());
-    
-    ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],Components(mBkgFunct.at(i).c_str()),VisualizeError(*fitM,1,kFALSE),FillColor(kGray),Precision(1e-4));//,Normalization(redData[i]->sumEntries(),RooAbsReal::NumEvent));
-    ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],Components(mBkgFunct.at(i).c_str()),LineColor(kBlack),LineStyle(kDashed),LineWidth(2),Precision(1e-4));//,Normalization(redData[i]->sumEntries(),RooAbsReal::NumEvent));
-
+    string signal;
     if (!isPaper && found!=string::npos) { 
-      string signal;
       if (isPbPb && !shareShape)
        	signal = ",signalCB1_HI,signalCB1P_HI";
       else
 	signal = ",signalCB1,signalCB1P";
       ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],VisualizeError(*fitM,1,kFALSE),FillColor(kOrange-9),Components((mBkgFunct.at(i)+signal).c_str()),Precision(1e-4));
-      ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],Components((mBkgFunct.at(i)+signal).c_str()),LineColor(kOrange+2),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
-      if (isPbPb && !shareShape)
-       	signal = ",signalG2_HI,signalG2P_HI";
-      else
-	signal = ",signalG2,signalG2P";
+      ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframezoom[i],VisualizeError(*fitM,1,kFALSE),FillColor(kOrange-9),Components((mBkgFunct.at(i)+signal).c_str()),Precision(1e-4));
+      if (isPbPb && !shareShape) {
+	if (twoCB)
+	  signal = ",signalCB2_HI,signalCB2P_HI";
+	else
+	  signal = ",signalG2_HI,signalG2P_HI";
+      }
+      else {
+	if (twoCB)
+	  signal = ",signalCB2,signalCB2P";
+	else
+	  signal = ",signalG2,signalG2P";
+      }
       ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],VisualizeError(*fitM,1,kFALSE),FillColor(kGreen-9),Components((mBkgFunct.at(i)+signal).c_str()),Precision(1e-4));
-      ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],Components((mBkgFunct.at(i)+signal).c_str()),LineColor(kGreen+2),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
+      ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframezoom[i],VisualizeError(*fitM,1,kFALSE),FillColor(kGreen-9),Components((mBkgFunct.at(i)+signal).c_str()),Precision(1e-4));
     }
+
+    ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],Components(mBkgFunct.at(i).c_str()),VisualizeError(*fitM,1,kFALSE),FillColor(kGray),Precision(1e-4));
+    ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframezoom[i],Components(mBkgFunct.at(i).c_str()),VisualizeError(*fitM,1,kFALSE),FillColor(kGray),Precision(1e-4));
 
     if (i==nFiles-1) {
       ws->pdf(("sigMassPDF_mix_"+varSuffix.front()).c_str())->plotOn(mframe[i],VisualizeError(*fitM,1,kFALSE),FillColor(kYellow),Precision(1e-4));
-      redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerStyle(20),MarkerSize(0.8),Binning(rbm));
-      ws->pdf(("sigMassPDF_mix_"+varSuffix.front()).c_str())->plotOn(mframe[i],LineColor(kRed),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
+      ws->pdf(("sigMassPDF_mix_"+varSuffix.front()).c_str())->plotOn(mframezoom[i],VisualizeError(*fitM,1,kFALSE),FillColor(kYellow),Precision(1e-4));
     }
+
+    // replot data on top of shaded bands
+    redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(rbm));
+    redData[i]->plotOn(mframezoom[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(rbmZoom));
+
+    // plot lines
+    ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],LineColor(kBlue),LineWidth(2),Precision(1e-4));
+    ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframezoom[i],LineColor(kBlue),LineWidth(2),Precision(1e-4));
+
+    hpull[i] = mframe[i]->pullHist(0,0,true);
+    hpull[i]->SetName(("hpullhist_"+varSuffix.at(i)).c_str());
+    hpull[i]->SetTitle(("hpullhist_"+varSuffix.at(i)).c_str());
+    
+    if (!isPaper && found!=string::npos) { 
+      if (isPbPb && !shareShape)
+       	signal = ",signalCB1_HI,signalCB1P_HI";
+      else
+	signal = ",signalCB1,signalCB1P";
+      ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],Components((mBkgFunct.at(i)+signal).c_str()),LineColor(kOrange+2),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
+      ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframezoom[i],Components((mBkgFunct.at(i)+signal).c_str()),LineColor(kOrange+2),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
+      if (isPbPb && !shareShape) {
+	if (twoCB)
+	  signal = ",signalCB2_HI,signalCB2P_HI";
+	else
+	  signal = ",signalG2_HI,signalG2P_HI";
+      }
+      else {
+	if (twoCB)
+	  signal = ",signalCB2,signalCB2P";
+	else
+	  signal = ",signalG2,signalG2P";
+      }
+      ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],Components((mBkgFunct.at(i)+signal).c_str()),LineColor(kGreen+2),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
+      ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframezoom[i],Components((mBkgFunct.at(i)+signal).c_str()),LineColor(kGreen+2),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
+    }
+
+    ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],Components(mBkgFunct.at(i).c_str()),LineColor(kBlack),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
+    ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframezoom[i],Components(mBkgFunct.at(i).c_str()),LineColor(kBlack),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
+    // redraw total line
+    ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],LineColor(kBlue),LineWidth(2),Precision(1e-4));
+    ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframezoom[i],LineColor(kBlue),LineWidth(2),Precision(1e-4));
+
+    if (i==nFiles-1) {
+      //      redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerStyle(20),MarkerSize(0.8),Binning(rbm));
+      ws->pdf(("sigMassPDF_mix_"+varSuffix.front()).c_str())->plotOn(mframe[i],LineColor(kRed),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
+      ws->pdf(("sigMassPDF_mix_"+varSuffix.front()).c_str())->plotOn(mframezoom[i],LineColor(kRed),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
+    }
+    //    redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),MarkerStyle(24),Binning(rbm));
 
     hdata[i] = redData[i]->createHistogram(("hdata"+varSuffix.at(i)).c_str(),*ws->var("Jpsi_Mass"),Binning(rbm));
 
@@ -1142,6 +1242,10 @@ int main(int argc, char* argv[]) {
     TPad *pad3 = new TPad("pad3","This is pad3",0.16,0.52,0.40,0.75);
     pad3->SetLeftMargin(0.2);
     pad3->SetBottomMargin(0.2);
+    TPad *pad4 = new TPad("pad4","This is pad4",0.52,0.32,0.90,0.70);
+    pad4->SetFillStyle(0);
+    pad4->SetLeftMargin(0.2);
+    pad4->SetBottomMargin(0.2);
     if (!isPaper) {
       pad1->Draw();
       pad2->Draw();
@@ -1149,7 +1253,7 @@ int main(int argc, char* argv[]) {
       pad2->cd(); mframepull[i]->Draw();
       pad1->cd();
     }
-    
+      
     double minX = 0.62;
     double maxY = 0.9;
     double step = 0.05;
@@ -1365,7 +1469,10 @@ int main(int argc, char* argv[]) {
       maxY-=step;//0.6
 
       if  (found!=string::npos) {
-	sprintf(reduceDS,"#sigma_{G} = %0.0f MeV/c^{2}",sigmaSig2*1000.0);
+	if (twoCB)
+	  sprintf(reduceDS,"#sigma_{CB2} = %0.0f MeV/c^{2}",sigmaSig2*1000.0);
+	else
+	  sprintf(reduceDS,"#sigma_{G} = %0.0f MeV/c^{2}",sigmaSig2*1000.0);
 	lSigG->SetText(minX,maxY,reduceDS);
 	maxY-=step;//0.55
 	if (isPbPb && !shareShape)
@@ -1373,12 +1480,22 @@ int main(int argc, char* argv[]) {
 	else
 	  name = "wideFactor";
 
-	if (ws->var(name.c_str())->isConstant())
-	  sprintf(reduceDS,"n_{G} = %0.2f (fixed)",ws->var(name.c_str())->getVal());
-	else if (ws->var(name.c_str())->hasAsymError() && abs(-1.0*ws->var(name.c_str())->getErrorLo()/ws->var(name.c_str())->getErrorHi() - 1)>0.1)
-	  sprintf(reduceDS,"n_{G} = %0.2f^{+%0.2f}_{%0.2f}",ws->var(name.c_str())->getVal(),ws->var(name.c_str())->getErrorHi(),ws->var(name.c_str())->getErrorLo());
-	else
-	  sprintf(reduceDS,"n_{G} = %0.2f #pm %0.2f",ws->var(name.c_str())->getVal(),ws->var(name.c_str())->getError());
+	if (twoCB) {
+	  if (ws->var(name.c_str())->isConstant())
+	    sprintf(reduceDS,"n_{CB2} = %0.2f (fixed)",ws->var(name.c_str())->getVal());
+	  else if (ws->var(name.c_str())->hasAsymError() && abs(-1.0*ws->var(name.c_str())->getErrorLo()/ws->var(name.c_str())->getErrorHi() - 1)>0.1)
+	    sprintf(reduceDS,"n_{CB2} = %0.2f^{+%0.2f}_{%0.2f}",ws->var(name.c_str())->getVal(),ws->var(name.c_str())->getErrorHi(),ws->var(name.c_str())->getErrorLo());
+	  else
+	    sprintf(reduceDS,"n_{CB2} = %0.2f #pm %0.2f",ws->var(name.c_str())->getVal(),ws->var(name.c_str())->getError());
+	}
+	else {
+	  if (ws->var(name.c_str())->isConstant())
+	    sprintf(reduceDS,"n_{G} = %0.2f (fixed)",ws->var(name.c_str())->getVal());
+	  else if (ws->var(name.c_str())->hasAsymError() && abs(-1.0*ws->var(name.c_str())->getErrorLo()/ws->var(name.c_str())->getErrorHi() - 1)>0.1)
+	    sprintf(reduceDS,"n_{G} = %0.2f^{+%0.2f}_{%0.2f}",ws->var(name.c_str())->getVal(),ws->var(name.c_str())->getErrorHi(),ws->var(name.c_str())->getErrorLo());
+	  else
+	    sprintf(reduceDS,"n_{G} = %0.2f #pm %0.2f",ws->var(name.c_str())->getVal(),ws->var(name.c_str())->getError());
+	}
 	lNG->SetText(minX,maxY,reduceDS);
 	maxY-=step;//0.50
       }
@@ -1399,11 +1516,18 @@ int main(int argc, char* argv[]) {
 
     if (!isPaper) {
       if  (found!=string::npos) {
-	if (Errresol<0.0005) 
-	  sprintf(reduceDS,"#sigma_{CB+G} = (%0.0f #pm %0.0f) MeV/c^{2}",resol*1000.0,1.0);
-	else
-	  sprintf(reduceDS,"#sigma_{CB+G} = (%0.0f #pm %0.0f) MeV/c^{2}",resol*1000.0,Errresol*1000.0);
-
+	if (twoCB) {
+	  if (Errresol<0.0005) 
+	    sprintf(reduceDS,"#sigma_{CB+CB2} = (%0.0f #pm %0.0f) MeV/c^{2}",resol*1000.0,1.0);
+	  else
+	    sprintf(reduceDS,"#sigma_{CB+CB2} = (%0.0f #pm %0.0f) MeV/c^{2}",resol*1000.0,Errresol*1000.0);
+	}
+	else {
+	  if (Errresol<0.0005) 
+	    sprintf(reduceDS,"#sigma_{CB+G} = (%0.0f #pm %0.0f) MeV/c^{2}",resol*1000.0,1.0);
+	  else
+	    sprintf(reduceDS,"#sigma_{CB+G} = (%0.0f #pm %0.0f) MeV/c^{2}",resol*1000.0,Errresol*1000.0);
+	}
 	lSigma->SetText(minX,maxY,reduceDS);
 	maxY-=step;//0.45
 	mframe[i]->addObject(lSigma,"");
@@ -1438,10 +1562,18 @@ int main(int argc, char* argv[]) {
 	  name = "coeffGaus_HI";
 	else
 	  name = "coeffGaus";
-	if (ws->var(name.c_str())->hasAsymError() && abs(-1.0*ws->var(name.c_str())->getErrorLo()/ws->var(name.c_str())->getErrorHi() - 1)>0.1)
-	  sprintf(reduceDS,"f_{G} = %0.3f^{+%0.3f}_{%0.3f}",ws->var(name.c_str())->getVal(),ws->var(name.c_str())->getErrorHi(),ws->var(name.c_str())->getErrorLo());
-	else
-	  sprintf(reduceDS,"f_{G} = %0.2f #pm %0.2f",ws->var(name.c_str())->getVal(),ws->var(name.c_str())->getError());
+	if (twoCB) {
+	  if (ws->var(name.c_str())->hasAsymError() && abs(-1.0*ws->var(name.c_str())->getErrorLo()/ws->var(name.c_str())->getErrorHi() - 1)>0.1)
+	    sprintf(reduceDS,"f_{CB2} = %0.3f^{+%0.3f}_{%0.3f}",ws->var(name.c_str())->getVal(),ws->var(name.c_str())->getErrorHi(),ws->var(name.c_str())->getErrorLo());
+	  else
+	    sprintf(reduceDS,"f_{CB2} = %0.2f #pm %0.2f",ws->var(name.c_str())->getVal(),ws->var(name.c_str())->getError());
+	}
+	else {
+	  if (ws->var(name.c_str())->hasAsymError() && abs(-1.0*ws->var(name.c_str())->getErrorLo()/ws->var(name.c_str())->getErrorHi() - 1)>0.1)
+	    sprintf(reduceDS,"f_{G} = %0.3f^{+%0.3f}_{%0.3f}",ws->var(name.c_str())->getVal(),ws->var(name.c_str())->getErrorHi(),ws->var(name.c_str())->getErrorLo());
+	  else
+	    sprintf(reduceDS,"f_{G} = %0.2f #pm %0.2f",ws->var(name.c_str())->getVal(),ws->var(name.c_str())->getError());
+	}
 	lFG->SetText(minX,maxY,reduceDS);
 	maxY-=step;//0.30
 
@@ -1518,12 +1650,20 @@ int main(int argc, char* argv[]) {
       st->SetTextSize(0.065);
       st->SetTextFont(42);
     }
+    else {
+      mframezoom[i]->SetMinimum(0);
+      mframezoom[i]->SetMaximum(ws->var(("NJpsi_"+varSuffix.at(i)).c_str())->getVal()*0.1);
+      pad4->Draw();
+      pad4->cd();mframezoom[i]->Draw();
+      c00.cd();
+    }
  
     titlestr = dirPre + "_" + mBkgFunct.at(i) + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str +  "massfit.pdf";
     c00.SaveAs(titlestr.c_str());
 
 
     ws->import(*mframe[i]);
+    ws->import(*mframezoom[i]);
     ws->import(*mframepull[i]);
     ws->import(*hpull[i]);
     ws->import(*hpull_proj[i]);
@@ -1532,6 +1672,7 @@ int main(int argc, char* argv[]) {
     dir[i]->cd();
 
     mframe[i]->Write();
+    mframezoom[i]->Write();
     mframepull[i]->Write();
     hpull[i]->Write();
     hpull_proj[i]->Write();
@@ -1788,9 +1929,14 @@ void defineMassSig(RooWorkspace *ws) {
   RooFormulaVar sigmaSig2("sigmaSig2","@0*@1",RooArgList(*(ws->var("sigmaSig1")),wideFactor));ws->import(sigmaSig2);
   // wide Gauss
   ws->factory("Gaussian::signalG2(Jpsi_Mass,meanSig1,sigmaSig2)");
+  // wide CB
+  ws->factory("CBShape::signalCB2(Jpsi_Mass,meanSig1,sigmaSig2,alpha,enne)");
 
   // CB(narrow) + Gauss(wide)
   ws->factory("SUM::sigCB1G2(coeffGaus[0.1,0.0,1.0]*signalG2,signalCB1)");
+
+  // CB(narrow) + CB(wide)
+  ws->factory("SUM::sigCB1CB2(coeffGaus[0.1,0.0,1.0]*signalCB2,signalCB1)");
 
   // Fix Jpsi-psi' mass difference
   //  RooFormulaVar meanSig1P("meanSig1P","@0+0.58919",RooArgList(*(ws->var("meanSig1")))); ws->import(meanSig1P);
@@ -1805,9 +1951,13 @@ void defineMassSig(RooWorkspace *ws) {
   ws->factory("Gaussian::signalG2P(Jpsi_Mass,meanSig1P,sigmaSig2P)");
   // narrow CB
   ws->factory("CBShape::signalCB1P(Jpsi_Mass,meanSig1P,sigmaSig1P,alpha,enne)");
+  // wide CB
+  ws->factory("CBShape::signalCB2P(Jpsi_Mass,meanSig1P,sigmaSig2P,alpha,enne)");
 
   // CB(narrow) + Gauss(wide)
   ws->factory("SUM::sigCB1G2P(coeffGaus*signalG2P,signalCB1P)");
+  // CB(narrow) + CB(wide)
+  ws->factory("SUM::sigCB1CB2P(coeffGaus*signalCB2P,signalCB1P)");
 
   return;
 }
@@ -2056,9 +2206,13 @@ void defineMassSigHI(RooWorkspace *ws) {
   RooFormulaVar sigmaSig2_HI("sigmaSig2_HI","@0*@1",RooArgList(*(ws->var("sigmaSig1_HI")),wideFactor_HI));ws->import(sigmaSig2_HI);
   // wide Gauss
   ws->factory("Gaussian::signalG2_HI(Jpsi_Mass,meanSig1_HI,sigmaSig2_HI)");
+  // wide CB
+  ws->factory("CBShape::signalCB2_HI(Jpsi_Mass,meanSig1_HI,sigmaSig2_HI,alpha_HI,enne_HI)");
 
   // CB(narrow) + Gauss(wide)
   ws->factory("SUM::sigCB1G2_HI(coeffGaus_HI[0.1,0.0,1.0]*signalG2_HI,signalCB1_HI)");
+  // CB(narrow) + CB(wide)
+  ws->factory("SUM::sigCB1CB2_HI(coeffGaus_HI[0.1,0.0,1.0]*signalCB2_HI,signalCB1_HI)");
 
   // Fix Jpsi/psi' mass ratio
   RooFormulaVar meanSig1P_HI("meanSig1P_HI","@0*1.19025",RooArgList(*(ws->var("meanSig1_HI")))); ws->import(meanSig1P_HI);
@@ -2071,9 +2225,13 @@ void defineMassSigHI(RooWorkspace *ws) {
   ws->factory("Gaussian::signalG2P_HI(Jpsi_Mass,meanSig1P_HI,sigmaSig2P_HI)");
   // narrow CB
   ws->factory("CBShape::signalCB1P_HI(Jpsi_Mass,meanSig1P_HI,sigmaSig1P_HI,alpha_HI,enne_HI)");
+  // narrow CB
+  ws->factory("CBShape::signalCB2P_HI(Jpsi_Mass,meanSig1P_HI,sigmaSig2P_HI,alpha_HI,enne_HI)");
 
   // CB(narrow) + Gauss(wide)
   ws->factory("SUM::sigCB1G2P_HI(coeffGaus_HI*signalG2P_HI,signalCB1P_HI)");
+  // CB(narrow) + CB(wide)
+  ws->factory("SUM::sigCB1CB2P_HI(coeffGaus_HI*signalCB2P_HI,signalCB1P_HI)");
 
   return;
 }
