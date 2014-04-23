@@ -494,11 +494,11 @@ int main(int argc, char* argv[]) {
   RooRealVar *sigma_eff[nFiles-1];
   RooRealVar *sigma_pol = new RooRealVar("sigma_pol","#sigma_{pol}",1.0);
   RooRealVar *sigma_b = new RooRealVar("sigma_b","#sigma_{b}",1.0);
-  // TODO: add conditions for pt and y bins
+
   sigma_pol->setConstant(true);
   sigma_b->setConstant(true);
   if (useSystematics) {
-    sigma_pol->setVal(0.01);
+    sigma_pol->setVal(0.00);// 0.01 but not considered an uncertainty
     if (prange=="3.0-30.0" || prange=="3.0-6.5")
       sigma_b->setVal(0.08);
     else
