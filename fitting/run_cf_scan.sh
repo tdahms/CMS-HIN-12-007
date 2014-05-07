@@ -27,9 +27,9 @@ fi
 
 ptbins=(3-30 65-30)
 #rapbins=(0-16 16-24)
-rapbins=(16-24)
+rapbins=(0-16)
 #centbins=(HI020 HI2040 HI40100)
-centbins=(HI020)
+centbins=(HI2040)
 
 for pt in "${ptbins[@]}";
 do

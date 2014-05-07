@@ -20,21 +20,30 @@
 #include "TLegend.h"
 
 
-void plot_double_ratio(bool isPaper=false, bool plotGlobalPP = false, bool savePlots=false)
+void plot_double_ratio(bool isPaper=false, bool plotGlobalPP = false, bool overlay=true, bool savePlots=false)
 {
   gStyle->SetOptFit(0);
   gStyle->SetOptStat(0);
 
+  double split = 0.86;
+  double zoom = split/(1-split);
+
   // 0-20%, 20-40%, 40-100%
   double Npart[3] = {308.3853, 158.5653, 32.7694};
-  double Npart2[3] = {/*318.3853, */308.3853, 158.5653, 32.7694, /*22.7694*/};
+  double Npart2[3] = {310.3853, 160.5653, 34.7694};
   double Npart_err[3] = {0,0,0};
   double Npart_sys[3] = {10,10,10};
 
-  double ratio_fwd_pt3030[3];
-  double ratio_fwd_pt3030_err[3];
-  double ratio_fwd_pt3030_sys[3];
-  double ratio_fwd_pt3030_glb[3];
+  double ratio_fwd_pt3030[3] = {};
+  double ratio_fwd_pt3030_err[3] = {};
+  double ratio_fwd_pt3030_sys[3] = {};
+  double ratio_fwd_pt3030_glb[3] = {};
+
+  // centrality integrated points
+  double ratio_fwd_pt3030_mb[] = {};
+  double ratio_fwd_pt3030_mb_err[] = {};
+  double ratio_fwd_pt3030_mb_sys[] = {};
+
 
   std::ifstream ifs("fwd.txt");
   int i=0;
@@ -46,10 +55,25 @@ void plot_double_ratio(bool isPaper=false, bool plotGlobalPP = false, bool saveP
     ifs.close();
   }
 
+   ifs.open("fwd_mb.txt");
+  i=0;
+  if (ifs.is_open()) {
+    while (ifs.good()) {
+      ifs >> ratio_fwd_pt3030_mb[i] >> ratio_fwd_pt3030_mb_err[i] >> ratio_fwd_pt3030_mb_sys[i];
+      i++;
+    }
+    ifs.close();
+  }
+
   double ratio_mid_pt6530[3] =     {};
   double ratio_mid_pt6530_err[3] = {};
   double ratio_mid_pt6530_sys[3] = {};
   double ratio_mid_pt6530_glb[3] = {};
+
+  // centrality integrated points
+  double ratio_mid_pt6530_mb[1] = {};
+  double ratio_mid_pt6530_mb_err[1] = {};
+  double ratio_mid_pt6530_mb_sys[1] = {};
 
   ifs.open("mid.txt");
   i=0;
@@ -60,13 +84,36 @@ void plot_double_ratio(bool isPaper=false, bool plotGlobalPP = false, bool saveP
     }
     ifs.close();
   }
-									               
-  TGraphErrors *gr_fwd_pt3030 = new TGraphErrors(3,Npart, ratio_fwd_pt3030, Npart_err, ratio_fwd_pt3030_err);
-  TGraphErrors *gr_fwd_pt3030_sys = new TGraphErrors(3,Npart, ratio_fwd_pt3030, Npart_sys, ratio_fwd_pt3030_sys);
-  TGraphErrors *gr_fwd_pt3030_glb = new TGraphErrors(3,Npart2, ratio_fwd_pt3030, Npart_sys, ratio_fwd_pt3030_glb);
-  // TGraphAsymmErrors *gr_fwd_pt3030_sys = new TGraphAsymmErrors(3,Npart, ratio_fwd_pt3030, Npart_sys, Npart_sys, ratio_fwd_pt3030_sysLo, ratio_fwd_pt3030_sysHi);
-  // TGraphAsymmErrors *gr_fwd_pt3030_glb = new TGraphAsymmErrors(3,Npart2, ratio_fwd_pt3030, Npart_sys, Npart_sys, ratio_fwd_pt3030_glbLo, ratio_fwd_pt3030_glbHi);
-  TGraphErrors *gr_fwd_pt3030P = new TGraphErrors(3,Npart, ratio_fwd_pt3030, Npart_err, Npart_err);
+
+  ifs.open("mid_mb.txt");
+  i=0;
+  if (ifs.is_open()) {
+    while (ifs.good()) {
+      ifs >> ratio_mid_pt6530_mb[i] >> ratio_mid_pt6530_mb_err[i] >> ratio_mid_pt6530_mb_sys[i];
+      i++;
+    }
+    ifs.close();
+  }
+  
+  TGraphErrors *gr_fwd_pt3030;
+  TGraphErrors *gr_fwd_pt3030_sys;
+  TGraphErrors *gr_fwd_pt3030_glb;
+  TGraphErrors *gr_fwd_pt3030P;
+
+  if (overlay) {
+    gr_fwd_pt3030 = new TGraphErrors(3,Npart2, ratio_fwd_pt3030, Npart_err, ratio_fwd_pt3030_err);
+    gr_fwd_pt3030_sys = new TGraphErrors(3,Npart2, ratio_fwd_pt3030, Npart_sys, ratio_fwd_pt3030_sys);
+    gr_fwd_pt3030_glb = new TGraphErrors(3,Npart2, ratio_fwd_pt3030, Npart_sys, ratio_fwd_pt3030_glb);
+    gr_fwd_pt3030P = new TGraphErrors(3,Npart2, ratio_fwd_pt3030, Npart_err, Npart_err);
+  }
+  else {
+    gr_fwd_pt3030 = new TGraphErrors(3,Npart, ratio_fwd_pt3030, Npart_err, ratio_fwd_pt3030_err);
+    gr_fwd_pt3030_sys = new TGraphErrors(3,Npart, ratio_fwd_pt3030, Npart_sys, ratio_fwd_pt3030_sys);
+    gr_fwd_pt3030_glb = new TGraphErrors(3,Npart, ratio_fwd_pt3030, Npart_sys, ratio_fwd_pt3030_glb);
+    // TGraphAsymmErrors *gr_fwd_pt3030_sys = new TGraphAsymmErrors(3,Npart, ratio_fwd_pt3030, Npart_sys, Npart_sys, ratio_fwd_pt3030_sysLo, ratio_fwd_pt3030_sysHi);
+    // TGraphAsymmErrors *gr_fwd_pt3030_glb = new TGraphAsymmErrors(3,Npart, ratio_fwd_pt3030, Npart_sys, Npart_sys, ratio_fwd_pt3030_glbLo, ratio_fwd_pt3030_glbHi);
+    gr_fwd_pt3030P = new TGraphErrors(3,Npart, ratio_fwd_pt3030, Npart_err, Npart_err);
+  }
   gr_fwd_pt3030->SetName("gr_fwd_pt3030");
   gr_fwd_pt3030_sys->SetName("gr_fwd_pt3030_sys");
   gr_fwd_pt3030_glb->SetName("gr_fwd_pt3030_glb");
@@ -74,9 +121,9 @@ void plot_double_ratio(bool isPaper=false, bool plotGlobalPP = false, bool saveP
 									               
   TGraphErrors *gr_mid_pt6530 = new TGraphErrors(3,Npart, ratio_mid_pt6530, Npart_err, ratio_mid_pt6530_err);
   TGraphErrors *gr_mid_pt6530_sys = new TGraphErrors(3,Npart, ratio_mid_pt6530, Npart_sys, ratio_mid_pt6530_sys);
-  TGraphErrors *gr_mid_pt6530_glb = new TGraphErrors(3,Npart2, ratio_mid_pt6530, Npart_sys, ratio_mid_pt6530_glb);
+  TGraphErrors *gr_mid_pt6530_glb = new TGraphErrors(3,Npart, ratio_mid_pt6530, Npart_sys, ratio_mid_pt6530_glb);
   // TGraphAsymmErrors *gr_mid_pt6530_sys = new TGraphAsymmErrors(3,Npart, ratio_mid_pt6530, Npart_sys, Npart_sys, ratio_mid_pt6530_sysLo, ratio_mid_pt6530_sysHi);
-  // TGraphAsymmErrors *gr_mid_pt6530_glb = new TGraphAsymmErrors(3,Npart2, ratio_mid_pt6530, Npart_sys, Npart_sys, ratio_mid_pt6530_glbLo, ratio_mid_pt6530_glbHi);
+  // TGraphAsymmErrors *gr_mid_pt6530_glb = new TGraphAsymmErrors(3,Npart, ratio_mid_pt6530, Npart_sys, Npart_sys, ratio_mid_pt6530_glbLo, ratio_mid_pt6530_glbHi);
   TGraphErrors *gr_mid_pt6530P = new TGraphErrors(3,Npart, ratio_mid_pt6530, Npart_err, Npart_err);
   gr_mid_pt6530->SetName("gr_mid_pt6530");
   gr_mid_pt6530_sys->SetName("gr_mid_pt6530_sys");
@@ -84,57 +131,71 @@ void plot_double_ratio(bool isPaper=false, bool plotGlobalPP = false, bool saveP
   gr_mid_pt6530P->SetName("gr_mid_pt6530P");
 
   gr_fwd_pt3030->SetMarkerSize(1.2);
-  gr_mid_pt6530->SetMarkerSize(2.0);
+  gr_mid_pt6530->SetMarkerSize(1.2);
 
   gr_fwd_pt3030P->SetMarkerSize(1.2);
-  gr_mid_pt6530P->SetMarkerSize(2.0);
+  gr_mid_pt6530P->SetMarkerSize(1.2);
 
   gr_mid_pt6530->RemovePoint(2);
   gr_mid_pt6530_sys->RemovePoint(2);
   gr_mid_pt6530_glb->RemovePoint(2);
   gr_mid_pt6530P->RemovePoint(2);
 
-  double ratio_mid_pt6530_limit[1] = {0.46};
+  double ratio_mid_pt6530_limit[1] = {0.452};
   double ratio_mid_pt6530_arrow[1] = {0.36};
   double Npart_limit[1] = {32.7694};
   TGraphAsymmErrors *gr_mid_pt6530_limit = new TGraphAsymmErrors(1, Npart_limit, ratio_mid_pt6530_limit, Npart_err, Npart_err, ratio_mid_pt6530_arrow, Npart_err);
-  TGraphAsymmErrors *gr_mid_pt6530_bar = new TGraphAsymmErrors(1, Npart_limit, ratio_mid_pt6530_limit, Npart_sys, Npart_sys, ratio_mid_pt6530_arrow, Npart_err);
+  TGraphAsymmErrors *gr_mid_pt6530_bar = new TGraphAsymmErrors(1, Npart_limit, ratio_mid_pt6530_limit, Npart_sys, Npart_sys, Npart_err, Npart_err);
   gr_mid_pt6530_limit->SetName("gr_mid_pt6530_limit");
   gr_mid_pt6530_bar->SetName("gr_mid_pt6530_bar");
+  gr_mid_pt6530_limit->SetMarkerStyle(1);
   gr_mid_pt6530_limit->SetMarkerSize(2.0);
   gr_mid_pt6530_bar->SetMarkerSize(0.0);
-  gr_mid_pt6530_limit->SetMarkerColor(kGreen+2);
-  gr_mid_pt6530_limit->SetLineColor(kGreen+2);
-  gr_mid_pt6530_bar->SetMarkerColor(kGreen+2);
-  gr_mid_pt6530_bar->SetLineColor(kGreen+2);
+  gr_mid_pt6530_limit->SetLineWidth(1);
+  gr_mid_pt6530_bar->SetLineWidth(2);
 
   if (isPaper) {
     gr_fwd_pt3030->SetMarkerColor(kRed+2);
     gr_fwd_pt3030->SetLineColor(kRed+2);
     gr_fwd_pt3030_sys->SetLineColor(kRed+2);
-    gr_fwd_pt3030_glb->SetFillColor(kRed+2);
+    gr_fwd_pt3030_glb->SetLineColor(kRed+2);
+
+    gr_mid_pt6530->SetMarkerColor(kBlue+1);
+    gr_mid_pt6530->SetLineColor(kBlue+1);
+    gr_mid_pt6530_sys->SetLineColor(kBlue+1);
+    gr_mid_pt6530_glb->SetLineColor(kBlue+1);
+
+    gr_mid_pt6530_limit->SetMarkerColor(kBlue+1);
+    gr_mid_pt6530_limit->SetLineColor(kBlue+1);
+    gr_mid_pt6530_bar->SetMarkerColor(kBlue+1);
+    gr_mid_pt6530_bar->SetLineColor(kBlue+1);
   }
   else {
     gr_fwd_pt3030->SetMarkerColor(kRed);
     gr_fwd_pt3030->SetLineColor(kRed);
     gr_fwd_pt3030_sys->SetLineColor(kRed);
-    gr_fwd_pt3030_glb->SetFillColor(kRed);
+    gr_fwd_pt3030_glb->SetLineColor(kRed);
+
+    gr_mid_pt6530->SetMarkerColor(kBlue);
+    gr_mid_pt6530->SetLineColor(kBlue);
+    gr_mid_pt6530_sys->SetLineColor(kBlue);
+    gr_mid_pt6530_glb->SetLineColor(kBlue);
+
+    gr_mid_pt6530_limit->SetMarkerColor(kBlue);
+    gr_mid_pt6530_limit->SetLineColor(kBlue);
+    gr_mid_pt6530_bar->SetMarkerColor(kBlue);
+    gr_mid_pt6530_bar->SetLineColor(kBlue);
   }
 
   gr_fwd_pt3030_sys->SetFillColor(kRed-9);
+  gr_fwd_pt3030_glb->SetFillColor(kRed-9);
+  gr_mid_pt6530_sys->SetFillColor(kAzure-9);
+  gr_mid_pt6530_glb->SetFillColor(kAzure-9);
 
-  gr_mid_pt6530->SetMarkerColor(kGreen+2);
-  gr_mid_pt6530->SetLineColor(kGreen+2);
-  gr_mid_pt6530_sys->SetLineColor(kGreen+2);
-  gr_mid_pt6530_sys->SetFillColor(kGreen-9);
-  gr_mid_pt6530_glb->SetFillColor(kGreen+2);
-  gr_mid_pt6530->SetMarkerStyle(33);
+  gr_mid_pt6530->SetMarkerStyle(21);
 
   gr_fwd_pt3030P->SetMarkerStyle(24);
-  gr_mid_pt6530P->SetMarkerStyle(27);
-
-  gr_fwd_pt3030_glb->SetLineColor(kRed+2);
-  gr_mid_pt6530_glb->SetLineColor(kGreen+2);
+  gr_mid_pt6530P->SetMarkerStyle(25);
 
   gr_fwd_pt3030_glb->SetFillStyle(0);
   gr_mid_pt6530_glb->SetFillStyle(0);
@@ -154,29 +215,93 @@ void plot_double_ratio(bool isPaper=false, bool plotGlobalPP = false, bool saveP
   TBox *pp_fwd_pt3030 = new TBox(0.0,1.0-pp_fwd_pt3030_err,10.0,1.0+pp_fwd_pt3030_err);
   pp_fwd_pt3030->SetFillColor(kRed-9);
   TBox *pp_mid_pt6530 = new TBox(0.0,1.0-pp_mid_pt6530_err,10.0,1.0+pp_mid_pt6530_err);
-  pp_mid_pt6530->SetFillColor(kGreen-9);
+  pp_mid_pt6530->SetFillColor(kAzure-9);
 
-  TBox *pp_mid2_pt6530 = new TBox(7.0,1.0-pp_mid_pt6530_err,14.0,1.0+pp_mid_pt6530_err);
-  pp_mid2_pt6530->SetFillColor(kGreen-9);
+  TBox *pp_mid2_pt6530 = new TBox(10.0,1.0-pp_mid_pt6530_err,20.0,1.0+pp_mid_pt6530_err);
+  pp_mid2_pt6530->SetFillColor(kAzure-9);
 
-  TF1 *f3 = new TF1("f3","1",0,400);
+
+  // centrality integrated points
+  double xval[1] = {0.5*416/zoom};
+  TGraphErrors *gr_fwd_pt3030_mb = new TGraphErrors(1,xval,ratio_fwd_pt3030_mb, Npart_err, ratio_fwd_pt3030_mb_err);
+  TGraphErrors *gr_fwd_pt3030_mb_sys = new TGraphErrors(1,xval,ratio_fwd_pt3030_mb, Npart_sys, ratio_fwd_pt3030_mb_sys);
+  TGraphErrors *gr_fwd_pt3030_mbP = new TGraphErrors(1,xval,ratio_fwd_pt3030_mb, Npart_err, Npart_err);
+
+  TGraphErrors *gr_mid_pt6530_mb = new TGraphErrors(1,xval,ratio_mid_pt6530_mb, Npart_err, ratio_mid_pt6530_mb_err);
+  TGraphErrors *gr_mid_pt6530_mb_sys = new TGraphErrors(1,xval,ratio_mid_pt6530_mb, Npart_sys, ratio_mid_pt6530_mb_sys);
+  TGraphErrors *gr_mid_pt6530_mbP = new TGraphErrors(1,xval,ratio_mid_pt6530_mb, Npart_err, Npart_err);
+
+  if (isPaper) {
+    gr_fwd_pt3030_mb->SetMarkerColor(kRed+2);
+    gr_fwd_pt3030_mb->SetLineColor(kRed+2);
+    gr_fwd_pt3030_mb_sys->SetLineColor(kRed+2);
+    
+    gr_mid_pt6530_mb->SetMarkerColor(kBlue+1);
+    gr_mid_pt6530_mb->SetLineColor(kBlue+1);
+    gr_mid_pt6530_mb_sys->SetLineColor(kBlue+1);
+  }
+  else {
+    gr_fwd_pt3030_mb->SetMarkerColor(kRed);
+    gr_fwd_pt3030_mb->SetLineColor(kRed);
+    gr_fwd_pt3030_mb_sys->SetLineColor(kRed);
+    
+    gr_mid_pt6530_mb->SetMarkerColor(kBlue);
+    gr_mid_pt6530_mb->SetLineColor(kBlue);
+    gr_mid_pt6530_mb_sys->SetLineColor(kBlue);
+  }
+
+  gr_fwd_pt3030_mb_sys->SetFillColor(kRed-9);
+  gr_mid_pt6530_mb_sys->SetFillColor(kAzure-9);
+
+  gr_fwd_pt3030_mbP->SetMarkerStyle(24);
+  gr_mid_pt6530_mbP->SetMarkerStyle(25);
+  gr_mid_pt6530_mb->SetMarkerStyle(21);
+
+  gr_fwd_pt3030_mb->SetMarkerSize(1.2);
+  gr_mid_pt6530_mb->SetMarkerSize(1.2);
+  gr_fwd_pt3030_mbP->SetMarkerSize(1.2);
+  gr_mid_pt6530_mbP->SetMarkerSize(1.2);
+
+
+
+  TF1 *f3 = new TF1("f3","1",0,416);
   f3->SetLineWidth(1);
   f3->GetXaxis()->SetTitle("N_{part}");
-  f3->GetYaxis()->SetTitle("[ #psi (2S) #/J/#psi ]_{PbPb} #/[ #psi (2S) #/J/#psi ]_{pp}");
+  f3->GetYaxis()->SetTitle("[ N_{#psi(2S)}/N_{J/#psi} ]_{PbPb} / [ N_{#psi(2S)}/N_{J/#psi} ]_{pp}");
   f3->GetYaxis()->SetTitleOffset(1.15);
-  f3->GetYaxis()->SetRangeUser(0.0,3.0);
+  f3->GetYaxis()->SetRangeUser(0.0,3.2);
   f3->GetXaxis()->CenterTitle(kTRUE);
 
-  TF1 *f3a = new TF1("f3a","1",0,400);
+  TF1 *f3a = new TF1("f3a","1",0,416/zoom);
   f3a->SetLineWidth(1);
-  f3a->GetXaxis()->SetTitle("N_{part}");
-  f3a->GetYaxis()->SetTitle("[ #psi (2S) #/J/#psi ]_{PbPb} #/[ #psi (2S) #/J/#psi ]_{pp}");
+  f3a->SetNpx(10);
+  //  f3a->GetXaxis()->SetTitle("0-100%");
+  f3a->GetXaxis()->SetTitle("");
+  f3a->GetYaxis()->SetTitle("[ N_{#psi(2S)}/N_{J/#psi} ]_{PbPb} / [ N_{#psi(2S)}/N_{J/#psi} ]_{pp}");
   f3a->GetYaxis()->SetTitleOffset(1.15);
-  f3a->GetYaxis()->SetRangeUser(0.0,3);
-  f3a->GetXaxis()->CenterTitle(kTRUE);
+  f3a->GetYaxis()->SetTickLength(zoom*f3->GetYaxis()->GetTickLength());
+  //  f3a->GetXaxis()->SetTitleOffset(0.165);
+  //  f3a->GetXaxis()->SetTitleSize(zoom*f3->GetXaxis()->GetTitleSize()*0.99);
+  //  f3a->GetXaxis()->CenterTitle(kTRUE);
+  f3a->GetXaxis()->SetNdivisions(0);
+  f3a->GetYaxis()->SetRangeUser(0.0,3.2);
 
   //  TCanvas *c3 = new TCanvas("c3","c3",600,800);
-  TCanvas *c3 = new TCanvas("c3","c3");//,1000,600);
+  TCanvas *c3;
+  if (overlay)
+    c3 = new TCanvas("c3","c3",650,600);//,1000,600);
+  else
+    c3 = new TCanvas("c3","c3");//,1000,600);
+
+  if(overlay) {
+    c3->Divide(2,1);
+    c3->GetPad(1)->SetPad(0.0,0.0,split,1.0);
+    c3->GetPad(2)->SetPad(split,0.0,1.0,1.0);
+    c3->GetPad(1)->SetRightMargin(0.0);
+    c3->GetPad(2)->SetLeftMargin(0.0);
+    c3->GetPad(1)->SetLeftMargin(0.13);
+  }
+
   //  c3->Divide(1,2);
 
   // c3->GetPad(1)->SetPad(0.0,0.5,1.0,1.0);
@@ -190,22 +315,46 @@ void plot_double_ratio(bool isPaper=false, bool plotGlobalPP = false, bool saveP
   //  c3->SetLogy();
   f3->Draw();
 
-  if (plotGlobalPP)
+  if (plotGlobalPP) {
     pp_fwd_pt3030->Draw();
+    if (overlay)
+      pp_mid2_pt6530->Draw();
+  }
   else
     gr_fwd_pt3030_glb2->Draw("3");
 
   f3->Draw("same");
 
   gr_fwd_pt3030_sys->Draw("5");
+  if (overlay)
+    gr_mid_pt6530_sys->Draw("5");
   gr_fwd_pt3030->Draw("P");
   gr_fwd_pt3030P->Draw("PX");
   if (!plotGlobalPP)
     gr_fwd_pt3030_glb->Draw("3");
 
+  if (overlay) {
+    gr_mid_pt6530->Draw("P");
+    gr_mid_pt6530P->Draw("PX");
+    if (!plotGlobalPP)
+      gr_mid_pt6530_glb->Draw("3");
+
+    gr_mid_pt6530_limit->Draw(">");
+    gr_mid_pt6530_bar->Draw("Z");
+  }
+
+  TLatex *lCMS = new TLatex(0.17,0.9,"CMS PbPb & pp #sqrt{s_{NN}} = 2.76 TeV");
+  lCMS->SetNDC();
+  lCMS->SetTextAlign(12);
+  lCMS->SetTextSize(0.05);
+  if(overlay)
+    lCMS->Draw();
+
   TLegend *leg3;
-  if (plotGlobalPP)
+  if (plotGlobalPP&&!overlay)
     leg3 = new TLegend(0.15,0.77,0.72,0.88);
+  else if (overlay)
+    leg3 = new TLegend(0.15,0.665,0.72,0.865);
   else
     leg3 = new TLegend(0.15,0.78,0.72,0.94);
 
@@ -214,11 +363,16 @@ void plot_double_ratio(bool isPaper=false, bool plotGlobalPP = false, bool saveP
   leg3->SetFillStyle(0);
   leg3->SetFillColor(0);
   leg3->SetBorderSize(0);
-  leg3->SetMargin(0.15);
+  leg3->SetMargin(0.1);
   //  leg3->SetTextSize(0.04);
   leg3->SetTextSize(0.035);
-  leg3->SetHeader("CMS PbPb #sqrt{s_{NN}} = 2.76 TeV");
+  if (!overlay)
+    leg3->SetHeader("CMS PbPb #sqrt{s_{NN}} = 2.76 TeV");
   leg3->AddEntry(gr_fwd_pt3030,"3 < p_{T} < 30 GeV/c, 1.6 < |y| < 2.4","P");
+  if (overlay) {
+    leg3->AddEntry(gr_mid_pt6530,"6.5 < p_{T} < 30 GeV/c, |y| < 1.6","P");
+    leg3->AddEntry(gr_mid_pt6530_bar,"95% CL, 6.5 < p_{T} < 30 GeV/c, |y| < 1.6","L");
+  }
   if (!plotGlobalPP)
     leg3->AddEntry(gr_fwd_pt3030_glb2,"pp uncertainty (global)","F");
   leg3->Draw();
@@ -236,64 +390,87 @@ void plot_double_ratio(bool isPaper=false, bool plotGlobalPP = false, bool saveP
 
   gPad->RedrawAxis();
 
+  TLatex *label = new TLatex(55/zoom,2.675,"#splitline{Cent.}{0-100%}");
+  label->SetTextSize(0.23);
 
-  TCanvas *c4 = new TCanvas("c4","c4");//,1000,600);
-  //  c3->cd(2);
-  f3a->Draw();
-  if (plotGlobalPP)
-    pp_mid_pt6530->Draw();
-  else
-    gr_mid_pt6530_glb2->Draw("3");
-  f3a->Draw("same");
+  if (overlay) {
+    c3->cd(2);
+    f3a->Draw();
+    gr_fwd_pt3030_mb_sys->Draw("5");
+    gr_mid_pt6530_mb_sys->Draw("5");
+    gr_fwd_pt3030_mb->Draw("P");
+    gr_fwd_pt3030_mbP->Draw("PX");
+    
+    gr_mid_pt6530_mb->Draw("P");
+    gr_mid_pt6530_mbP->Draw("PX");
+    label->Draw();
+  }
 
-  gr_mid_pt6530_sys->Draw("5");
-  gr_mid_pt6530->Draw("P");
-  gr_mid_pt6530P->Draw("PX");
-  if (!plotGlobalPP)
-    gr_mid_pt6530_glb->Draw("3");
+  TCanvas *c4=NULL;
+  if (!overlay) {
+    c4 = new TCanvas("c4","c4");//,1000,600);
+    //  c3->cd(2);
+    f3a->Draw();
+    if (plotGlobalPP)
+      pp_mid_pt6530->Draw();
+    else
+      gr_mid_pt6530_glb2->Draw("3");
+    f3a->Draw("same");
 
-  gr_mid_pt6530_limit->Draw(">");
-  gr_mid_pt6530_bar->Draw("Z");
+    gr_mid_pt6530_sys->Draw("5");
+    gr_mid_pt6530->Draw("P");
+    gr_mid_pt6530P->Draw("PX");
+    if (!plotGlobalPP)
+      gr_mid_pt6530_glb->Draw("3");
 
-  TLegend *leg3a;
-  if (plotGlobalPP)
-    leg3a = new TLegend(0.15,0.77,0.72,0.88);
-  else
-    leg3a = new TLegend(0.15,0.78,0.72,0.94);
+    gr_mid_pt6530_limit->Draw(">");
+    gr_mid_pt6530_bar->Draw("Z");
 
-  //leg1 = new TLegend(0.15,0.68,0.72,0.88);
+    TLegend *leg3a;
+    if (plotGlobalPP)
+      leg3a = new TLegend(0.15,0.74,0.72,0.94);
+    else
+      leg3a = new TLegend(0.15,0.78,0.72,0.94);
 
-  leg3a->SetFillStyle(0);
-  leg3a->SetFillColor(0);
-  leg3a->SetBorderSize(0);
-  leg3a->SetMargin(0.15);
-  //  leg3a->SetTextSize(0.04);
-  leg3a->SetTextSize(0.035);
-  leg3a->SetHeader("CMS PbPb #sqrt{s_{NN}} = 2.76 TeV");
+    //leg1 = new TLegend(0.15,0.68,0.72,0.88);
 
-  leg3a->AddEntry(gr_mid_pt6530,"6.5 < p_{T} < 30 GeV/c, |y| < 1.6","P");
-  if (!plotGlobalPP)
-    leg3a->AddEntry(gr_mid_pt6530_glb2,"pp uncertainty (global)","F");
-  leg3a->Draw();
+    leg3a->SetFillStyle(0);
+    leg3a->SetFillColor(0);
+    leg3a->SetBorderSize(0);
+    leg3a->SetMargin(0.15);
+    //  leg3a->SetTextSize(0.04);
+    leg3a->SetTextSize(0.035);
+    leg3a->SetHeader("CMS PbPb #sqrt{s_{NN}} = 2.76 TeV");
 
-  // TLatex *pre3 = (TLatex*)pre->Clone();
-  // pre3->SetY(0.056);
-  //  pre3->Draw();
+    leg3a->AddEntry(gr_mid_pt6530,"6.5 < p_{T} < 30 GeV/c, |y| < 1.6","P");
+    if (!plotGlobalPP)
+      leg3a->AddEntry(gr_mid_pt6530_glb2,"pp uncertainty (global)","F");
+    leg3a->Draw();
 
-  // TLine *l1a = new TLine(-90,0.15,0.0,1.0);
-  // //  l1a->Draw("same");
+    // TLatex *pre3 = (TLatex*)pre->Clone();
+    // pre3->SetY(0.056);
+    //  pre3->Draw();
 
-  // TLine *l2a = new TLine(-90,0.0,-18.0,0.0);
-  // //  l2a->Draw("same");
+    // TLine *l1a = new TLine(-90,0.15,0.0,1.0);
+    // //  l1a->Draw("same");
+
+    // TLine *l2a = new TLine(-90,0.0,-18.0,0.0);
+    // //  l2a->Draw("same");
 
 
-  gPad->RedrawAxis();
-
+    gPad->RedrawAxis();
+  }
   if (savePlots) {
-    c3->SaveAs("double_ratio_ppGlobal_fwd_pp2013_PbPbRegit.pdf");
-    c3->SaveAs("double_ratio_ppGlobal_fwd_pp2013_PbPbRegit.png");
-    c4->SaveAs("double_ratio_ppGlobal_mid_pp2013_PbPbRegit.pdf");
-    c4->SaveAs("double_ratio_ppGlobal_mid_pp2013_PbPbRegit.png");
+    if (overlay) {
+      c3->SaveAs("double_ratio_ppGlobal_pp2013_PbPbRegit.pdf");
+      c3->SaveAs("double_ratio_ppGlobal_pp2013_PbPbRegit.png");
+    }
+    else{
+      c3->SaveAs("double_ratio_ppGlobal_fwd_pp2013_PbPbRegit.pdf");
+      c3->SaveAs("double_ratio_ppGlobal_fwd_pp2013_PbPbRegit.png");
+      c4->SaveAs("double_ratio_ppGlobal_mid_pp2013_PbPbRegit.pdf");
+      c4->SaveAs("double_ratio_ppGlobal_mid_pp2013_PbPbRegit.png");
+    }
   }
 
 
