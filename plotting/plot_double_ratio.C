@@ -71,7 +71,16 @@ void plot_double_ratio(bool isPaper=false, bool plotGlobalPP = false, bool saveP
   gr_fwd_pt3030_sys->SetName("gr_fwd_pt3030_sys");
   gr_fwd_pt3030_glb->SetName("gr_fwd_pt3030_glb");
   gr_fwd_pt3030P->SetName("gr_fwd_pt3030P");				               
-									               
+
+  double Npart3[2] = {355.4, 261.4};
+  double ratio_fwd_pt3030_split[2] = {2.811, 1.838};
+  double ratio_fwd_pt3030_split_err[2] = {0.784, 0.703};
+
+  TGraphErrors *gr_fwd_pt3030_split = new TGraphErrors(2,Npart3,ratio_fwd_pt3030_split, Npart_sys, ratio_fwd_pt3030_split_err);
+  gr_fwd_pt3030_split->SetMarkerColor(kRed);
+  gr_fwd_pt3030_split->SetMarkerStyle(24);
+  gr_fwd_pt3030_split->SetMarkerSize(1.2);
+
   TGraphErrors *gr_mid_pt6530 = new TGraphErrors(3,Npart, ratio_mid_pt6530, Npart_err, ratio_mid_pt6530_err);
   TGraphErrors *gr_mid_pt6530_sys = new TGraphErrors(3,Npart, ratio_mid_pt6530, Npart_sys, ratio_mid_pt6530_sys);
   TGraphErrors *gr_mid_pt6530_glb = new TGraphErrors(3,Npart2, ratio_mid_pt6530, Npart_sys, ratio_mid_pt6530_glb);
@@ -202,6 +211,8 @@ void plot_double_ratio(bool isPaper=false, bool plotGlobalPP = false, bool saveP
   gr_fwd_pt3030P->Draw("PX");
   if (!plotGlobalPP)
     gr_fwd_pt3030_glb->Draw("3");
+
+  gr_fwd_pt3030_split->Draw("P");
 
   TLegend *leg3;
   if (plotGlobalPP)
