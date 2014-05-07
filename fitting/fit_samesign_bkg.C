@@ -10,6 +10,7 @@
 #include "RooGaussian.h"
 #include "RooCBShape.h"
 #include "RooChebychev.h"
+#include "RooPolynomial.h"
 #include "RooFormulaVar.h"
 #include "RooAddPdf.h"
 #include "RooPlot.h"
@@ -21,6 +22,8 @@
 #include "RooGenericPdf.h"
 #include "RooChi2Var.h"
 #include "RooMinuit.h"
+
+#include <RooWorkspace.h>
 
 #include "TCut.h"
 #include "TCanvas.h"
@@ -49,6 +52,9 @@ void fit_samesign_bkg(bool isHI=true, string prange="6.5-30.0", string yrange="0
   getOptRange(prange,&pmin,&pmax);
   getOptRange(yrange,&ymin,&ymax);
 
+  // Create workspace to play with
+  RooWorkspace *ws = new RooWorkspace("workspace");
+
   RooRealVar Jpsi_Mass("Jpsi_Mass","J/#psi mass",1.8,5.0,"GeV/c^{2}");
   RooRealVar Jpsi_Pt("Jpsi_Pt","J/#psi pt",0,30,"GeV/c");
   RooRealVar Jpsi_Y("Jpsi_Y","J/#psi y",-2.4,2.4);
@@ -60,8 +66,8 @@ void fit_samesign_bkg(bool isHI=true, string prange="6.5-30.0", string yrange="0
   Jpsi_Ct.setBins(1);
 
   Jpsi_Mass.setRange("signal",3.6,3.76);
-  Jpsi_Mass.setRange("M2045",2.0,4.5);
-  Jpsi_Mass.setRange("M2242",2.2,4.2);
+  // Jpsi_Mass.setRange("M2045",2.0,4.5);
+  // Jpsi_Mass.setRange("M2242",2.2,4.2);
   // cout << "Min(full) = " << Jpsi_Mass.min() << endl;
   // cout << "Max(full) = " << Jpsi_Mass.max() << endl;
   // cout << "Min(M2045) = " << Jpsi_Mass.min("M2045") << endl;
@@ -76,9 +82,9 @@ void fit_samesign_bkg(bool isHI=true, string prange="6.5-30.0", string yrange="0
   RooRealVar c0("c0","c0",0.0);c0.setConstant(false);
   RooRealVar c1("c1","c1",0.0);c1.setConstant(false);
   RooRealVar c2("c2","c2",0.0);c2.setConstant(false);
-  RooChebychev bkg1("bkg1","Background pol2",Jpsi_Mass,RooArgSet(a0,a1));
-  RooChebychev bkg2("bkg2","Background pol2",Jpsi_Mass,RooArgSet(b0,b1));
-  RooChebychev bkg3("bkg3","Background pol2",Jpsi_Mass,RooArgSet(c0,c1));
+  RooChebychev bkg1("bkg1","Background pol3",Jpsi_Mass,RooArgSet(a0,a1,a2));
+  RooChebychev bkg2("bkg2","Background pol3",Jpsi_Mass,RooArgSet(b0,b1,b2));
+  RooChebychev bkg3("bkg3","Background pol3",Jpsi_Mass,RooArgSet(c0,c1,c2));
   // RooChebychev bkg2("bkg2","Background pol2",Jpsi_Mass,RooArgSet(a0,a1));
   // RooChebychev bkg3("bkg3","Background pol3",Jpsi_Mass,RooArgSet(a0,a1,a2));
   // RooChebychev bkg4("bkg4","Background pol4",Jpsi_Mass,RooArgSet(a0,a1,a2,a3));
@@ -87,16 +93,19 @@ void fit_samesign_bkg(bool isHI=true, string prange="6.5-30.0", string yrange="0
   RooRealVar zero_A("zero_A","zero_A",0.0);zero_A.setConstant(true);
   RooRealVar zero_B("zero_B","zero_B",0.0);zero_B.setConstant(true);
   RooRealVar zero_C("zero_C","zero_C",0.0);zero_C.setConstant(true);
-  RooChebychev dummy("dummy","dummy pdf",Jpsi_Mass,RooArgSet(zero_A));
+  RooPolynomial dummy("dummy","dummy pdf",Jpsi_Mass,RooArgSet(zero_A));
 
   RooRealVar Ndummy("Ndummy","Ndummy",0);  Ndummy.setConstant(true);
   RooRealVar Nbkg_A("Nbkg_A","Nbkg_A",100,0,1e6);
   RooRealVar Nbkg_B("Nbkg_B","Nbkg_B",100,0,1e6);
   RooRealVar Nbkg_C("Nbkg_C","Nbkg_C",100,0,1e6);
 
-  RooAddPdf model_A("model_A","model_A",RooArgList(bkg1,zero_A),RooArgList(Nbkg_A,Ndummy));
+  RooAddPdf model_A("model_A","model_A",RooArgList(bkg1,dummy),RooArgList(Nbkg_A,Ndummy));
   RooAddPdf model_B("model_B","model_B",RooArgList(bkg2,zero_B),RooArgList(Nbkg_B,Ndummy));
   RooAddPdf model_C("model_C","model_C",RooArgList(bkg3,zero_C),RooArgList(Nbkg_C,Ndummy));
+
+  ws->import(model_A);
+  ws->Print("v");
 
   RooDataSet *data = (RooDataSet*)inf->Get("dataJpsiSame");
   char reduceDS[300];
@@ -119,20 +128,24 @@ void fit_samesign_bkg(bool isHI=true, string prange="6.5-30.0", string yrange="0
   redData->SetName("redData");
   redData->SetTitle("redData");
 
-  RooDataSet *redDataM2045 = (RooDataSet*) tmp->reduce("Jpsi_Mass>2.0&&Jpsi_Mass<4.5");
-  redDataM2045->SetName("redDataM2045");
-  redDataM2045->SetTitle("redDataM2045");
+  ws->import(*redData);
 
-  RooDataSet *redDataM2242 = (RooDataSet*) tmp->reduce("Jpsi_Mass>2.2&&Jpsi_Mass<4.2");
-  redDataM2242->SetName("redDataM2242");
-  redDataM2242->SetTitle("redDataM2242");
+  // RooDataSet *redDataM2045 = (RooDataSet*) tmp->reduce("Jpsi_Mass>2.0&&Jpsi_Mass<4.5");
+  // redDataM2045->SetName("redDataM2045");
+  // redDataM2045->SetTitle("redDataM2045");
+
+  // RooDataSet *redDataM2242 = (RooDataSet*) tmp->reduce("Jpsi_Mass>2.2&&Jpsi_Mass<4.2");
+  // redDataM2242->SetName("redDataM2242");
+  // redDataM2242->SetTitle("redDataM2242");
 
   
   RooFitResult *fitM;
-  fitM = model_A.fitTo(*redData,Extended(1),Minos(1),Save(1),SumW2Error(kFALSE));//,NumCPU(4),Range("full"));
-  double relYield_all = model_A.analyticalIntegral(1,"signal")/model_A.analyticalIntegral(1,"full");
+  fitM = ws->pdf("model_A")->fitTo(*redData,Extended(1),Minos(1),Save(1),SumW2Error(kFALSE));//,NumCPU(4),Range("full"));
+  double relYield_all = ws->pdf("model_A")->analyticalIntegral(1,"signal")/ws->pdf("model_A")->analyticalIntegral(1,"full");
   fitM->Print();
 
+
+  /*
   Jpsi_Mass.setMin(2.0);
   Jpsi_Mass.setMax(4.5);
   b0.setVal(a0.getVal());
@@ -154,19 +167,20 @@ void fit_samesign_bkg(bool isHI=true, string prange="6.5-30.0", string yrange="0
 
   Jpsi_Mass.setMin(1.8);
   Jpsi_Mass.setMax(5);
+  */
   RooPlot* mframe = Jpsi_Mass.frame(Title("data"));
-  redData->plotOn(mframe);
-  model_A.plotOn(mframe, LineColor(kBlue));//,Range("full"),NormRange("full"));
-  model_B.plotOn(mframe, LineColor(kRed),Range("M2045"),NormRange("M2045"));
-  model_C.plotOn(mframe, LineColor(kGreen+2),Range("M2242"),NormRange("M2242"));
+  ws->data("redData")->plotOn(mframe);
+  ws->pdf("model_A")->plotOn(mframe, LineColor(kBlue));//,Range("full"),NormRange("full"));
+  // model_B.plotOn(mframe, LineColor(kRed),Range("M2045"),NormRange("M2045"));
+  // model_C.plotOn(mframe, LineColor(kGreen+2),Range("M2242"),NormRange("M2242"));
 
   cout << "Mass range 1.8-5.0 GeV: " << relYield_all << endl;
-  cout << "Mass range 2.0-4.5 GeV: " << relYield_M2045 << endl;
-  cout << "Mass range 2.2-4.2 GeV: " << relYield_M2242 << endl;
+  // cout << "Mass range 2.0-4.5 GeV: " << relYield_M2045 << endl;
+  // cout << "Mass range 2.2-4.2 GeV: " << relYield_M2242 << endl;
   
   char *cut = NULL;
   cout << "Actual fraction in data" << endl;
-  cout << redData->sumEntries(cut,"signal")/redData->sumEntries(cut,"full") <<endl;
+  cout << ws->data("redData")->sumEntries(cut,"signal")/ws->data("redData")->sumEntries(cut,"full") <<endl;
   // cout << redData->sumEntries(cut,"signal")/redData->sumEntries(cut,"M2045") <<endl;
   // cout << redData->sumEntries(cut,"signal")/redData->sumEntries(cut,"M2242") <<endl;
 
@@ -174,11 +188,12 @@ void fit_samesign_bkg(bool isHI=true, string prange="6.5-30.0", string yrange="0
   canv->SetLogy(0);
   mframe->Draw();
 
-  TH1 *h1 = (TH1*) redData->createHistogram("Jpsi_Mass")->Clone("h1");
-  TFile *outf = new TFile("fwd_pbpb_cent0-20.root","RECREATE");
-  h1->Write();
-  outf->Close();
+  // TH1 *h1 = (TH1*) redData->createHistogram("Jpsi_Mass")->Clone("h1");
+  // TFile *outf = new TFile("fwd_pbpb_cent0-20.root","RECREATE");
+  // h1->Write();
+  // outf->Close();
 
+  ws->writeToFile("fwd_pbpb_cent0-20_workspace.root",kTRUE);
 
   return;
 }
