@@ -371,33 +371,60 @@ int main(int argc, char* argv[]) {
   string titlestr;
 
   // Binning for invariant mass distribution
-  RooBinning rbm(2.2,4.2);
-  RooBinning rbmZoom(2.2,4.2);
+  RooBinning *rbm[nFiles];
   int nbins = 100;
-  // RooBinning rbm(2.0,4.5);
-  // int nbins = 150;
-  bool highStats=true;
-  if (highStats)
-    rbm.addUniform(nbins,2.2,4.2);
-  //    rbm.addUniform(nbins,2.0,4.5);
-  else {
-    // rbm.addUniform(14,2.2,2.760);
-    // rbm.addUniform(24,2.760,3.240);
-    // rbm.addUniform(24,3.240,4.2);
-    rbm.addUniform(11,2.2,2.860); // 60 MeV
-    rbm.addUniform(19,2.860,3.240); // 20 MeV
-    rbm.addUniform(6,3.240,3.600); // 60 MeV
-    rbm.addUniform(4,3.600,3.720); // 30 MeV
-    rbm.addUniform(8,3.720,4.2); // 60 MeV
+  bool highStats=false;
+  for (unsigned int i=0;i<nFiles;++i) {
+    rbm[i] = new RooBinning(2.2,4.2);
+
+    if (highStats)
+      rbm[i]->addUniform(nbins,2.2,4.2);
+    else {
+      switch (i) {
+      case 0: // 0-20%
+	rbm[i]->addUniform(22,2.2,2.860);   // 30 MeV
+	rbm[i]->addUniform(19,2.860,3.240); // 20 MeV
+	rbm[i]->addUniform(12,3.240,3.600); // 30 MeV
+	rbm[i]->addUniform(3,3.600,3.720);  // 40 MeV
+	rbm[i]->addUniform(16,3.720,4.2);   // 30 MeV
+	break;
+      case 1: // 20-40%
+	rbm[i]->addUniform(22,2.2,2.860);   // 30 MeV
+	rbm[i]->addUniform(19,2.860,3.240); // 20 MeV
+	rbm[i]->addUniform(12,3.240,3.600); // 30 MeV
+	rbm[i]->addUniform(4,3.600,3.720);  // 30 MeV
+	rbm[i]->addUniform(16,3.720,4.2);   // 30 MeV
+	break;
+      case 2: // 40-100%
+	rbm[i]->addUniform(11,2.2,2.860);   // 60 MeV
+	rbm[i]->addUniform(19,2.860,3.240); // 20 MeV
+	rbm[i]->addUniform(6,3.240,3.600);  // 60 MeV
+	rbm[i]->addUniform(3,3.600,3.720);  // 40 MeV
+	rbm[i]->addUniform(8,3.720,4.2);    // 60 MeV
+	break;
+      case 3: // pp
+	rbm[i]->addUniform(22,2.2,2.860);   // 30 MeV
+	rbm[i]->addUniform(19,2.860,3.240); // 20 MeV
+	rbm[i]->addUniform(12,3.240,3.600); // 30 MeV
+	rbm[i]->addUniform(6,3.600,3.720);  // 20 MeV
+	rbm[i]->addUniform(16,3.720,4.2);   // 30 MeV
+	break;
+      default:
+	rbm[i]->addUniform(nbins,2.2,4.2);
+	break;
+      }
+    }
   }
-  rbmZoom.addUniform(11,2.2,2.860); // 60 MeV
+  
+  RooBinning rbmZoom(2.2,4.2);
+  rbmZoom.addUniform(22,2.2,2.860); // 30 MeV
   rbmZoom.addUniform(19,2.860,3.240); // 20 MeV
-  rbmZoom.addUniform(1,3.240,3.300); // 60 MeV
+  rbmZoom.addUniform(2,3.240,3.300); // 30 MeV
   rbmZoom.addUniform(5,3.300,3.600); // 60 MeV
-  rbmZoom.addUniform(4,3.600,3.720); // 30 MeV
+  rbmZoom.addUniform(3,3.600,3.720); // 40 MeV
   rbmZoom.addUniform(8,3.720,4.2); // 60 MeV
 
-  ws->var("Jpsi_Mass")->setBinning(rbm);
+  ws->var("Jpsi_Mass")->setBinning(*rbm[nFiles-1]);
 
 
   RooDataHist *binData[nFiles];
@@ -1061,13 +1088,18 @@ int main(int argc, char* argv[]) {
     mframe[i]->SetName(("frame_"+varSuffix.at(i)).c_str());
     mframe[i]->SetTitle(("A RooPlot of \"J/#psi mass\" in "+varSuffix.at(i)).c_str());
     mframe[i]->GetYaxis()->SetTitle("Events");
+    mframe[i]->SetTitleOffset(1.10,"X");
+    mframe[i]->SetTitleOffset(1.05,"Y");
 
     mframezoom[i] = ws->var("Jpsi_Mass")->frame(3.3,4.1);
-    mframezoom[i]->SetName(("frame_"+varSuffix.at(i)).c_str());
+    mframezoom[i]->SetName(("zoom_frame_"+varSuffix.at(i)).c_str());
     mframezoom[i]->SetTitle(("A RooPlot of \"J/#psi mass\" in "+varSuffix.at(i)).c_str());
     mframezoom[i]->GetYaxis()->SetTitle("Events");
 
-    redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(rbm));
+    if (yrange=="1.6-2.4" && i==1)
+      redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(*rbm[i+1]));
+    else
+      redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(*rbm[i]));
     redData[i]->plotOn(mframezoom[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(rbmZoom));
     titlestr = "2D fit for" + partTit + "muons (mass projection), p_{T} = " + prange + " GeV/c and |y| = " + yrange;
     mframe[i]->GetXaxis()->SetTitle("m_{#mu^{+}#mu^{-}} (GeV/c^{2})");
@@ -1118,7 +1150,10 @@ int main(int argc, char* argv[]) {
     }
 
     // replot data on top of shaded bands
-    redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(rbm));
+    if (yrange=="1.6-2.4" && i==1)
+      redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(*rbm[i+1]));
+    else
+      redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(*rbm[i]));
     redData[i]->plotOn(mframezoom[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(rbmZoom));
 
     // plot lines
@@ -1159,13 +1194,13 @@ int main(int argc, char* argv[]) {
     ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframezoom[i],LineColor(kBlue),LineWidth(2),Precision(1e-4));
 
     if (i==nFiles-1) {
-      //      redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerStyle(20),MarkerSize(0.8),Binning(rbm));
+      //      redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerStyle(20),MarkerSize(0.8),Binning(*rbm[i]));
       ws->pdf(("sigMassPDF_mix_"+varSuffix.front()).c_str())->plotOn(mframe[i],LineColor(kRed),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
       ws->pdf(("sigMassPDF_mix_"+varSuffix.front()).c_str())->plotOn(mframezoom[i],LineColor(kRed),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
     }
-    //    redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),MarkerStyle(24),Binning(rbm));
+    //    redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),MarkerStyle(24),Binning(*rbm[i]));
 
-    hdata[i] = redData[i]->createHistogram(("hdata"+varSuffix.at(i)).c_str(),*ws->var("Jpsi_Mass"),Binning(rbm));
+    hdata[i] = redData[i]->createHistogram(("hdata"+varSuffix.at(i)).c_str(),*ws->var("Jpsi_Mass"),Binning(*rbm[i]));
 
     // *** Calculate chi2/nDof for mass fitting
     unsigned int nBins = hdata[i]->GetNbinsX();
@@ -1201,10 +1236,11 @@ int main(int argc, char* argv[]) {
     
     mframepull[i] =  ws->var("Jpsi_Mass")->frame(Title(("Pull of "+varSuffix.at(i)).c_str()));
     mframepull[i]->SetName(("pull_frame_"+varSuffix.at(i)).c_str());
-    mframepull[i]->GetYaxis()->SetTitle("Pull");
+    mframepull[i]->GetYaxis()->SetTitle("Pull ");
     mframepull[i]->SetLabelSize(0.08,"XYZ");
     mframepull[i]->SetTitleSize(0.1,"XYZ");
-    mframepull[i]->SetTitleOffset(0.55,"Y");
+    mframepull[i]->SetTitleOffset(1.05,"X");
+    mframepull[i]->SetTitleOffset(0.51,"Y");
     mframepull[i]->addPlotable(hpull[i],"PX") ;
 
     if ( fabs(mframepull[i]->GetMaximum()) > fabs(mframepull[i]->GetMinimum()) )
@@ -1242,7 +1278,7 @@ int main(int argc, char* argv[]) {
     TPad *pad3 = new TPad("pad3","This is pad3",0.16,0.52,0.40,0.75);
     pad3->SetLeftMargin(0.2);
     pad3->SetBottomMargin(0.2);
-    TPad *pad4 = new TPad("pad4","This is pad4",0.52,0.32,0.90,0.70);
+    TPad *pad4 = new TPad("pad4","This is pad4",0.52,0.33,0.90,0.71);
     pad4->SetFillStyle(0);
     pad4->SetLeftMargin(0.2);
     pad4->SetBottomMargin(0.2);
@@ -1267,48 +1303,72 @@ int main(int argc, char* argv[]) {
 	c00.SetLogy(1);
       else
 	pad1->SetLogy(1);
-
-      mframe[i]->SetMinimum(0.2*min);
-      if ( (yrange == "0.0-1.6" || yrange == "0.0-2.4") && isPbPb) {
-	if (crange == "20-40") {
-	  mframe[i]->SetMaximum(3.5*max);
-	  mframe[i]->SetMinimum(0.5*min);
+      
+      if (highStats) {
+	mframe[i]->SetMinimum(0.2*min);
+	if ( (yrange == "0.0-1.6" || yrange == "0.0-2.4") && isPbPb) {
+	  if (crange == "20-40") {
+	    mframe[i]->SetMaximum(3.5*max);
+	    mframe[i]->SetMinimum(0.5*min);
+	  }
+	  else if ( crange == "40-100" ) {
+	    mframe[i]->SetMaximum(60*max);
+	    mframe[i]->SetMinimum(0.1*min);
+	  }
+	  else{
+	    mframe[i]->SetMaximum(2.5*max);
+	    mframe[i]->SetMinimum(0.8*min);
+	  }
 	}
-	else if ( crange == "40-100" ) {
-	  mframe[i]->SetMaximum(60*max);
-	  mframe[i]->SetMinimum(0.1*min);
-	}
-	else{
-	  mframe[i]->SetMaximum(2.5*max);
-	  mframe[i]->SetMinimum(0.8*min);
-	}
-      }
-      else if (yrange == "1.6-2.4" && isPbPb) {
-	if ( crange == "40-100" ) {
-	  mframe[i]->SetMaximum(10.0*max);
-	  mframe[i]->SetMinimum(0.5*min);
-	}
-	else if ( crange == "20-40" ) {
-	  mframe[i]->SetMaximum(2.0*max);
-	  mframe[i]->SetMinimum(0.9*min);
+	else if (yrange == "1.6-2.4" && isPbPb) {
+	  if ( crange == "40-100" ) {
+	    mframe[i]->GetYaxis()->SetRangeUser(10,2000);
+	  }
+	  else if ( crange == "20-40" ) {
+	    mframe[i]->GetYaxis()->SetRangeUser(100,3000);
+	  }
+	  else {
+	    mframe[i]->GetYaxis()->SetRangeUser(300,3000);
+	  }
 	}
 	else {
-	  mframe[i]->SetMaximum(1.5*max);
-	  mframe[i]->SetMinimum(0.95*min);
+	  mframe[i]->SetMaximum(20*max);
+	  mframe[i]->SetMinimum(0.5*min);
 	}
       }
       else {
-	mframe[i]->SetMaximum(20*max);
-	mframe[i]->SetMinimum(0.5*min);
+	switch (i) {
+	case 0:
+	  if (yrange == "0.0-1.6")
+	    mframe[i]->GetYaxis()->SetRangeUser(40,5000);
+	  else if (yrange == "1.6-2.4")
+	    mframe[i]->GetYaxis()->SetRangeUser(300,3000);
+	  break;
+	case 1:
+	  if (yrange == "0.0-1.6")
+	    mframe[i]->GetYaxis()->SetRangeUser(5,5000);
+	  else if (yrange == "1.6-2.4")
+	    mframe[i]->GetYaxis()->SetRangeUser(120,2000);
+	  break;
+	case 2:
+	  if (yrange == "0.0-1.6")
+	    mframe[i]->GetYaxis()->SetRangeUser(3,5000);
+	  else if (yrange == "1.6-2.4")
+	    mframe[i]->GetYaxis()->SetRangeUser(20,2000);
+	  break;
+	case 3:
+	  if (yrange == "0.0-1.6")
+	    mframe[i]->GetYaxis()->SetRangeUser(10,20000);
+	  else if (yrange == "1.6-2.4")
+	    mframe[i]->GetYaxis()->SetRangeUser(20,10000);
+	  break;
+	default:
+	  mframe[i]->GetYaxis()->SetRangeUser(1,10000);
+	  break;
+	}
       }
     }
 
-    if (!highStats) {
-      max = mframe[i]->GetMaximum();
-      min = mframe[i]->GetMinimum();
-      mframe[i]->SetMaximum(2.0*max);
-      mframe[i]->SetMinimum(2.0*min);
-    }
 
     lCMS->SetTextSize(0.05);
     if (isPbPb)
@@ -1327,9 +1387,9 @@ int main(int argc, char* argv[]) {
     lRap->SetTextSize(0.035);
     if (isPbPb) { 
       if (ymin==0.0)
-	sprintf(reduceDS,"%.0f-%.0f%%, |y| < %.1f",cmin,cmax,ymax);
+	sprintf(reduceDS,"Cent. %.0f-%.0f%%, |y| < %.1f",cmin,cmax,ymax);
       else
-	sprintf(reduceDS,"%.0f-%.0f%%, %0.1f < |y| < %.1f",cmin,cmax,ymin,ymax);
+	sprintf(reduceDS,"Cent. %.0f-%.0f%%, %0.1f < |y| < %.1f",cmin,cmax,ymin,ymax);
     }
     else {
       if (ymin==0.0)
@@ -1392,18 +1452,18 @@ int main(int argc, char* argv[]) {
       //	double errFracP_HI = sqrt( pow(errDoubleRatio/DoubleRatio,2) + pow(errFracP_pp/fracP_pp,2) + 2*errDoubleRatio*errFracP_pp*corr/fracP_HI )*fracP_HI;
       double errFracP_HI = ws->function( ("fracP_"+varSuffix.at(i)).c_str())->getPropagatedError(*fitM);
 
-      sprintf(reduceDS,"R_{#psi(2S)} = %0.3f #pm %0.3f",fracP_HI,errFracP_HI);
+      sprintf(reduceDS,"R_{#psi} = %0.3f #pm %0.3f",fracP_HI,errFracP_HI);
       // }
       // else
-      // 	sprintf(reduceDS,"R_{#psi(2S)} = %0.3f",ws->function( ("fracP_"+varSuffix.at(i)).c_str())->getVal());
+      // 	sprintf(reduceDS,"R_{#psi} = %0.3f",ws->function( ("fracP_"+varSuffix.at(i)).c_str())->getVal());
     }
     else {
       name = "fracP_pp";
       
       if (ws->var(name.c_str())->hasAsymError() && abs(-1.0*ws->var(name.c_str())->getErrorLo()/ws->var(name.c_str())->getErrorHi() - 1)>0.1)
-	sprintf(reduceDS,"R_{#psi(2S)} = %0.3f^{+%0.3f}_{%0.3f}",ws->var(name.c_str())->getVal(),ws->var(name.c_str())->getErrorHi(),ws->var(name.c_str())->getErrorLo());
+	sprintf(reduceDS,"R_{#psi} = %0.3f^{+%0.3f}_{%0.3f}",ws->var(name.c_str())->getVal(),ws->var(name.c_str())->getErrorHi(),ws->var(name.c_str())->getErrorLo());
       else
-	sprintf(reduceDS,"R_{#psi(2S)} = %0.3f #pm %0.3f",ws->var(name.c_str())->getVal(),ws->var(name.c_str())->getError());
+	sprintf(reduceDS,"R_{#psi} = %0.3f #pm %0.3f",ws->var(name.c_str())->getVal(),ws->var(name.c_str())->getError());
     }
     if (!isPaper) {
       lRpsi->SetText(minX,maxY,reduceDS);
@@ -1427,9 +1487,9 @@ int main(int argc, char* argv[]) {
       }
       else {
 	if (!(fitCentIntegrated && i==0))
-	  sprintf(reduceDS,"#chi_{#psi(2S)} = %0.3f #pm %0.3f",ws->var(("doubleRatio_"+varSuffix.at(i)).c_str())->getVal(),ws->var(("doubleRatio_"+varSuffix.at(i)).c_str())->getError());
+	  sprintf(reduceDS,"#chi_{#psi} = %0.3f #pm %0.3f",ws->var(("doubleRatio_"+varSuffix.at(i)).c_str())->getVal(),ws->var(("doubleRatio_"+varSuffix.at(i)).c_str())->getError());
 	else
-	  sprintf(reduceDS,"#chi_{#psi(2S)} = %0.3f #pm %0.3f",ws->function(("doubleRatio_"+varSuffix.at(i)).c_str())->getVal(),ws->function(("doubleRatio_"+varSuffix.at(i)).c_str())->getPropagatedError(*fitM));
+	  sprintf(reduceDS,"#chi_{#psi} = %0.3f #pm %0.3f",ws->function(("doubleRatio_"+varSuffix.at(i)).c_str())->getVal(),ws->function(("doubleRatio_"+varSuffix.at(i)).c_str())->getPropagatedError(*fitM));
       }
       lNpsiP->SetText(minX,maxY,reduceDS);
       maxY-=step;//0.65
@@ -1616,14 +1676,14 @@ int main(int argc, char* argv[]) {
     leg1->SetFillStyle(0);
     leg1->SetFillColor(0);
     leg1->SetBorderSize(0);
-    leg1->SetMargin(0.15);
+    leg1->SetMargin(0.14);
     leg1->SetTextSize(0.035);
     leg1->AddEntry(gDataLegend,"data","P");
     leg1->AddEntry(hTotalLegend,"total fit","L");
     leg1->AddEntry(hBkgLegend,"background","L");
     if (!isPbPb) {
       //      leg1->AddEntry(hMixLegend,"total with","L");
-      leg1->AddEntry(hMixLegend,"R_{#psi(2S)}(PbPb 0-20%)","L");
+      leg1->AddEntry(hMixLegend,"R_{#psi}(PbPb 0-20%)","L");
     }
 
     if (isPaper)
@@ -1651,11 +1711,33 @@ int main(int argc, char* argv[]) {
       st->SetTextFont(42);
     }
     else {
-      mframezoom[i]->SetMinimum(0);
-      mframezoom[i]->SetMaximum(ws->var(("NJpsi_"+varSuffix.at(i)).c_str())->getVal()*0.1);
-      pad4->Draw();
-      pad4->cd();mframezoom[i]->Draw();
-      c00.cd();
+      if (isPbPb) {
+	switch (i) {
+	case 0:
+	  if (yrange == "0.0-1.6")
+	    mframezoom[i]->GetYaxis()->SetRangeUser(70,150);
+	  else if (yrange == "1.6-2.4")
+	    mframezoom[i]->GetYaxis()->SetRangeUser(400,800);
+	  break;
+	case 1:
+	  if (yrange == "0.0-1.6")
+	    mframezoom[i]->GetYaxis()->SetRangeUser(0,100);
+	  else if (yrange == "1.6-2.4")
+	    mframezoom[i]->GetYaxis()->SetRangeUser(100,200);
+	  break;
+	case 2:
+	  if (yrange == "0.0-1.6")
+	    mframezoom[i]->GetYaxis()->SetRangeUser(0,20);
+	  else if (yrange == "1.6-2.4")
+	    mframezoom[i]->GetYaxis()->SetRangeUser(20,60);
+	  break;
+	default:
+	  break;
+	}
+	pad4->Draw();
+	pad4->cd();mframezoom[i]->Draw();
+	c00.cd();
+      }
     }
  
     titlestr = dirPre + "_" + mBkgFunct.at(i) + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str +  "massfit.pdf";
@@ -1683,9 +1765,9 @@ int main(int argc, char* argv[]) {
   plotF.Close();
 
   // prepare models for CLs calculations
-  RooStats::ModelConfig *model[nFiles-1];
-  RooStats::ModelConfig *bmodel[nFiles-1];
-  RooArgSet *nuisances[nFiles-1];
+  RooStats::ModelConfig *model[nFiles];
+  RooStats::ModelConfig *bmodel[nFiles];
+  RooArgSet *nuisances[nFiles];
 
   for (unsigned int i=0;i<nFiles-1;++i) {
     model[i] = new RooStats::ModelConfig(("model_"+varSuffix.at(i)).c_str(),ws);
@@ -1699,8 +1781,8 @@ int main(int argc, char* argv[]) {
 
     RooArgSet *pars = ws->pdf("sigMassPDFSim")->getParameters(redData[nFiles-1]);
     pars->add(*ws->pdf("sigMassPDFSim")->getParameters(redData[i]));
-    cout << "All Parameters:" << endl;
-    pars->Print("v");
+    //    cout << "All Parameters:" << endl;
+    //    pars->Print("v");
     nuisances[i] = new RooArgSet(*pars);
     if (!(fitCentIntegrated && i==0) || nFiles==2)
       nuisances[i]->remove(*ws->var(("doubleRatio_"+varSuffix.at(i)).c_str()));
@@ -1713,8 +1795,8 @@ int main(int argc, char* argv[]) {
     nuisances[i]->remove(*ws->var(("xi_pol_"+varSuffix.at(i)).c_str()));
     nuisances[i]->remove(*ws->var(("xi_b_"+varSuffix.at(i)).c_str()));
 
-    cout << "Nuisance Parameters:" << endl;
-    nuisances[i]->Print("v");
+    // cout << "Nuisance Parameters:" << endl;
+    // nuisances[i]->Print("v");
     ws->defineSet(("nuisParameters_"+varSuffix.at(i)).c_str(),*nuisances[i]);
     model[i]->SetNuisanceParameters(*ws->set(("nuisParameters_"+varSuffix.at(i)).c_str()));
 
@@ -1737,6 +1819,66 @@ int main(int argc, char* argv[]) {
     ws->import(*bmodel[i]);
     poi->setVal(tmp_poi);
   }
+
+  // now make a model for HI0100
+  /* does not work yet
+  if (nFiles>2) {
+    unsigned int i=nFiles-1;
+    model[i] = new RooStats::ModelConfig("model_HI0100",ws);
+    model[i]->SetPdf(*ws->pdf("sigMassPDFSim"));
+    model[i]->SetParametersOfInterest(*ws->function("doubleRatio_HI0100"));
+    model[i]->SetObservables(RooArgSet(*ws->var("Jpsi_Mass"),*ws->cat("sample")));
+  
+    RooArgSet *pars = ws->pdf("sigMassPDFSim")->getParameters(redData[nFiles-1]);
+    pars->add(*ws->pdf("sigMassPDFSim")->getParameters(redData[0]));
+    pars->add(*ws->pdf("sigMassPDFSim")->getParameters(redData[1]));
+    pars->add(*ws->pdf("sigMassPDFSim")->getParameters(redData[2]));
+    cout << "All Parameters:" << endl;
+    pars->Print("v");
+    nuisances[i] = new RooArgSet(*pars);
+    nuisances[i]->remove(*ws->function("doubleRatio_HI0100"));
+  
+    //    nuisances[i]->remove(*ws->cat("sample"));
+    // for (unsigned int j=0;j<nFiles-1;++j) {
+    //   nuisances[i]->remove(*ws->var(("xi_fit_"+varSuffix.at(j)).c_str()));
+    //   nuisances[i]->remove(*ws->var(("xi_eff_"+varSuffix.at(j)).c_str()));
+    //   nuisances[i]->remove(*ws->var(("xi_pol_"+varSuffix.at(j)).c_str()));
+    //   nuisances[i]->remove(*ws->var(("xi_b_"+varSuffix.at(j)).c_str()));
+    // }
+
+    cout << "Nuisance Parameters:" << endl;
+    nuisances[i]->Print("v");
+    ws->defineSet("nuisParameters_HI0100",*nuisances[i]);
+    model[i]->SetNuisanceParameters(*ws->set("nuisParameters_HI0100"));
+  
+    // these are the systematic uncertainties
+    model[i]->SetGlobalObservables(("xi_fit_"+varSuffix.at(0)+","+
+				    "xi_eff_"+varSuffix.at(0)+","+
+				    "xi_pol_"+varSuffix.at(0)+","+
+				    "xi_b_"+varSuffix.at(0)+","+
+				    "xi_fit_"+varSuffix.at(1)+","+
+				    "xi_eff_"+varSuffix.at(1)+","+
+				    "xi_pol_"+varSuffix.at(1)+","+
+				    "xi_b_"+varSuffix.at(1)+","+
+				    "xi_fit_"+varSuffix.at(2)+","+
+				    "xi_eff_"+varSuffix.at(2)+","+
+				    "xi_pol_"+varSuffix.at(2)+","+
+				    "xi_b_"+varSuffix.at(2)).c_str());
+  
+    RooRealVar* poi = (RooRealVar*) model[i]->GetParametersOfInterest()->first();
+    double tmp_poi = poi->getVal();
+    model[i]->SetSnapshot(*poi);
+  
+    ws->import(*model[i]);
+  
+    bmodel[i] = (RooStats::ModelConfig*)model[i]->Clone("bmodel_HI0100");
+    bmodel[i]->SetName("B_only_model_HI0100");
+    poi->setVal(1.0);
+    bmodel[i]->SetSnapshot(*poi);
+    ws->import(*bmodel[i]);
+    poi->setVal(tmp_poi);
+  }
+  */
 
   string fname = dirPre + "_PbPb" + mBkgFunct.front();
   for (unsigned int i=1; i<nFiles-1;++i) {

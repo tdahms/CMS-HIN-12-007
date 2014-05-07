@@ -6,6 +6,7 @@
 #include "TFitResult.h"
 #include "TCanvas.h"
 #include "TStyle.h"
+#include "TBox.h"
 
 using namespace std;
 
@@ -21,26 +22,29 @@ void fit_samesign_bkg_oldschool(string infname="mid_pbpb.root")
   TF1 *f1 = new TF1("f1","[0]+[1]*x+[2]*pow(x,2)+[3]*pow(x,3)",1.8,5.0);
   f1->SetParNames("a","b","c","d");
   f1->SetParameters(1,1,1,0);
+  f1->SetNpx(200);
   //f1->FixParameter(3,0);
-  f1->SetLineWidth(2);
+  f1->SetLineWidth(3);
   f1->SetLineColor(kBlue);
   TCanvas *c1 = new TCanvas("c1","c1");
   c1->SetBottomMargin(0.14);
 
-  h1->Draw();
+  h1->Draw("");
   //plotting
-  TFitResultPtr s1 = h1->Fit(f1,"RMEILS");
+  TFitResultPtr s1 = h1->Fit(f1,"RMEILS","");
   double R1850 = f1->Integral(3.52,3.84)/0.02;///f1->Integral(1.8,5.0)*h1->Integral(1,160);
   double errR1850 = f1->IntegralError(3.52,3.84,s1->GetParams(), s1->GetCovarianceMatrix().GetMatrixArray())/0.02;
   cout << "M1850: " << R1850 << " +/- " << errR1850 << endl;
 
   f1->SetLineColor(kRed);
+  f1->SetLineStyle(7);
   TFitResultPtr s2 = h1->Fit(f1,"MEILS+","",2.0,4.5);
   double R2045 = f1->Integral(3.52,3.84)/0.02;///f1->Integral(1.8,5.0)*h1->Integral(1,160);
   double errR2045 = f1->IntegralError(3.52,3.84,s2->GetParams(), s2->GetCovarianceMatrix().GetMatrixArray())/0.02;
   cout << "M2045: " << R2045 << " +/- " << errR2045 << endl;
 
   f1->SetLineColor(kGreen+2);
+  f1->SetLineStyle(10);
   TFitResultPtr s3 = h1->Fit(f1,"MEILS+","",2.2,4.2);
   double R2242 = f1->Integral(3.52,3.84)/0.02;///f1->Integral(1.8,5.0)*h1->Integral(1,160);
   double errR2242 = f1->IntegralError(3.52,3.84,s3->GetParams(), s3->GetCovarianceMatrix().GetMatrixArray())/0.02;
@@ -59,6 +63,19 @@ void fit_samesign_bkg_oldschool(string infname="mid_pbpb.root")
   cout << 1-(R1850/Rdata) << endl;
   cout << 1-(R2045/Rdata) << endl;
   cout << 1-(R2242/Rdata) << endl;
+
+  double maxY = h1->GetMaximum();
+  maxY+=1.1*sqrt(maxY);
+  TBox *b1 = new TBox(3.52,0,3.84,maxY);
+  b1->SetFillColor(kYellow);
+  //  b1->Draw();
+
+  b1->Draw();
+  h1->Draw("same");
+  gPad->RedrawAxis();
+
+  // TLine *l1 = new TLine(3.52,0,3.52,100);
+  // TLine *l2 = new TLine(3.84,0,3.84,100);
 
   // s1.Get()->Print("v");
   // s2.Get()->Print("v");
