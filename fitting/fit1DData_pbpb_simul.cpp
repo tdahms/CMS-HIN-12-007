@@ -83,6 +83,7 @@ int main(int argc, char* argv[]) {
   bool fitCentIntegrated = false;
   bool useSystematics = false;
   bool twoCB=false;
+  bool overlay_pp=true;
 
   // *** Check options
   for (int i=1; i<argc; ++i) {
@@ -510,6 +511,7 @@ int main(int argc, char* argv[]) {
   RooRealVar *doubleRatio[nFiles-1];
   RooFormulaVar *fracP_HI[nFiles-1];
   RooFormulaVar *NPsiP_mix[nFiles-1];
+  RooFormulaVar *NPsiP_mix_pp[nFiles-1];
   RooRealVar *xi_fit[nFiles-1];
   RooRealVar *xi_eff[nFiles-1];
   RooRealVar *xi_pol[nFiles-1];
@@ -633,6 +635,10 @@ int main(int argc, char* argv[]) {
 					RooArgList(*(ws->var(("NJpsi_"+varSuffix.back()).c_str())),
 						   *(ws->function(("fracP_"+varSuffix.at(i)).c_str()))));
       ws->import(*NPsiP_mix[i]);
+      NPsiP_mix_pp[i]  = new RooFormulaVar(("NPsiP_mix_pp_"+varSuffix.at(i)).c_str(),"@0*@1",
+					 RooArgList(*(ws->var(("NJpsi_"+varSuffix.at(i)).c_str())),
+						    *(ws->var("fracP_pp"))));
+      ws->import(*NPsiP_mix_pp[i]);
     }
 
     if (shareShape || i == (int)nFiles-1)
@@ -790,6 +796,16 @@ int main(int argc, char* argv[]) {
        	      varSuffix.at(i).c_str(),
        	      mPsiPFunct.c_str(),
        	      mBkgFunct.back().c_str());
+      ws->factory(funct);
+      cout << funct << endl;
+      sprintf(funct,"SUM::sigMassPDF_mix_pp_%s(NJpsi_%s*%s,NPsiP_mix_pp_%s*%s,NBkg_%s*%s)",
+       	      varSuffix.at(i).c_str(),
+       	      varSuffix.at(i).c_str(),
+       	      mJpsiFunct.c_str(),
+       	      varSuffix.at(i).c_str(),
+       	      mPsiPFunct.c_str(),
+       	      varSuffix.at(i).c_str(),
+       	      mBkgFunct.at(i).c_str());
       ws->factory(funct);
       cout << funct << endl;
     }
@@ -1148,6 +1164,10 @@ int main(int argc, char* argv[]) {
       ws->pdf(("sigMassPDF_mix_"+varSuffix.front()).c_str())->plotOn(mframe[i],VisualizeError(*fitM,1,kFALSE),FillColor(kYellow),Precision(1e-4));
       ws->pdf(("sigMassPDF_mix_"+varSuffix.front()).c_str())->plotOn(mframezoom[i],VisualizeError(*fitM,1,kFALSE),FillColor(kYellow),Precision(1e-4));
     }
+    else if(overlay_pp) {
+      ws->pdf(("sigMassPDF_mix_pp_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],VisualizeError(*fitM,1,kFALSE),FillColor(kYellow),Precision(1e-4));
+      ws->pdf(("sigMassPDF_mix_pp_"+varSuffix.at(i)).c_str())->plotOn(mframezoom[i],VisualizeError(*fitM,1,kFALSE),FillColor(kYellow),Precision(1e-4));
+    }
 
     // replot data on top of shaded bands
     if (yrange=="1.6-2.4" && i==1)
@@ -1197,6 +1217,10 @@ int main(int argc, char* argv[]) {
       //      redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerStyle(20),MarkerSize(0.8),Binning(*rbm[i]));
       ws->pdf(("sigMassPDF_mix_"+varSuffix.front()).c_str())->plotOn(mframe[i],LineColor(kRed),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
       ws->pdf(("sigMassPDF_mix_"+varSuffix.front()).c_str())->plotOn(mframezoom[i],LineColor(kRed),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
+    }
+    else if(overlay_pp) {
+      ws->pdf(("sigMassPDF_mix_pp_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],LineColor(kRed),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
+      ws->pdf(("sigMassPDF_mix_pp_"+varSuffix.at(i)).c_str())->plotOn(mframezoom[i],LineColor(kRed),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
     }
     //    redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),MarkerStyle(24),Binning(*rbm[i]));
 
@@ -1668,7 +1692,7 @@ int main(int argc, char* argv[]) {
     }
 
     TLegend *leg1;
-    if (isPbPb)
+    if (isPbPb && !overlay_pp)
       leg1 = new TLegend(minX,0.8625-3*step,0.92,0.853,NULL,"brNDC");
     else
       leg1 = new TLegend(minX,0.8625-4*step,0.92,0.853,NULL,"brNDC");
@@ -1685,6 +1709,8 @@ int main(int argc, char* argv[]) {
       //      leg1->AddEntry(hMixLegend,"total with","L");
       leg1->AddEntry(hMixLegend,"R_{#psi}(PbPb 0-20%)","L");
     }
+    else if (overlay_pp)
+      leg1->AddEntry(hMixLegend,"R_{#psi}(pp)","L");
 
     if (isPaper)
       mframe[i]->addObject(leg1,"same");
@@ -1711,7 +1737,7 @@ int main(int argc, char* argv[]) {
       st->SetTextFont(42);
     }
     else {
-      if (isPbPb) {
+      if (false && isPbPb) {
 	switch (i) {
 	case 0:
 	  if (yrange == "0.0-1.6")
