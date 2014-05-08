@@ -75,7 +75,7 @@ void check_fit_bias(const int N=1, string infname="20140409_SimFits_M1850_DblMu0
 
   for (int i=0;i<N;++i) {
     cout << "Fitting event " << i << "/" << N << endl;
-    fitMall = model->fitTo(*data[i],Extended(1),Hesse(1),Save(1),NumCPU(8),PrintEvalErrors(-1),Verbose(0),PrintLevel(-1));
+    fitMall = ws->pdf("sigMassPDF_M2242")->fitTo(*data[i],Extended(1),Hesse(1),Save(1),NumCPU(8),PrintEvalErrors(-1),Verbose(0),PrintLevel(-1));
     if (fitMall->statusCodeHistory(fitMall->numStatusHistory()-1) != 0) {i--; continue;}
 
     //  cout << "Fitted R_{psi} = " << ws->function("fracP_HI020")->getVal() << " +/- " << ws->function("fracP_HI020")->getPropagatedError(*fitMall) << endl;
@@ -108,7 +108,7 @@ void check_fit_bias(const int N=1, string infname="20140409_SimFits_M1850_DblMu0
 
   c1->SaveAs(Form("toy_fits_N%i.pdf",N));
 
-  TFile *outf = new TFile(Form("toy_fits_N%i.root",N),"CREATE");
+  TFile *outf = new TFile(Form("toy_fits_new_N%i.root",N),"CREATE");
   h0->Write();
   h1->Write();
   outf->Close();
