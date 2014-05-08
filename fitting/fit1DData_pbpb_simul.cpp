@@ -798,12 +798,12 @@ int main(int argc, char* argv[]) {
        	      mBkgFunct.back().c_str());
       ws->factory(funct);
       cout << funct << endl;
-      sprintf(funct,"SUM::sigMassPDF_mix_pp_%s(NJpsi_%s*%s,NPsiP_mix_pp_%s*%s,NBkg_%s*%s)",
+      sprintf(funct,"SUM::sigMassPDF_mix_pp_%s(NJpsi_%s*%s_%s,NPsiP_mix_pp_%s*%s_%s,NBkg_%s*%s)",
        	      varSuffix.at(i).c_str(),
        	      varSuffix.at(i).c_str(),
-       	      mJpsiFunct.c_str(),
+       	      mJpsiFunct.c_str(),"HI",
        	      varSuffix.at(i).c_str(),
-       	      mPsiPFunct.c_str(),
+       	      mPsiPFunct.c_str(),"HI",
        	      varSuffix.at(i).c_str(),
        	      mBkgFunct.at(i).c_str());
       ws->factory(funct);
