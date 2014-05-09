@@ -498,9 +498,13 @@ int main(int argc, char* argv[]) {
   TH1F *hBkgLegend = new TH1F("hBkgLegend","hBkgLegend",100,0,1);
   hBkgLegend->SetLineColor(kBlack); hBkgLegend->SetLineWidth(2); hBkgLegend->SetLineStyle(kDashed); hBkgLegend->SetFillColor(kGray);
   TH1F *hTotalLegend = new TH1F("hTotalLegend","hTotalLegend",100,0,1);
-  hTotalLegend->SetLineColor(kBlue); hTotalLegend->SetLineWidth(2); hTotalLegend->SetFillColor(kAzure-9);
+  hTotalLegend->SetLineColor(kRed); hTotalLegend->SetLineWidth(2); hTotalLegend->SetFillColor(kYellow);
   TH1F *hMixLegend = new TH1F("hMixLegend","hMixLegend",100,0,1);
-  hMixLegend->SetLineColor(kRed); hMixLegend->SetLineWidth(2); hMixLegend->SetLineStyle(kDashed);hMixLegend->SetFillColor(kYellow);
+  hMixLegend->SetLineColor(kBlue); hMixLegend->SetLineWidth(2); hMixLegend->SetLineStyle(kDashed);hMixLegend->SetFillColor(kAzure-9);
+  TH1F *hTotalLegend_pp = new TH1F("hTotalLegend_pp","hTotalLegend_pp",100,0,1);
+  hTotalLegend_pp->SetLineColor(kBlue); hTotalLegend_pp->SetLineWidth(2); hTotalLegend_pp->SetFillColor(kAzure-9);
+  TH1F *hMixLegend_pp = new TH1F("hMixLegend_pp","hMixLegend_pp",100,0,1);
+  hMixLegend_pp->SetLineColor(kRed); hMixLegend_pp->SetLineWidth(2); hMixLegend_pp->SetLineStyle(kDashed);hMixLegend_pp->SetFillColor(kYellow);
 
   RooFitResult *fitM;
   
@@ -1107,7 +1111,7 @@ int main(int argc, char* argv[]) {
     mframe[i]->SetTitleOffset(1.10,"X");
     mframe[i]->SetTitleOffset(1.05,"Y");
 
-    mframezoom[i] = ws->var("Jpsi_Mass")->frame(3.3,4.1);
+    mframezoom[i] = ws->var("Jpsi_Mass")->frame(3.42,3.960);//3.3,4.1
     mframezoom[i]->SetName(("zoom_frame_"+varSuffix.at(i)).c_str());
     mframezoom[i]->SetTitle(("A RooPlot of \"J/#psi mass\" in "+varSuffix.at(i)).c_str());
     mframezoom[i]->GetYaxis()->SetTitle("Events");
@@ -1130,8 +1134,14 @@ int main(int argc, char* argv[]) {
     min = ws->var(name.c_str())->getVal()/(double(nbins)) * 0.7;
 
     // plot shaded areas
-    ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],VisualizeError(*fitM,1,kFALSE),FillColor(kAzure-9),LineWidth(2),Precision(1e-4));
-    ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframezoom[i],VisualizeError(*fitM,1,kFALSE),FillColor(kAzure-9),LineWidth(2),Precision(1e-4));
+    if (isPbPb) {
+      ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],VisualizeError(*fitM,1,kFALSE),FillColor(kYellow),LineWidth(2),Precision(1e-4));
+      ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframezoom[i],VisualizeError(*fitM,1,kFALSE),FillColor(kYellow),LineWidth(2),Precision(1e-4));
+    }
+    else {
+      ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],VisualizeError(*fitM,1,kFALSE),FillColor(kAzure-9),LineWidth(2),Precision(1e-4));
+      ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframezoom[i],VisualizeError(*fitM,1,kFALSE),FillColor(kAzure-9),LineWidth(2),Precision(1e-4));
+    }
 
     string signal;
     if (!isPaper && found!=string::npos) { 
@@ -1165,20 +1175,30 @@ int main(int argc, char* argv[]) {
       ws->pdf(("sigMassPDF_mix_"+varSuffix.front()).c_str())->plotOn(mframezoom[i],VisualizeError(*fitM,1,kFALSE),FillColor(kYellow),Precision(1e-4));
     }
     else if(overlay_pp) {
-      ws->pdf(("sigMassPDF_mix_pp_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],VisualizeError(*fitM,1,kFALSE),FillColor(kYellow),Precision(1e-4));
-      ws->pdf(("sigMassPDF_mix_pp_"+varSuffix.at(i)).c_str())->plotOn(mframezoom[i],VisualizeError(*fitM,1,kFALSE),FillColor(kYellow),Precision(1e-4));
+      ws->pdf(("sigMassPDF_mix_pp_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],VisualizeError(*fitM,1,kFALSE),FillColor(kAzure-9),Precision(1e-4));
+      ws->pdf(("sigMassPDF_mix_pp_"+varSuffix.at(i)).c_str())->plotOn(mframezoom[i],VisualizeError(*fitM,1,kFALSE),FillColor(kAzure-9),Precision(1e-4));
     }
 
     // replot data on top of shaded bands
-    if (yrange=="1.6-2.4" && i==1)
+    if (yrange=="1.6-2.4" && i==1) {
       redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(*rbm[i+1]));
-    else
+      redData[i]->plotOn(mframezoom[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(*rbm[i+1]));
+    }
+    else {
       redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(*rbm[i]));
-    redData[i]->plotOn(mframezoom[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(rbmZoom));
+      redData[i]->plotOn(mframezoom[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(*rbm[i]));
+    }
+    //    redData[i]->plotOn(mframezoom[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(rbmZoom));
 
     // plot lines
-    ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],LineColor(kBlue),LineWidth(2),Precision(1e-4));
-    ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframezoom[i],LineColor(kBlue),LineWidth(2),Precision(1e-4));
+    if (isPbPb) {
+      ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],LineColor(kRed),LineWidth(2),Precision(1e-4));
+      ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframezoom[i],LineColor(kRed),LineWidth(2),Precision(1e-4));
+    }
+    else {
+      ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],LineColor(kBlue),LineWidth(2),Precision(1e-4));
+      ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframezoom[i],LineColor(kBlue),LineWidth(2),Precision(1e-4));
+    }
 
     hpull[i] = mframe[i]->pullHist(0,0,true);
     hpull[i]->SetName(("hpullhist_"+varSuffix.at(i)).c_str());
@@ -1210,8 +1230,14 @@ int main(int argc, char* argv[]) {
     ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],Components(mBkgFunct.at(i).c_str()),LineColor(kBlack),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
     ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframezoom[i],Components(mBkgFunct.at(i).c_str()),LineColor(kBlack),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
     // redraw total line
-    ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],LineColor(kBlue),LineWidth(2),Precision(1e-4));
-    ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframezoom[i],LineColor(kBlue),LineWidth(2),Precision(1e-4));
+    if (isPbPb) {
+      ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],LineColor(kRed),LineWidth(2),Precision(1e-4));
+      ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframezoom[i],LineColor(kRed),LineWidth(2),Precision(1e-4));
+    }
+    else {
+      ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],LineColor(kBlue),LineWidth(2),Precision(1e-4));
+      ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframezoom[i],LineColor(kBlue),LineWidth(2),Precision(1e-4));
+    }
 
     if (i==nFiles-1) {
       //      redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerStyle(20),MarkerSize(0.8),Binning(*rbm[i]));
@@ -1219,8 +1245,8 @@ int main(int argc, char* argv[]) {
       ws->pdf(("sigMassPDF_mix_"+varSuffix.front()).c_str())->plotOn(mframezoom[i],LineColor(kRed),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
     }
     else if(overlay_pp) {
-      ws->pdf(("sigMassPDF_mix_pp_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],LineColor(kRed),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
-      ws->pdf(("sigMassPDF_mix_pp_"+varSuffix.at(i)).c_str())->plotOn(mframezoom[i],LineColor(kRed),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
+      ws->pdf(("sigMassPDF_mix_pp_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],LineColor(kBlue),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
+      ws->pdf(("sigMassPDF_mix_pp_"+varSuffix.at(i)).c_str())->plotOn(mframezoom[i],LineColor(kBlue),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
     }
     //    redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),MarkerStyle(24),Binning(*rbm[i]));
 
@@ -1302,7 +1328,8 @@ int main(int argc, char* argv[]) {
     TPad *pad3 = new TPad("pad3","This is pad3",0.16,0.52,0.40,0.75);
     pad3->SetLeftMargin(0.2);
     pad3->SetBottomMargin(0.2);
-    TPad *pad4 = new TPad("pad4","This is pad4",0.52,0.33,0.90,0.71);
+    //    TPad *pad4 = new TPad("pad4","This is pad4",0.52,0.33,0.90,0.71);
+    TPad *pad4 = new TPad("pad4","This is pad4",0.52,0.37,0.92,0.77);
     pad4->SetFillStyle(0);
     pad4->SetLeftMargin(0.2);
     pad4->SetBottomMargin(0.2);
@@ -1370,7 +1397,7 @@ int main(int argc, char* argv[]) {
 	  break;
 	case 1:
 	  if (yrange == "0.0-1.6")
-	    mframe[i]->GetYaxis()->SetRangeUser(5,5000);
+	    mframe[i]->GetYaxis()->SetRangeUser(8,5000);
 	  else if (yrange == "1.6-2.4")
 	    mframe[i]->GetYaxis()->SetRangeUser(120,2000);
 	  break;
@@ -1695,7 +1722,8 @@ int main(int argc, char* argv[]) {
     if (isPbPb && !overlay_pp)
       leg1 = new TLegend(minX,0.8625-3*step,0.92,0.853,NULL,"brNDC");
     else
-      leg1 = new TLegend(minX,0.8625-4*step,0.92,0.853,NULL,"brNDC");
+      leg1 = new TLegend(0.17,0.6895-4*step,0.47,0.680,NULL,"brNDC");
+    //      leg1 = new TLegend(minX,0.8625-4*step,0.92,0.853,NULL,"brNDC");
 
     leg1->SetFillStyle(0);
     leg1->SetFillColor(0);
@@ -1703,14 +1731,17 @@ int main(int argc, char* argv[]) {
     leg1->SetMargin(0.14);
     leg1->SetTextSize(0.035);
     leg1->AddEntry(gDataLegend,"data","P");
-    leg1->AddEntry(hTotalLegend,"total fit","L");
+    if (isPbPb)
+      leg1->AddEntry(hTotalLegend,"total fit","L");
+    else
+      leg1->AddEntry(hTotalLegend_pp,"total fit","L");
     leg1->AddEntry(hBkgLegend,"background","L");
     if (!isPbPb) {
       //      leg1->AddEntry(hMixLegend,"total with","L");
-      leg1->AddEntry(hMixLegend,"R_{#psi}(PbPb 0-20%)","L");
+      leg1->AddEntry(hMixLegend_pp,"R_{#psi}^{PbPb 0-20%}","L");
     }
     else if (overlay_pp)
-      leg1->AddEntry(hMixLegend,"R_{#psi}(pp)","L");
+      leg1->AddEntry(hMixLegend,"R_{#psi}^{pp}","L");
 
     if (isPaper)
       mframe[i]->addObject(leg1,"same");
@@ -1737,7 +1768,7 @@ int main(int argc, char* argv[]) {
       st->SetTextFont(42);
     }
     else {
-      if (false && isPbPb) {
+      if (isPbPb) {
 	switch (i) {
 	case 0:
 	  if (yrange == "0.0-1.6")

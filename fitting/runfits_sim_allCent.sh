@@ -2,7 +2,7 @@
 TODAY=`date +%Y%m%d`
 echo "Today is ${TODAY}"
 
-SUFFIX="SimFits_M2242_DblMu0_AllCent_WithSyst_final_forPaper"
+SUFFIX="SimFits_M2242_DblMu0_AllCent_WithSyst_final_forPaper_insert"
 
 DIRECTORY="${TODAY}_${SUFFIX}"
 
