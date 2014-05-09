@@ -13,14 +13,16 @@
 #include "TH1.h"
 #include "TH2.h"
 #include "TH3.h"
+#include "TMultiGraph.h"
 #include "TGraphErrors.h"
 #include "TGraphAsymmErrors.h"
 #include "TPaveStats.h"
 #include "TLatex.h"
 #include "TLegend.h"
 
+TMultiGraph *read_alice();
 
-void plot_double_ratio(bool isPaper=false, bool plotGlobalPP = false, bool overlay=true, bool showSplit=false, bool savePlots=false)
+void plot_double_ratio(bool isPaper=false, bool plotGlobalPP = false, bool overlay=true, bool showSplit=false, bool overlayAlice=false, bool savePlots=false)
 {
   gStyle->SetOptFit(0);
   gStyle->SetOptStat(0);
@@ -293,6 +295,9 @@ void plot_double_ratio(bool isPaper=false, bool plotGlobalPP = false, bool overl
   gr_mid_pt6530_mbP->SetMarkerSize(1.2);
 
 
+  TMultiGraph *alice = NULL;
+  alice = read_alice();
+
 
   TF1 *f3 = new TF1("f3","1",0,416);
   f3->SetLineWidth(1);
@@ -342,6 +347,12 @@ void plot_double_ratio(bool isPaper=false, bool plotGlobalPP = false, bool overl
   // c3->GetPad(1)->SetPad(0.0,0.0,0.5,1.0);
   // c3->GetPad(2)->SetPad(0.5,0.0,1.0,1.0);
   c3->cd(1);
+
+  if (overlayAlice) {
+    f3->GetYaxis()->SetRangeUser(0,5);
+    f3a->GetYaxis()->SetRangeUser(0,5);
+  }
+
   //  c3->SetLogy();
   f3->Draw();
 
@@ -352,6 +363,9 @@ void plot_double_ratio(bool isPaper=false, bool plotGlobalPP = false, bool overl
   }
   else
     gr_fwd_pt3030_glb2->Draw("3");
+
+  if (overlayAlice)
+    alice->Draw();
 
   f3->Draw("same");
 
@@ -425,6 +439,8 @@ void plot_double_ratio(bool isPaper=false, bool plotGlobalPP = false, bool overl
 
   TLatex *label = new TLatex(55/zoom,2.675,"#splitline{Cent.}{0-100%}");
   label->SetTextSize(0.23);
+  if (overlayAlice)
+    label->SetY(4.18);
 
   if (overlay) {
     c3->cd(2);
@@ -508,4 +524,99 @@ void plot_double_ratio(bool isPaper=false, bool plotGlobalPP = false, bool overl
 
 
   return;
+}
+
+TMultiGraph* read_alice()
+{
+  TMultiGraph *gr = new TMultiGraph();
+
+  double Npart_alice_err[3] = {0.0, 0.0, 0.0};
+  double Npart_alice_sys[3] = {10.0, 10.0, 10.0};
+
+  double Npart_alice_pt03[3] = {16.7901, 69.1358, 157.037};
+  double ratio_alice_pt03[3] = {1.9887, 1.06215, 0.94915};
+  double ratio_alice_pt03_err[3] = {0.779661, 0.745763, 0.610169};
+  double ratio_alice_pt03_sys[3] = {0.282486, 0.700565, 0.293785};
+  double ratio_alice_pt03_glb[3] = {0.508475, 0.259887, 0.259887};
+  
+  double Npart_alice_pt38[2] = {114.568, 312.099};
+  double ratio_alice_pt38[2] = {0.632768, 1.74011};
+  double ratio_alice_pt38_err[2] = {0.463277, 0.0};
+  double ratio_alice_pt38_sys[2] = {0.112994, 0.0};
+  double ratio_alice_pt38_glb[2] = {0.169492, 0.0};
+
+
+  TGraphErrors *gr_alice_pt03 = new TGraphErrors(3, Npart_alice_pt03, ratio_alice_pt03, Npart_alice_err, ratio_alice_pt03_err);
+  TGraphErrors *gr_alice_pt03_sys = new TGraphErrors(3, Npart_alice_pt03, ratio_alice_pt03, Npart_alice_sys, ratio_alice_pt03_sys);
+  TGraphErrors *gr_alice_pt03_glb = new TGraphErrors(3, Npart_alice_pt03, ratio_alice_pt03, Npart_alice_err, ratio_alice_pt03_glb);
+
+  gr_alice_pt03->SetName("alice_pt03");
+  gr_alice_pt03_sys->SetName("alice_pt03_sys");
+  gr_alice_pt03_glb->SetName("alice_pt03_glb");
+
+  gr_alice_pt03->SetMarkerStyle(25);
+  gr_alice_pt03_sys->SetMarkerStyle(25);
+  gr_alice_pt03_glb->SetMarkerStyle(25);
+  gr_alice_pt03->SetMarkerColor(kGreen+2);
+  gr_alice_pt03_sys->SetMarkerColor(kGreen+2);
+  gr_alice_pt03_glb->SetMarkerColor(kGreen+2);
+
+  gr_alice_pt03_glb->SetLineColor(kGreen+2);
+  gr_alice_pt03_sys->SetLineColor(kGreen+2);
+
+  gr_alice_pt03_glb->SetFillStyle(0);
+  gr_alice_pt03_glb->SetFillColor(kGreen+2);
+  gr_alice_pt03_sys->SetFillColor(kGreen-9);
+
+  TGraphErrors *gr_alice_pt38 = new TGraphErrors(1, Npart_alice_pt38, ratio_alice_pt38, Npart_alice_err, ratio_alice_pt38_err);
+  TGraphErrors *gr_alice_pt38_sys = new TGraphErrors(1, Npart_alice_pt38, ratio_alice_pt38, Npart_alice_sys, ratio_alice_pt38_sys);
+  TGraphErrors *gr_alice_pt38_glb = new TGraphErrors(1, Npart_alice_pt38, ratio_alice_pt38, Npart_alice_sys, ratio_alice_pt38_glb);
+
+  gr_alice_pt38->SetName("alice_pt38");
+  gr_alice_pt38_glb->SetName("alice_pt38_glb");
+  gr_alice_pt38_sys->SetName("alice_pt38_sys");
+
+
+  gr_alice_pt38->SetMarkerStyle(24);
+  gr_alice_pt38_sys->SetMarkerStyle(24);
+  gr_alice_pt38_glb->SetMarkerStyle(24);
+  gr_alice_pt38->SetMarkerColor(kMagenta+1);
+  gr_alice_pt38_sys->SetMarkerColor(kMagenta+1);
+  gr_alice_pt38_glb->SetMarkerColor(kMagenta+1);
+
+  gr_alice_pt38_glb->SetLineColor(kMagenta+1);
+  gr_alice_pt38_sys->SetLineColor(kMagenta+1);
+
+  gr_alice_pt38_glb->SetFillColor(kMagenta+1);
+  gr_alice_pt38_glb->SetFillStyle(0);
+  gr_alice_pt38_sys->SetFillColor(kMagenta-9);
+
+
+  double ratio_alice_pt38_limit[1] = {1.74011};
+  double ratio_alice_pt38_arrow[1] = {1.5};
+  double Npart_alice_limit[1] = {312.099};
+  TGraphAsymmErrors *gr_alice_pt38_limit = new TGraphAsymmErrors(1, Npart_alice_limit, ratio_alice_pt38_limit, Npart_alice_err, Npart_alice_err, ratio_alice_pt38_arrow, Npart_alice_err);
+  TGraphAsymmErrors *gr_alice_pt38_bar = new TGraphAsymmErrors(1, Npart_alice_limit, ratio_alice_pt38_limit, Npart_alice_sys, Npart_alice_sys, Npart_alice_err, Npart_alice_err);
+  gr_alice_pt38_limit->SetName("gr_alice_pt38_limit");
+  gr_alice_pt38_bar->SetName("gr_alice_pt38_bar");
+  gr_alice_pt38_limit->SetMarkerStyle(1);
+  gr_alice_pt38_limit->SetMarkerSize(2.0);
+  gr_alice_pt38_bar->SetMarkerSize(0.0);
+  gr_alice_pt38_limit->SetLineWidth(1);
+  gr_alice_pt38_bar->SetLineWidth(2);
+
+  gr_alice_pt38_limit->SetLineColor(kMagenta+1);
+  gr_alice_pt38_bar->SetLineColor(kMagenta+1);
+
+
+  gr->Add(gr_alice_pt03_sys,"5");
+  gr->Add(gr_alice_pt38_sys,"5");
+  gr->Add(gr_alice_pt03_glb,"3");
+  gr->Add(gr_alice_pt38_glb,"2");
+  gr->Add(gr_alice_pt03,"P");
+  gr->Add(gr_alice_pt38,"P");
+  gr->Add(gr_alice_pt38_limit,">");
+  gr->Add(gr_alice_pt38_bar,"Z");
+
+  return gr;
 }
