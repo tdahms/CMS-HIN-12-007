@@ -1,4 +1,4 @@
-#include <iostream>
+0;95;c#include <iostream>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -21,6 +21,9 @@
 #include "TLegend.h"
 
 TMultiGraph *read_alice();
+TGraphErrors *gr_alice_pt03P;
+TGraphErrors *gr_alice_pt38;
+TGraphAsymmErrors *gr_alice_pt38_bar;
 
 void plot_double_ratio(bool isPaper=false, bool plotGlobalPP = false, bool overlay=true, bool showSplit=false, bool overlayAlice=false, bool savePlots=false)
 {
@@ -65,7 +68,6 @@ void plot_double_ratio(bool isPaper=false, bool plotGlobalPP = false, bool overl
   if (ifs.is_open()) {
     while (ifs.good()) {
       ifs >> ratio_fwd_pt3030_mb[i] >> ratio_fwd_pt3030_mb_err[i] >> ratio_fwd_pt3030_mb_sys[i];
-      cout << ratio_fwd_pt3030_mb[i] << " " << ratio_fwd_pt3030_mb_err[i] << " " << ratio_fwd_pt3030_mb_sys[i]<<endl;
       i++;
     }
     ifs.close();
@@ -235,9 +237,9 @@ void plot_double_ratio(bool isPaper=false, bool plotGlobalPP = false, bool overl
   double pp_mid_pt6530_err = 0.056;
   double pp_fwd_pt3030_err = 0.064;
 
-  TBox *pp_fwd_pt3030 = new TBox(0.0,1.0-pp_fwd_pt3030_err,10.0,1.0+pp_fwd_pt3030_err);
+  TBox *pp_fwd_pt3030 = new TBox(0.4,1.0-pp_fwd_pt3030_err,10.0,1.0+pp_fwd_pt3030_err);
   pp_fwd_pt3030->SetFillColor(kRed-9);
-  TBox *pp_mid_pt6530 = new TBox(0.0,1.0-pp_mid_pt6530_err,10.0,1.0+pp_mid_pt6530_err);
+  TBox *pp_mid_pt6530 = new TBox(0.4,1.0-pp_mid_pt6530_err,10.0,1.0+pp_mid_pt6530_err);
   pp_mid_pt6530->SetFillColor(kAzure-9);
 
   TBox *pp_mid2_pt6530 = new TBox(10.0,1.0-pp_mid_pt6530_err,20.0,1.0+pp_mid_pt6530_err);
@@ -301,6 +303,7 @@ void plot_double_ratio(bool isPaper=false, bool plotGlobalPP = false, bool overl
 
   TF1 *f3 = new TF1("f3","1",0,416);
   f3->SetLineWidth(1);
+  f3->SetNpx(200);
   f3->GetXaxis()->SetTitle("N_{part}");
   f3->GetYaxis()->SetTitle("[ N_{#psi(2S)}/N_{J/#psi} ]_{PbPb} / [ N_{#psi(2S)}/N_{J/#psi} ]_{pp}");
   f3->GetYaxis()->SetTitleOffset(1.15);
@@ -349,8 +352,8 @@ void plot_double_ratio(bool isPaper=false, bool plotGlobalPP = false, bool overl
   c3->cd(1);
 
   if (overlayAlice) {
-    f3->GetYaxis()->SetRangeUser(0,5);
-    f3a->GetYaxis()->SetRangeUser(0,5);
+    f3->GetYaxis()->SetRangeUser(0,6);
+    f3a->GetYaxis()->SetRangeUser(0,6);
   }
 
   //  c3->SetLogy();
@@ -400,8 +403,12 @@ void plot_double_ratio(bool isPaper=false, bool plotGlobalPP = false, bool overl
   TLegend *leg3;
   if (plotGlobalPP&&!overlay)
     leg3 = new TLegend(0.15,0.77,0.72,0.88);
-  else if (overlay)
-    leg3 = new TLegend(0.15,0.665,0.72,0.865);
+  else if (overlay) {
+    if (overlayAlice)
+      leg3 = new TLegend(0.15,0.555,0.72,0.865);
+    else
+      leg3 = new TLegend(0.15,0.665,0.72,0.865);
+  }
   else
     leg3 = new TLegend(0.15,0.78,0.72,0.94);
 
@@ -415,10 +422,20 @@ void plot_double_ratio(bool isPaper=false, bool plotGlobalPP = false, bool overl
   leg3->SetTextSize(0.035);
   if (!overlay)
     leg3->SetHeader("CMS PbPb #sqrt{s_{NN}} = 2.76 TeV");
+
   leg3->AddEntry(gr_fwd_pt3030,"3 < p_{T} < 30 GeV/c, 1.6 < |y| < 2.4","P");
   if (overlay) {
-    leg3->AddEntry(gr_mid_pt6530,"6.5 < p_{T} < 30 GeV/c, |y| < 1.6","P");
-    leg3->AddEntry(gr_mid_pt6530_bar,"95% CL, 6.5 < p_{T} < 30 GeV/c, |y| < 1.6","L");
+    if (overlayAlice) {
+      leg3->AddEntry(gr_mid_pt6530,"6.5 < p_{T} < 30 GeV/c, |y| < 1.6","P");
+      leg3->AddEntry(gr_mid_pt6530_bar,"95% CL, 6.5 < p_{T} < 30 GeV/c, |y| < 1.6","L");
+      leg3->AddEntry(gr_alice_pt03P,"ALICE: p_{T} < 3 GeV/c, 2.5 < |y| < 4 (pp #sqrt{s} = 7 TeV)","P");
+      leg3->AddEntry(gr_alice_pt38,"ALICE: 3 < p_{T} < 8 GeV/c, 2.5 < |y| < 4 (pp #sqrt{s} = 7 TeV)","P");
+      leg3->AddEntry(gr_alice_pt38_bar,"ALICE: 95% CL, 3 < p_{T} < 8 GeV/c, 2.5 < |y| < 4","L");
+    }
+    else {
+      leg3->AddEntry(gr_mid_pt6530,"6.5 < p_{T} < 30 GeV/c, |y| < 1.6","P");
+      leg3->AddEntry(gr_mid_pt6530_bar,"95% CL, 6.5 < p_{T} < 30 GeV/c, |y| < 1.6","L");
+    }
   }
   if (!plotGlobalPP)
     leg3->AddEntry(gr_fwd_pt3030_glb2,"pp uncertainty (global)","F");
@@ -511,8 +528,14 @@ void plot_double_ratio(bool isPaper=false, bool plotGlobalPP = false, bool overl
   }
   if (savePlots) {
     if (overlay) {
-      c3->SaveAs("double_ratio_ppGlobal_pp2013_PbPbRegit.pdf");
-      c3->SaveAs("double_ratio_ppGlobal_pp2013_PbPbRegit.png");
+      if (overlayAlice) {
+	c3->SaveAs("double_ratio_compAlice_ppGlobal_pp2013_PbPbRegit.pdf");
+	c3->SaveAs("double_ratio_compAlice_ppGlobal_pp2013_PbPbRegit.png");
+      }
+      else {
+	c3->SaveAs("double_ratio_ppGlobal_pp2013_PbPbRegit.pdf");
+	c3->SaveAs("double_ratio_ppGlobal_pp2013_PbPbRegit.png");
+      }
     }
     else{
       c3->SaveAs("double_ratio_ppGlobal_fwd_pp2013_PbPbRegit.pdf");
@@ -549,54 +572,67 @@ TMultiGraph* read_alice()
   TGraphErrors *gr_alice_pt03 = new TGraphErrors(3, Npart_alice_pt03, ratio_alice_pt03, Npart_alice_err, ratio_alice_pt03_err);
   TGraphErrors *gr_alice_pt03_sys = new TGraphErrors(3, Npart_alice_pt03, ratio_alice_pt03, Npart_alice_sys, ratio_alice_pt03_sys);
   TGraphErrors *gr_alice_pt03_glb = new TGraphErrors(3, Npart_alice_pt03, ratio_alice_pt03, Npart_alice_err, ratio_alice_pt03_glb);
+  gr_alice_pt03P = new TGraphErrors(3, Npart_alice_pt03, ratio_alice_pt03, Npart_alice_err, Npart_alice_err);
 
   gr_alice_pt03->SetName("alice_pt03");
   gr_alice_pt03_sys->SetName("alice_pt03_sys");
   gr_alice_pt03_glb->SetName("alice_pt03_glb");
+  gr_alice_pt03P->SetName("alice_pt03P");
 
-  gr_alice_pt03->SetMarkerStyle(25);
-  gr_alice_pt03_sys->SetMarkerStyle(25);
-  gr_alice_pt03_glb->SetMarkerStyle(25);
-  gr_alice_pt03->SetMarkerColor(kGreen+2);
-  gr_alice_pt03_sys->SetMarkerColor(kGreen+2);
-  gr_alice_pt03_glb->SetMarkerColor(kGreen+2);
+  gr_alice_pt03->SetMarkerStyle(33);
+  gr_alice_pt03_sys->SetMarkerStyle(27);
+  gr_alice_pt03_glb->SetMarkerStyle(27);
+  gr_alice_pt03P->SetMarkerStyle(27);
+  gr_alice_pt03->SetMarkerSize(2);
+  gr_alice_pt03_sys->SetMarkerSize(2);
+  gr_alice_pt03_glb->SetMarkerSize(2);
+  gr_alice_pt03P->SetMarkerSize(2);
+  gr_alice_pt03->SetMarkerColor(kGray);
+  gr_alice_pt03_sys->SetMarkerColor(kBlack);
+  gr_alice_pt03_glb->SetMarkerColor(kBlack);
+  gr_alice_pt03P->SetMarkerColor(kBlack);
 
-  gr_alice_pt03_glb->SetLineColor(kGreen+2);
-  gr_alice_pt03_sys->SetLineColor(kGreen+2);
+  gr_alice_pt03->SetLineColor(kBlack);
+  gr_alice_pt03_glb->SetLineColor(kBlack);
+  gr_alice_pt03_sys->SetLineColor(kBlack);
+  gr_alice_pt03P->SetLineColor(kBlack);
 
   gr_alice_pt03_glb->SetFillStyle(0);
-  gr_alice_pt03_glb->SetFillColor(kGreen+2);
-  gr_alice_pt03_sys->SetFillColor(kGreen-9);
+  gr_alice_pt03_glb->SetFillColor(kBlack);
+  gr_alice_pt03_sys->SetFillColor(kGray);
 
-  TGraphErrors *gr_alice_pt38 = new TGraphErrors(1, Npart_alice_pt38, ratio_alice_pt38, Npart_alice_err, ratio_alice_pt38_err);
+  gr_alice_pt38 = new TGraphErrors(1, Npart_alice_pt38, ratio_alice_pt38, Npart_alice_err, ratio_alice_pt38_err);
   TGraphErrors *gr_alice_pt38_sys = new TGraphErrors(1, Npart_alice_pt38, ratio_alice_pt38, Npart_alice_sys, ratio_alice_pt38_sys);
   TGraphErrors *gr_alice_pt38_glb = new TGraphErrors(1, Npart_alice_pt38, ratio_alice_pt38, Npart_alice_sys, ratio_alice_pt38_glb);
 
   gr_alice_pt38->SetName("alice_pt38");
   gr_alice_pt38_glb->SetName("alice_pt38_glb");
   gr_alice_pt38_sys->SetName("alice_pt38_sys");
+  
+  gr_alice_pt38->SetMarkerStyle(29);
+  gr_alice_pt38_sys->SetMarkerStyle(29);
+  gr_alice_pt38_glb->SetMarkerStyle(29);
+  gr_alice_pt38->SetMarkerSize(2);
+  gr_alice_pt38_sys->SetMarkerSize(2);
+  gr_alice_pt38_glb->SetMarkerSize(2);
+  gr_alice_pt38->SetMarkerColor(kBlack);
+  gr_alice_pt38_sys->SetMarkerColor(kBlack);
+  gr_alice_pt38_glb->SetMarkerColor(kBlack);
 
+  gr_alice_pt38->SetLineColor(kBlack);
+  gr_alice_pt38_glb->SetLineColor(kBlack);
+  gr_alice_pt38_sys->SetLineColor(kBlack);
 
-  gr_alice_pt38->SetMarkerStyle(24);
-  gr_alice_pt38_sys->SetMarkerStyle(24);
-  gr_alice_pt38_glb->SetMarkerStyle(24);
-  gr_alice_pt38->SetMarkerColor(kMagenta+1);
-  gr_alice_pt38_sys->SetMarkerColor(kMagenta+1);
-  gr_alice_pt38_glb->SetMarkerColor(kMagenta+1);
-
-  gr_alice_pt38_glb->SetLineColor(kMagenta+1);
-  gr_alice_pt38_sys->SetLineColor(kMagenta+1);
-
-  gr_alice_pt38_glb->SetFillColor(kMagenta+1);
+  gr_alice_pt38_glb->SetFillColor(kBlack);
   gr_alice_pt38_glb->SetFillStyle(0);
-  gr_alice_pt38_sys->SetFillColor(kMagenta-9);
+  gr_alice_pt38_sys->SetFillColor(kGray);
 
 
   double ratio_alice_pt38_limit[1] = {1.74011};
-  double ratio_alice_pt38_arrow[1] = {1.5};
+  double ratio_alice_pt38_arrow[1] = {1.0};
   double Npart_alice_limit[1] = {312.099};
   TGraphAsymmErrors *gr_alice_pt38_limit = new TGraphAsymmErrors(1, Npart_alice_limit, ratio_alice_pt38_limit, Npart_alice_err, Npart_alice_err, ratio_alice_pt38_arrow, Npart_alice_err);
-  TGraphAsymmErrors *gr_alice_pt38_bar = new TGraphAsymmErrors(1, Npart_alice_limit, ratio_alice_pt38_limit, Npart_alice_sys, Npart_alice_sys, Npart_alice_err, Npart_alice_err);
+  gr_alice_pt38_bar = new TGraphAsymmErrors(1, Npart_alice_limit, ratio_alice_pt38_limit, Npart_alice_sys, Npart_alice_sys, Npart_alice_err, Npart_alice_err);
   gr_alice_pt38_limit->SetName("gr_alice_pt38_limit");
   gr_alice_pt38_bar->SetName("gr_alice_pt38_bar");
   gr_alice_pt38_limit->SetMarkerStyle(1);
@@ -605,8 +641,8 @@ TMultiGraph* read_alice()
   gr_alice_pt38_limit->SetLineWidth(1);
   gr_alice_pt38_bar->SetLineWidth(2);
 
-  gr_alice_pt38_limit->SetLineColor(kMagenta+1);
-  gr_alice_pt38_bar->SetLineColor(kMagenta+1);
+  gr_alice_pt38_limit->SetLineColor(kBlack);
+  gr_alice_pt38_bar->SetLineColor(kBlack);
 
 
   gr->Add(gr_alice_pt03_sys,"5");
@@ -614,6 +650,7 @@ TMultiGraph* read_alice()
   gr->Add(gr_alice_pt03_glb,"3");
   gr->Add(gr_alice_pt38_glb,"2");
   gr->Add(gr_alice_pt03,"P");
+  gr->Add(gr_alice_pt03P,"P");
   gr->Add(gr_alice_pt38,"P");
   gr->Add(gr_alice_pt38_limit,">");
   gr->Add(gr_alice_pt38_bar,"Z");
