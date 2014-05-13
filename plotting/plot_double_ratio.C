@@ -1,4 +1,4 @@
-0;95;c#include <iostream>
+#include <iostream>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -457,7 +457,7 @@ void plot_double_ratio(bool isPaper=false, bool plotGlobalPP = false, bool overl
   TLatex *label = new TLatex(55/zoom,2.675,"#splitline{Cent.}{0-100%}");
   label->SetTextSize(0.23);
   if (overlayAlice)
-    label->SetY(4.18);
+    label->SetY(5.2);
 
   if (overlay) {
     c3->cd(2);
@@ -609,9 +609,9 @@ TMultiGraph* read_alice()
   gr_alice_pt38_glb->SetName("alice_pt38_glb");
   gr_alice_pt38_sys->SetName("alice_pt38_sys");
   
-  gr_alice_pt38->SetMarkerStyle(29);
-  gr_alice_pt38_sys->SetMarkerStyle(29);
-  gr_alice_pt38_glb->SetMarkerStyle(29);
+  gr_alice_pt38->SetMarkerStyle(33);
+  gr_alice_pt38_sys->SetMarkerStyle(33);
+  gr_alice_pt38_glb->SetMarkerStyle(33);
   gr_alice_pt38->SetMarkerSize(2);
   gr_alice_pt38_sys->SetMarkerSize(2);
   gr_alice_pt38_glb->SetMarkerSize(2);
