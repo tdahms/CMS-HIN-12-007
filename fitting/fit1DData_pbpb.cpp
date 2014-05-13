@@ -740,11 +740,27 @@ int main(int argc, char* argv[]) {
   }
 
   lCMS->SetTextSize(0.05);
-  if (isPbPb)
-    lCMS->SetText(0.17,0.90,"CMS PbPb #sqrt{s_{NN}} = 2.76 TeV");
-  else
-    lCMS->SetText(0.17,0.90,"CMS pp #sqrt{s} = 2.76 TeV");
-  mframe->addObject(lCMS,"");
+  if (false) {
+    if (isPbPb)
+      lCMS->SetText(0.17,0.90,"CMS PbPb #sqrt{s_{NN}} = 2.76 TeV");
+    else
+      lCMS->SetText(0.17,0.90,"CMS pp #sqrt{s} = 2.76 TeV");
+    
+    mframe->addObject(lCMS,"");
+  }
+  else {
+    lCMS->SetTextSize(0.04);
+    lPre->SetTextSize(0.04)
+    lPre->SetText(0.47,0.90,"CMS Preliminary");
+    mframe->addObject(lPre,"");
+
+    if (isPbPb)
+      lCMS->SetText(0.17,0.90,"PbPb #sqrt{s_{NN}} = 2.76 TeV");
+    else
+      lCMS->SetText(0.17,0.90,"pp #sqrt{s} = 2.76 TeV");
+
+    mframe->addObject(lCMS,"");
+  }
 
   lLumi->SetTextSize(0.035);
   if (isPbPb)

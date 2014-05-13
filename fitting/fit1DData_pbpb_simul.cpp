@@ -83,7 +83,8 @@ int main(int argc, char* argv[]) {
   bool fitCentIntegrated = false;
   bool useSystematics = false;
   bool twoCB=false;
-  bool overlay_pp=true;
+  bool overlay=true;
+  bool showInsert=false;
 
   // *** Check options
   for (int i=1; i<argc; ++i) {
@@ -455,40 +456,42 @@ int main(int argc, char* argv[]) {
   else { partTit = "all"; partFile = "ALL"; }
 
   // Global TLatex, TH1, TGraph objects for drawing
+  TLatex *lPre = new TLatex();
+  lPre->SetNDC(); lPre->SetTextAlign(11);
   TLatex *lCMS = new TLatex();
-  lCMS->SetNDC(); lCMS->SetTextAlign(12);
+  lCMS->SetNDC(); lCMS->SetTextAlign(11);
   TLatex *lLumi = new TLatex();
-  lLumi->SetNDC(); lLumi->SetTextAlign(12);
+  lLumi->SetNDC(); lLumi->SetTextAlign(11);
   TLatex *lRap = new TLatex();
-  lRap->SetNDC(); lRap->SetTextAlign(12);
+  lRap->SetNDC(); lRap->SetTextAlign(11);
   TLatex *lPt = new TLatex();
-  lPt->SetNDC(); lPt->SetTextAlign(12);
+  lPt->SetNDC(); lPt->SetTextAlign(11);
   TLatex *lNLL = new TLatex();
-  lNLL->SetNDC(); lNLL->SetTextAlign(12);
+  lNLL->SetNDC(); lNLL->SetTextAlign(11);
   TLatex *lChi = new TLatex();
-  lChi->SetNDC(); lChi->SetTextAlign(12);
+  lChi->SetNDC(); lChi->SetTextAlign(11);
   TLatex *lPval = new TLatex();
-  lPval->SetNDC(); lPval->SetTextAlign(12);
+  lPval->SetNDC(); lPval->SetTextAlign(11);
   TLatex *lNJpsi = new TLatex();
-  lNJpsi->SetNDC(); lNJpsi->SetTextAlign(12);
+  lNJpsi->SetNDC(); lNJpsi->SetTextAlign(11);
   TLatex *lRpsi = new TLatex();
-  lRpsi->SetNDC(); lRpsi->SetTextAlign(12);
+  lRpsi->SetNDC(); lRpsi->SetTextAlign(11);
   TLatex *lNpsiP = new TLatex();
-  lNpsiP->SetNDC(); lNpsiP->SetTextAlign(12);
+  lNpsiP->SetNDC(); lNpsiP->SetTextAlign(11);
   TLatex *lSigCB = new TLatex();
-  lSigCB->SetNDC(); lSigCB->SetTextAlign(12);
+  lSigCB->SetNDC(); lSigCB->SetTextAlign(11);
   TLatex *lSigG = new TLatex();
-  lSigG->SetNDC(); lSigG->SetTextAlign(12);
+  lSigG->SetNDC(); lSigG->SetTextAlign(11);
   TLatex *lNG = new TLatex();
-  lNG->SetNDC(); lNG->SetTextAlign(12);
+  lNG->SetNDC(); lNG->SetTextAlign(11);
   TLatex *lSigma = new TLatex();
-  lSigma->SetNDC(); lSigma->SetTextAlign(12);
+  lSigma->SetNDC(); lSigma->SetTextAlign(11);
   TLatex *lAlpha = new TLatex();
-  lAlpha->SetNDC(); lAlpha->SetTextAlign(12);
+  lAlpha->SetNDC(); lAlpha->SetTextAlign(11);
   TLatex *lN = new TLatex();
-  lN->SetNDC(); lN->SetTextAlign(12);
+  lN->SetNDC(); lN->SetTextAlign(11);
   TLatex *lFG = new TLatex();
-  lFG->SetNDC(); lFG->SetTextAlign(12);
+  lFG->SetNDC(); lFG->SetTextAlign(11);
 
   Double_t fx[2], fy[2], fex[2], fey[2];
   TGraphErrors *gDataLegend = new TGraphErrors(2,fx,fy,fex,fey);
@@ -1116,11 +1119,14 @@ int main(int argc, char* argv[]) {
     mframezoom[i]->SetTitle(("A RooPlot of \"J/#psi mass\" in "+varSuffix.at(i)).c_str());
     mframezoom[i]->GetYaxis()->SetTitle("Events");
 
-    if (yrange=="1.6-2.4" && i==1)
+    if (yrange=="1.6-2.4" && i==1) {
       redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(*rbm[i+1]));
-    else
+      redData[i]->plotOn(mframezoom[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(*rbm[i+1]));
+    }
+    else {
       redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(*rbm[i]));
-    redData[i]->plotOn(mframezoom[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(rbmZoom));
+      redData[i]->plotOn(mframezoom[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(*rbm[i]));
+    }
     titlestr = "2D fit for" + partTit + "muons (mass projection), p_{T} = " + prange + " GeV/c and |y| = " + yrange;
     mframe[i]->GetXaxis()->SetTitle("m_{#mu^{+}#mu^{-}} (GeV/c^{2})");
     mframe[i]->GetXaxis()->CenterTitle(1);
@@ -1170,13 +1176,15 @@ int main(int argc, char* argv[]) {
     ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],Components(mBkgFunct.at(i).c_str()),VisualizeError(*fitM,1,kFALSE),FillColor(kGray),Precision(1e-4));
     ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframezoom[i],Components(mBkgFunct.at(i).c_str()),VisualizeError(*fitM,1,kFALSE),FillColor(kGray),Precision(1e-4));
 
-    if (i==nFiles-1) {
-      ws->pdf(("sigMassPDF_mix_"+varSuffix.front()).c_str())->plotOn(mframe[i],VisualizeError(*fitM,1,kFALSE),FillColor(kYellow),Precision(1e-4));
-      ws->pdf(("sigMassPDF_mix_"+varSuffix.front()).c_str())->plotOn(mframezoom[i],VisualizeError(*fitM,1,kFALSE),FillColor(kYellow),Precision(1e-4));
-    }
-    else if(overlay_pp) {
-      ws->pdf(("sigMassPDF_mix_pp_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],VisualizeError(*fitM,1,kFALSE),FillColor(kAzure-9),Precision(1e-4));
+    if(overlay) {
+      if (i==nFiles-1) {
+	ws->pdf(("sigMassPDF_mix_"+varSuffix.front()).c_str())->plotOn(mframe[i],VisualizeError(*fitM,1,kFALSE),FillColor(kYellow),Precision(1e-4));
+	ws->pdf(("sigMassPDF_mix_"+varSuffix.front()).c_str())->plotOn(mframezoom[i],VisualizeError(*fitM,1,kFALSE),FillColor(kYellow),Precision(1e-4));
+      }
+      else {
+	ws->pdf(("sigMassPDF_mix_pp_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],VisualizeError(*fitM,1,kFALSE),FillColor(kAzure-9),Precision(1e-4));
       ws->pdf(("sigMassPDF_mix_pp_"+varSuffix.at(i)).c_str())->plotOn(mframezoom[i],VisualizeError(*fitM,1,kFALSE),FillColor(kAzure-9),Precision(1e-4));
+      }
     }
 
     // replot data on top of shaded bands
@@ -1239,14 +1247,16 @@ int main(int argc, char* argv[]) {
       ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframezoom[i],LineColor(kBlue),LineWidth(2),Precision(1e-4));
     }
 
-    if (i==nFiles-1) {
-      //      redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerStyle(20),MarkerSize(0.8),Binning(*rbm[i]));
-      ws->pdf(("sigMassPDF_mix_"+varSuffix.front()).c_str())->plotOn(mframe[i],LineColor(kRed),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
-      ws->pdf(("sigMassPDF_mix_"+varSuffix.front()).c_str())->plotOn(mframezoom[i],LineColor(kRed),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
-    }
-    else if(overlay_pp) {
-      ws->pdf(("sigMassPDF_mix_pp_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],LineColor(kBlue),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
-      ws->pdf(("sigMassPDF_mix_pp_"+varSuffix.at(i)).c_str())->plotOn(mframezoom[i],LineColor(kBlue),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
+    if(overlay) {
+      if (i==nFiles-1) {
+	//      redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerStyle(20),MarkerSize(0.8),Binning(*rbm[i]));
+	ws->pdf(("sigMassPDF_mix_"+varSuffix.front()).c_str())->plotOn(mframe[i],LineColor(kRed),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
+	ws->pdf(("sigMassPDF_mix_"+varSuffix.front()).c_str())->plotOn(mframezoom[i],LineColor(kRed),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
+      }
+      else {
+	ws->pdf(("sigMassPDF_mix_pp_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],LineColor(kBlue),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
+	ws->pdf(("sigMassPDF_mix_pp_"+varSuffix.at(i)).c_str())->plotOn(mframezoom[i],LineColor(kBlue),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
+      }
     }
     //    redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),MarkerStyle(24),Binning(*rbm[i]));
 
@@ -1346,7 +1356,10 @@ int main(int argc, char* argv[]) {
     double step = 0.05;
     double stepLarge = 0.07;
     if (isPaper) {
-      minX = 0.60;
+      // paper
+      //      minX = 0.60;
+      // preliminary
+      minX = 0.65;
     }
 
     if (logScale) {
@@ -1399,7 +1412,10 @@ int main(int argc, char* argv[]) {
 	  if (yrange == "0.0-1.6")
 	    mframe[i]->GetYaxis()->SetRangeUser(8,5000);
 	  else if (yrange == "1.6-2.4")
-	    mframe[i]->GetYaxis()->SetRangeUser(120,2000);
+	    // paper
+	    //	    mframe[i]->GetYaxis()->SetRangeUser(120,2000);
+	    // preliminary
+	    mframe[i]->GetYaxis()->SetRangeUser(120,3000);
 	  break;
 	case 2:
 	  if (yrange == "0.0-1.6")
@@ -1422,19 +1438,38 @@ int main(int argc, char* argv[]) {
 
 
     lCMS->SetTextSize(0.05);
-    if (isPbPb)
-      lCMS->SetText(0.17,maxY,"CMS PbPb #sqrt{s_{NN}} = 2.76 TeV");
-    else
-      lCMS->SetText(0.17,maxY,"CMS pp #sqrt{s} = 2.76 TeV");
-    mframe[i]->addObject(lCMS,"");
+    if (false) { // paper
+      if (isPbPb)
+	lCMS->SetText(0.16,maxY,"CMS PbPb #sqrt{s_{NN}} = 2.76 TeV");
+      else
+	lCMS->SetText(0.16,maxY,"CMS pp #sqrt{s} = 2.76 TeV");
+      mframe[i]->addObject(lCMS,"");
+
+      maxY-=stepLarge;
+    }
+    else { // prelimimary
+      lCMS->SetTextSize(0.045);
+      lPre->SetTextSize(0.045);
+      lPre->SetText(0.60,maxY,"CMS Preliminary");
+      mframe[i]->addObject(lPre,"");
+      //      maxY-=0.05;
+      if (isPbPb)
+	lCMS->SetText(0.16,maxY,"PbPb #sqrt{s_{NN}} = 2.76 TeV");
+      else
+	lCMS->SetText(0.16,maxY,"pp #sqrt{s} = 2.76 TeV");
+      
+      mframe[i]->addObject(lCMS,"");
+      maxY-=stepLarge;
+    }
 
     lLumi->SetTextSize(0.035);
     if (isPbPb)
-      lLumi->SetText(0.17,maxY-stepLarge,"L_{int} = 150 #mub^{-1}");
+      lLumi->SetText(0.16,maxY,"L_{int} = 150 #mub^{-1}");
     else
-      lLumi->SetText(0.17,maxY-stepLarge,"L_{int} = 5.4 pb^{-1}");
+      lLumi->SetText(0.16,maxY,"L_{int} = 5.4 pb^{-1}");
     mframe[i]->addObject(lLumi,"");
 
+    maxY-=step;
     lRap->SetTextSize(0.035);
     if (isPbPb) { 
       if (ymin==0.0)
@@ -1448,9 +1483,10 @@ int main(int argc, char* argv[]) {
       else
 	sprintf(reduceDS,"%0.1f < |y| < %.1f",ymin,ymax);
     }
-    lRap->SetText(0.17,0.78,reduceDS);
+    lRap->SetText(0.16,maxY,reduceDS);
     mframe[i]->addObject(lRap,"");
 
+    maxY-=step;
     lPt->SetTextSize(0.035);
     if (pmin==6.5)
       sprintf(reduceDS,"%.1f < p_{T} < %.0f GeV/c",pmin,pmax);
@@ -1459,16 +1495,17 @@ int main(int argc, char* argv[]) {
     else
       sprintf(reduceDS,"%.0f < p_{T} < %.0f GeV/c",pmin,pmax);
   
-    lPt->SetText(0.17,0.73,reduceDS);
+    lPt->SetText(0.16,maxY,reduceDS);
     mframe[i]->addObject(lPt,"");
 
     lNLL->SetTextSize(0.035);
     if (!isPaper) {
       sprintf(reduceDS,"Min. NLL = %0.2f",theNLL);
-      lNLL->SetText(0.17,0.68,reduceDS);
+      lNLL->SetText(0.16,0.68,reduceDS);
       mframe[i]->addObject(lNLL,"");
     }
 
+    maxY=0.9;
     if (!isPaper) {
       sprintf(reduceDS,"#chi^{2}/dof = %0.1f/%d",UnNormChi2,Dof);
       lChi->SetText(minX,maxY,reduceDS);
@@ -1719,11 +1756,19 @@ int main(int argc, char* argv[]) {
     }
 
     TLegend *leg1;
-    if (isPbPb && !overlay_pp)
-      leg1 = new TLegend(minX,0.8625-3*step,0.92,0.853,NULL,"brNDC");
+    if (showInsert)
+      {
+	if (overlay)  // paper+insert+overlay
+	  leg1 = new TLegend(0.16,0.6895-4*step,0.46,0.680,NULL,"brNDC");
+	else // paper+insert
+	  leg1 = new TLegend(0.16,0.6895-3*step,0.46,0.680,NULL,"brNDC");
+      }
+    else if (overlay)
+      // paper + overlay
+      leg1 = new TLegend(minX,0.8625-4*step,0.92,0.853,NULL,"brNDC");
     else
-      leg1 = new TLegend(0.17,0.6895-4*step,0.47,0.680,NULL,"brNDC");
-    //      leg1 = new TLegend(minX,0.8625-4*step,0.92,0.853,NULL,"brNDC");
+      // paper
+      leg1 = new TLegend(minX,0.8625-3*step,0.92,0.853,NULL,"brNDC");
 
     leg1->SetFillStyle(0);
     leg1->SetFillColor(0);
@@ -1736,11 +1781,11 @@ int main(int argc, char* argv[]) {
     else
       leg1->AddEntry(hTotalLegend_pp,"total fit","L");
     leg1->AddEntry(hBkgLegend,"background","L");
-    if (!isPbPb) {
+    if (!isPbPb && overlay) {
       //      leg1->AddEntry(hMixLegend,"total with","L");
       leg1->AddEntry(hMixLegend_pp,"R_{#psi}^{PbPb 0-20%}","L");
     }
-    else if (overlay_pp)
+    else if (overlay)
       leg1->AddEntry(hMixLegend,"R_{#psi}^{pp}","L");
 
     if (isPaper)
@@ -1768,35 +1813,36 @@ int main(int argc, char* argv[]) {
       st->SetTextFont(42);
     }
     else {
-      if (isPbPb) {
+      if (showInsert && isPbPb) {
 	switch (i) {
 	case 0:
 	  if (yrange == "0.0-1.6")
-	    mframezoom[i]->GetYaxis()->SetRangeUser(70,150);
+	    mframezoom[i]->GetYaxis()->SetRangeUser(50,130);
 	  else if (yrange == "1.6-2.4")
-	    mframezoom[i]->GetYaxis()->SetRangeUser(400,800);
+	    mframezoom[i]->GetYaxis()->SetRangeUser(300,600);
 	  break;
 	case 1:
 	  if (yrange == "0.0-1.6")
-	    mframezoom[i]->GetYaxis()->SetRangeUser(0,100);
+	    mframezoom[i]->GetYaxis()->SetRangeUser(0,60);
 	  else if (yrange == "1.6-2.4")
-	    mframezoom[i]->GetYaxis()->SetRangeUser(100,200);
+	    mframezoom[i]->GetYaxis()->SetRangeUser(150,300);
 	  break;
 	case 2:
 	  if (yrange == "0.0-1.6")
-	    mframezoom[i]->GetYaxis()->SetRangeUser(0,20);
+	    mframezoom[i]->GetYaxis()->SetRangeUser(0,30);
 	  else if (yrange == "1.6-2.4")
-	    mframezoom[i]->GetYaxis()->SetRangeUser(20,60);
+	    mframezoom[i]->GetYaxis()->SetRangeUser(20,70);
 	  break;
 	default:
 	  break;
 	}
 	pad4->Draw();
 	pad4->cd();mframezoom[i]->Draw();
+	pad4->RedrawAxis();
 	c00.cd();
       }
     }
- 
+    gPad->RedrawAxis(); 
     titlestr = dirPre + "_" + mBkgFunct.at(i) + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str +  "massfit.pdf";
     c00.SaveAs(titlestr.c_str());
 
