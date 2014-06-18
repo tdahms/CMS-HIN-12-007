@@ -61,6 +61,8 @@ void defineMassSigHI(RooWorkspace *ws);
 
 int main(int argc, char* argv[]) {
   gROOT->Macro("./rootlogon.C");
+  gStyle->SetLineStyleString(11,"8 12"); // thick dotted
+  gStyle->SetLineStyleString(12,"20 12"); // thick dashed
 
   RooMsgService::instance().setGlobalKillBelow(RooFit::WARNING);
 
@@ -83,7 +85,7 @@ int main(int argc, char* argv[]) {
   bool fitCentIntegrated = false;
   bool useSystematics = false;
   bool twoCB=false;
-  bool overlay=true;
+  bool overlay=false;
   bool showInsert=false;
 
   // *** Check options
@@ -426,6 +428,7 @@ int main(int argc, char* argv[]) {
   rbmZoom.addUniform(3,3.600,3.720); // 40 MeV
   rbmZoom.addUniform(8,3.720,4.2); // 60 MeV
 
+  ws->var("Jpsi_Mass")->SetTitle("m_{#mu^{+}#mu^{-}}");
   ws->var("Jpsi_Mass")->setBinning(*rbm[nFiles-1]);
 
 
@@ -499,15 +502,15 @@ int main(int argc, char* argv[]) {
   gDataLegend->SetTitle("gDataLegend");
   gDataLegend->SetMarkerStyle(20); gDataLegend->SetMarkerSize(0.8);
   TH1F *hBkgLegend = new TH1F("hBkgLegend","hBkgLegend",100,0,1);
-  hBkgLegend->SetLineColor(kBlack); hBkgLegend->SetLineWidth(2); hBkgLegend->SetLineStyle(kDashed); hBkgLegend->SetFillColor(kGray);
+  hBkgLegend->SetLineColor(kBlack); hBkgLegend->SetLineWidth(2); hBkgLegend->SetLineStyle(12); hBkgLegend->SetFillColor(kGray);
   TH1F *hTotalLegend = new TH1F("hTotalLegend","hTotalLegend",100,0,1);
   hTotalLegend->SetLineColor(kRed); hTotalLegend->SetLineWidth(2); hTotalLegend->SetFillColor(kYellow);
   TH1F *hMixLegend = new TH1F("hMixLegend","hMixLegend",100,0,1);
-  hMixLegend->SetLineColor(kBlue); hMixLegend->SetLineWidth(2); hMixLegend->SetLineStyle(kDashed);hMixLegend->SetFillColor(kAzure-9);
+  hMixLegend->SetLineColor(kBlue); hMixLegend->SetLineWidth(2); hMixLegend->SetLineStyle(11);hMixLegend->SetFillColor(kAzure-9);
   TH1F *hTotalLegend_pp = new TH1F("hTotalLegend_pp","hTotalLegend_pp",100,0,1);
   hTotalLegend_pp->SetLineColor(kBlue); hTotalLegend_pp->SetLineWidth(2); hTotalLegend_pp->SetFillColor(kAzure-9);
   TH1F *hMixLegend_pp = new TH1F("hMixLegend_pp","hMixLegend_pp",100,0,1);
-  hMixLegend_pp->SetLineColor(kRed); hMixLegend_pp->SetLineWidth(2); hMixLegend_pp->SetLineStyle(kDashed);hMixLegend_pp->SetFillColor(kYellow);
+  hMixLegend_pp->SetLineColor(kRed); hMixLegend_pp->SetLineWidth(2); hMixLegend_pp->SetLineStyle(11);hMixLegend_pp->SetFillColor(kYellow);
 
   RooFitResult *fitM;
   
@@ -693,11 +696,11 @@ int main(int argc, char* argv[]) {
 	      sigma_eff[i]->setVal(0.01);
 	    }
 	    else if (prange=="6.5-30.0" && yrange=="0.0-1.6") {
-	      sigma_fit[i]->setVal(0.04); 
+	      sigma_fit[i]->setVal(0.12); 
 	      sigma_eff[i]->setVal(0.01);
 	    }
 	    else if (prange=="3.0-30.0" && yrange=="1.6-2.4") {
-	      sigma_fit[i]->setVal(0.03);
+	      sigma_fit[i]->setVal(0.14);
 	      sigma_eff[i]->setVal(0.05);
 	    }
 	  }
@@ -730,11 +733,11 @@ int main(int argc, char* argv[]) {
 	    sigma_eff[i]->setVal(0.01);
 	  }
 	  else if (prange=="6.5-30.0" && yrange=="0.0-1.6") {
-	    sigma_fit[i]->setVal(0.02);
+	    sigma_fit[i]->setVal(0.08);
 	    sigma_eff[i]->setVal(0.01);
 	  }
 	  else if (prange=="3.0-30.0" && yrange=="1.6-2.4") {
-	    sigma_fit[i]->setVal(0.04);
+	    sigma_fit[i]->setVal(0.28);
 	    sigma_eff[i]->setVal(0.05);
 	  }
 	  break;
@@ -744,11 +747,11 @@ int main(int argc, char* argv[]) {
 	    sigma_eff[i]->setVal(0.01);
 	  }
 	  else if (prange=="6.5-30.0" && yrange=="0.0-1.6") {
-	    sigma_fit[i]->setVal(0.55);
+	    sigma_fit[i]->setVal(0.92);
 	    sigma_eff[i]->setVal(0.01);
 	  }
 	  else if (prange=="3.0-30.0" && yrange=="1.6-2.4") {
-	    sigma_fit[i]->setVal(0.01);
+	    sigma_fit[i]->setVal(0.10);
 	    sigma_eff[i]->setVal(0.05);
 	  }
 	  break;
@@ -1110,14 +1113,45 @@ int main(int argc, char* argv[]) {
     mframe[i] = ws->var("Jpsi_Mass")->frame();
     mframe[i]->SetName(("frame_"+varSuffix.at(i)).c_str());
     mframe[i]->SetTitle(("A RooPlot of \"J/#psi mass\" in "+varSuffix.at(i)).c_str());
-    mframe[i]->GetYaxis()->SetTitle("Events");
+    //    mframe[i]->GetYaxis()->SetTitle("Events");
     mframe[i]->SetTitleOffset(1.10,"X");
     mframe[i]->SetTitleOffset(1.05,"Y");
+
+    switch (i) {
+    case 0:
+      if (yrange == "0.0-1.6")
+	mframe[i]->GetYaxis()->SetTitle("Events / (0.028 GeV/c^{2})");
+      else if (yrange == "1.6-2.4")
+	mframe[i]->GetYaxis()->SetTitle("Events / (0.028 GeV/c^{2})");
+      break;
+    case 1:
+      if (yrange == "0.0-1.6")
+	mframe[i]->GetYaxis()->SetTitle("Events / (0.027 GeV/c^{2})");
+      else if (yrange == "1.6-2.4")
+	mframe[i]->GetYaxis()->SetTitle("Events / (0.043 GeV/c^{2})");
+	break;
+    case 2:
+      if (yrange == "0.0-1.6")
+	mframe[i]->GetYaxis()->SetTitle("Events / (0.043 GeV/c^{2})");
+      else if (yrange == "1.6-2.4")
+	mframe[i]->GetYaxis()->SetTitle("Events / (0.043 GeV/c^{2})");
+	break;
+    case 3:
+      if (yrange == "0.0-1.6")
+	mframe[i]->GetYaxis()->SetTitle("Events / (0.027 GeV/c^{2})");
+      else if (yrange == "1.6-2.4")
+	mframe[i]->GetYaxis()->SetTitle("Events / (0.027 GeV/c^{2})");
+	break;
+    default:
+	mframe[i]->GetYaxis()->SetTitle("Events / (0.020 GeV/c^{2})");
+      break;
+    }
+
 
     mframezoom[i] = ws->var("Jpsi_Mass")->frame(3.42,3.960);//3.3,4.1
     mframezoom[i]->SetName(("zoom_frame_"+varSuffix.at(i)).c_str());
     mframezoom[i]->SetTitle(("A RooPlot of \"J/#psi mass\" in "+varSuffix.at(i)).c_str());
-    mframezoom[i]->GetYaxis()->SetTitle("Events");
+    mframezoom[i]->GetYaxis()->SetTitle(mframe[i]->GetYaxis()->GetTitle());
 
     if (yrange=="1.6-2.4" && i==1) {
       redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(*rbm[i+1]));
@@ -1235,8 +1269,8 @@ int main(int argc, char* argv[]) {
       ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframezoom[i],Components((mBkgFunct.at(i)+signal).c_str()),LineColor(kGreen+2),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
     }
 
-    ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],Components(mBkgFunct.at(i).c_str()),LineColor(kBlack),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
-    ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframezoom[i],Components(mBkgFunct.at(i).c_str()),LineColor(kBlack),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
+    ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],Components(mBkgFunct.at(i).c_str()),LineColor(kBlack),LineStyle(12),LineWidth(2),Precision(1e-4));
+    ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframezoom[i],Components(mBkgFunct.at(i).c_str()),LineColor(kBlack),LineStyle(12),LineWidth(2),Precision(1e-4));
     // redraw total line
     if (isPbPb) {
       ws->pdf(("sigMassPDF_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],LineColor(kRed),LineWidth(2),Precision(1e-4));
@@ -1250,12 +1284,12 @@ int main(int argc, char* argv[]) {
     if(overlay) {
       if (i==nFiles-1) {
 	//      redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerStyle(20),MarkerSize(0.8),Binning(*rbm[i]));
-	ws->pdf(("sigMassPDF_mix_"+varSuffix.front()).c_str())->plotOn(mframe[i],LineColor(kRed),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
-	ws->pdf(("sigMassPDF_mix_"+varSuffix.front()).c_str())->plotOn(mframezoom[i],LineColor(kRed),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
+	ws->pdf(("sigMassPDF_mix_"+varSuffix.front()).c_str())->plotOn(mframe[i],LineColor(kRed),LineStyle(11),LineWidth(2),Precision(1e-4));
+	ws->pdf(("sigMassPDF_mix_"+varSuffix.front()).c_str())->plotOn(mframezoom[i],LineColor(kRed),LineStyle(11),LineWidth(2),Precision(1e-4));
       }
       else {
-	ws->pdf(("sigMassPDF_mix_pp_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],LineColor(kBlue),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
-	ws->pdf(("sigMassPDF_mix_pp_"+varSuffix.at(i)).c_str())->plotOn(mframezoom[i],LineColor(kBlue),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
+	ws->pdf(("sigMassPDF_mix_pp_"+varSuffix.at(i)).c_str())->plotOn(mframe[i],LineColor(kBlue),LineStyle(11),LineWidth(2),Precision(1e-4));
+	ws->pdf(("sigMassPDF_mix_pp_"+varSuffix.at(i)).c_str())->plotOn(mframezoom[i],LineColor(kBlue),LineStyle(11),LineWidth(2),Precision(1e-4));
       }
     }
     //    redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),MarkerStyle(24),Binning(*rbm[i]));
@@ -1440,9 +1474,9 @@ int main(int argc, char* argv[]) {
     lCMS->SetTextSize(0.05);
     if (false) { // paper
       if (isPbPb)
-	lCMS->SetText(0.16,maxY,"CMS PbPb #sqrt{s_{NN}} = 2.76 TeV");
+	lCMS->SetText(0.16,maxY-0.01,"CMS PbPb #sqrt{s_{NN}} = 2.76 TeV");
       else
-	lCMS->SetText(0.16,maxY,"CMS pp #sqrt{s} = 2.76 TeV");
+	lCMS->SetText(0.16,maxY-0.01,"CMS pp #sqrt{s} = 2.76 TeV");
       mframe[i]->addObject(lCMS,"");
 
       maxY-=stepLarge;
@@ -1450,13 +1484,13 @@ int main(int argc, char* argv[]) {
     else { // prelimimary
       lCMS->SetTextSize(0.045);
       lPre->SetTextSize(0.045);
-      lPre->SetText(0.60,maxY,"CMS Preliminary");
+      lPre->SetText(0.60,maxY-0.01,"CMS Preliminary");
       mframe[i]->addObject(lPre,"");
       //      maxY-=0.05;
       if (isPbPb)
-	lCMS->SetText(0.16,maxY,"PbPb #sqrt{s_{NN}} = 2.76 TeV");
+	lCMS->SetText(0.16,maxY-0.01,"PbPb #sqrt{s_{NN}} = 2.76 TeV");
       else
-	lCMS->SetText(0.16,maxY,"pp #sqrt{s} = 2.76 TeV");
+	lCMS->SetText(0.16,maxY-0.01,"pp #sqrt{s} = 2.76 TeV");
       
       mframe[i]->addObject(lCMS,"");
       maxY-=stepLarge;
@@ -1765,10 +1799,11 @@ int main(int argc, char* argv[]) {
       }
     else if (overlay)
       // paper + overlay
-      leg1 = new TLegend(minX,0.8625-4*step,0.92,0.853,NULL,"brNDC");
+      //      leg1 = new TLegend(minX,0.8625-4*step,0.92,0.853,NULL,"brNDC");
+      leg1 = new TLegend(minX,0.868-4*step,0.92,0.868,NULL,"brNDC");
     else
       // paper
-      leg1 = new TLegend(minX,0.8625-3*step,0.92,0.853,NULL,"brNDC");
+      leg1 = new TLegend(minX,0.868-3*step,0.92,0.868,NULL,"brNDC");
 
     leg1->SetFillStyle(0);
     leg1->SetFillColor(0);
@@ -2161,6 +2196,29 @@ void defineMassBkg(RooWorkspace *ws) {
   ws->var("expCoeffPol6")->setConstant(false);
   ws->var("expCoeffPol7")->setConstant(false);
 
+  // Fourier series of sine and cosine
+  RooRealVar sinA("sinA","sinA",0.0);sinA.setConstant(false);
+  RooRealVar sinB("sinB","sinB",0.0);sinB.setConstant(false);
+  RooRealVar sinC("sinC","sinC",0.0);sinC.setConstant(false);
+  RooRealVar sinD("sinD","sinD",0.0);sinD.setConstant(true);
+  RooGenericPdf sinSum("sinSum","1.0+@1*sin(@0)+@2*sin(2*@0)+@3*sin(3*@0)+@4*sin(4*@0)",RooArgList(*(ws->var("Jpsi_Mass")),sinA,sinB,sinC,sinD));
+  ws->import(sinSum);
+
+  RooRealVar cosA("cosA","cosA",0.0);cosA.setConstant(false);
+  RooRealVar cosB("cosB","cosB",0.0);cosB.setConstant(false);
+  RooRealVar cosC("cosC","cosC",0.0);cosC.setConstant(false);
+  RooRealVar cosD("cosD","cosD",0.0);cosD.setConstant(true);
+  RooGenericPdf cosSum("cosSum","1.0+@1*cos(@0)+@2*cos(2*@0)+@3*cos(3*@0)+@4*cos(4*@0)",RooArgList(*(ws->var("Jpsi_Mass")),cosA,cosB,cosC,cosD));
+  ws->import(cosSum);
+
+  ws->factory("SUM::SinCos(coeffCos[0.5]*cosSum,sinSum)");
+  ws->var("coeffCos")->setConstant(true);
+
+  // Gamma distribution
+  ws->factory("RooGamma::gammaBkg(Jpsi_Mass,gamma[5],beta[0.5],mu[0])");
+  ws->var("gamma")->setConstant(false);
+  ws->var("beta")->setConstant(false);
+  ws->var("mu")->setConstant(true);
   return;
 }
 
@@ -2437,6 +2495,74 @@ void defineMassBkgHI(RooWorkspace *ws) {
   ws->var("expCoeffPol5_HI40100")->setConstant(false);
   ws->var("expCoeffPol6_HI40100")->setConstant(false);
   ws->var("expCoeffPol7_HI40100")->setConstant(false);
+
+  // Fourier series of sine and cosine
+  RooRealVar sinA_HI020("sinA_HI020","sinA_HI020",0.0);sinA_HI020.setConstant(false);
+  RooRealVar sinB_HI020("sinB_HI020","sinB_HI020",0.0);sinB_HI020.setConstant(false);
+  RooRealVar sinC_HI020("sinC_HI020","sinC_HI020",0.0);sinC_HI020.setConstant(false);
+  RooRealVar sinD_HI020("sinD_HI020","sinD_HI020",0.0);sinD_HI020.setConstant(true);
+  RooGenericPdf sinSum_HI020("sinSum_HI020","1.0+@1*sin(@0)+@2*sin(2*@0)+@3*sin(3*@0)+@4*sin(4*@0)",RooArgList(*(ws->var("Jpsi_Mass")),sinA_HI020,sinB_HI020,sinC_HI020,sinD_HI020));
+  ws->import(sinSum_HI020);
+
+  RooRealVar cosA_HI020("cosA_HI020","cosA_HI020",0.0);cosA_HI020.setConstant(false);
+  RooRealVar cosB_HI020("cosB_HI020","cosB_HI020",0.0);cosB_HI020.setConstant(false);
+  RooRealVar cosC_HI020("cosC_HI020","cosC_HI020",0.0);cosC_HI020.setConstant(false);
+  RooRealVar cosD_HI020("cosD_HI020","cosD_HI020",0.0);cosD_HI020.setConstant(true);
+  RooGenericPdf cosSum_HI020("cosSum_HI020","1.0+@1*cos(@0)+@2*cos(2*@0)+@3*cos(3*@0)+@4*cos(4*@0)",RooArgList(*(ws->var("Jpsi_Mass")),cosA_HI020,cosB_HI020,cosC_HI020,cosD_HI020));
+  ws->import(cosSum_HI020);
+
+  ws->factory("SUM::SinCos_HI020(coeffCos_HI020[0.5]*cosSum_HI020,sinSum_HI020)");
+  ws->var("coeffCos_HI020")->setConstant(true);
+
+  RooRealVar sinA_HI2040("sinA_HI2040","sinA_HI2040",0.0);sinA_HI2040.setConstant(false);
+  RooRealVar sinB_HI2040("sinB_HI2040","sinB_HI2040",0.0);sinB_HI2040.setConstant(false);
+  RooRealVar sinC_HI2040("sinC_HI2040","sinC_HI2040",0.0);sinC_HI2040.setConstant(false);
+  RooRealVar sinD_HI2040("sinD_HI2040","sinD_HI2040",0.0);sinD_HI2040.setConstant(true);
+  RooGenericPdf sinSum_HI2040("sinSum_HI2040","1.0+@1*sin(@0)+@2*sin(2*@0)+@3*sin(3*@0)+@4*sin(4*@0)",RooArgList(*(ws->var("Jpsi_Mass")),sinA_HI2040,sinB_HI2040,sinC_HI2040,sinD_HI2040));
+  ws->import(sinSum_HI2040);
+
+  RooRealVar cosA_HI2040("cosA_HI2040","cosA_HI2040",0.0);cosA_HI2040.setConstant(false);
+  RooRealVar cosB_HI2040("cosB_HI2040","cosB_HI2040",0.0);cosB_HI2040.setConstant(false);
+  RooRealVar cosC_HI2040("cosC_HI2040","cosC_HI2040",0.0);cosC_HI2040.setConstant(false);
+  RooRealVar cosD_HI2040("cosD_HI2040","cosD_HI2040",0.0);cosD_HI2040.setConstant(true);
+  RooGenericPdf cosSum_HI2040("cosSum_HI2040","1.0+@1*cos(@0)+@2*cos(2*@0)+@3*cos(3*@0)+@4*cos(4*@0)",RooArgList(*(ws->var("Jpsi_Mass")),cosA_HI2040,cosB_HI2040,cosC_HI2040,cosD_HI2040));
+  ws->import(cosSum_HI2040);
+
+  ws->factory("SUM::SinCos_HI2040(coeffCos_HI2040[0.5]*cosSum_HI2040,sinSum_HI2040)");
+  ws->var("coeffCos_HI2040")->setConstant(true);
+
+  RooRealVar sinA_HI40100("sinA_HI40100","sinA_HI40100",0.0);sinA_HI40100.setConstant(false);
+  RooRealVar sinB_HI40100("sinB_HI40100","sinB_HI40100",0.0);sinB_HI40100.setConstant(false);
+  RooRealVar sinC_HI40100("sinC_HI40100","sinC_HI40100",0.0);sinC_HI40100.setConstant(false);
+  RooRealVar sinD_HI40100("sinD_HI40100","sinD_HI40100",0.0);sinD_HI40100.setConstant(true);
+  RooGenericPdf sinSum_HI40100("sinSum_HI40100","1.0+@1*sin(@0)+@2*sin(2*@0)+@3*sin(3*@0)+@4*sin(4*@0)",RooArgList(*(ws->var("Jpsi_Mass")),sinA_HI40100,sinB_HI40100,sinC_HI40100,sinD_HI40100));
+  ws->import(sinSum_HI40100);
+
+  RooRealVar cosA_HI40100("cosA_HI40100","cosA_HI40100",0.0);cosA_HI40100.setConstant(false);
+  RooRealVar cosB_HI40100("cosB_HI40100","cosB_HI40100",0.0);cosB_HI40100.setConstant(false);
+  RooRealVar cosC_HI40100("cosC_HI40100","cosC_HI40100",0.0);cosC_HI40100.setConstant(false);
+  RooRealVar cosD_HI40100("cosD_HI40100","cosD_HI40100",0.0);cosD_HI40100.setConstant(true);
+  RooGenericPdf cosSum_HI40100("cosSum_HI40100","1.0+@1*cos(@0)+@2*cos(2*@0)+@3*cos(3*@0)+@4*cos(4*@0)",RooArgList(*(ws->var("Jpsi_Mass")),cosA_HI40100,cosB_HI40100,cosC_HI40100,cosD_HI40100));
+  ws->import(cosSum_HI40100);
+
+  ws->factory("SUM::SinCos_HI40100(coeffCos_HI40100[0.5]*cosSum_HI40100,sinSum_HI40100)");
+  ws->var("coeffCos_HI40100")->setConstant(true);
+
+  // Gamma distribution
+  ws->factory("RooGamma::gammaBkg_HI020(Jpsi_Mass,gamma_HI020[5],beta_HI020[0.5],mu_HI020[0])");
+  ws->factory("RooGamma::gammaBkg_HI2040(Jpsi_Mass,gamma_HI2040[5],beta_HI2040[0.5],mu_HI2040[0])");
+  ws->factory("RooGamma::gammaBkg_HI40100(Jpsi_Mass,gamma_HI40100[5],beta_HI40100[0.5],mu_HI40100[0])");
+
+  ws->var("gamma_HI020")->setConstant(false);
+  ws->var("beta_HI020")->setConstant(false);
+  ws->var("mu_HI020")->setConstant(true);
+  ws->var("gamma_HI2040")->setConstant(false);
+  ws->var("beta_HI2040")->setConstant(false);
+  ws->var("mu_HI2040")->setConstant(true);
+  ws->var("gamma_HI40100")->setConstant(false);
+  ws->var("beta_HI40100")->setConstant(false);
+  ws->var("mu_HI40100")->setConstant(true);
+
 
   return;
 }
