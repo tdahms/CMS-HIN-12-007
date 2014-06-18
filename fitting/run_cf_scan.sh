@@ -1,10 +1,10 @@
 #! /bin/bash
 
-DATEIN="20140424"
-SUFFIXIN="SimFits_M2242_DblMu0_AllCent_WithSyst_final"
+DATEIN="20140516"
+SUFFIXIN="SimFits_M2242_DblMu0_AllCent_WithSyst_final_fixAxis_newUncertainties"
 DIRECTORYIN="${DATEIN}_${SUFFIXIN}"
 
-DATEOUT="20140424"
+DATEOUT="20140516"
 SUFFIXOUT="CFscan_WithSyst"
 DIRECTORYOUT="${DATEOUT}_${SUFFIXOUT}"
 
@@ -27,9 +27,9 @@ fi
 
 ptbins=(3-30 65-30)
 #rapbins=(0-16 16-24)
-rapbins=(0-16)
+rapbins=(16-24)
 #centbins=(HI020 HI2040 HI40100)
-centbins=(HI2040)
+centbins=(HI020)
 
 for pt in "${ptbins[@]}";
 do

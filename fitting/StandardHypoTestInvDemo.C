@@ -75,7 +75,7 @@ double maxPOI = -1;                      // max value used of POI (in case of au
 //bool useProof = false;                    // use Proof Light when using toys (for freq or hybrid)
 bool useProof = true;                    // use Proof Light when using toys (for freq or hybrid)
 //int nworkers = 4;                        // number of worker for Proof
-int nworkers = 7;                        // number of worker for Proof
+int nworkers = 6;                        // number of worker for Proof
 bool rebuild = false;                    // re-do extra toys for computing expected limits and rebuild test stat
                                          // distributions (N.B this requires much more CPU (factor is equivalent to nToyToRebuild)
 int nToyToRebuild = 100;                 // number of toys used to rebuild 
@@ -453,7 +453,7 @@ RooStats::HypoTestInvTool::AnalyzeResult( HypoTestInverterResult * r,
    std::cout << " expected limit (+2 sig) " << r->GetExpectedUpperLimit(2) << std::endl;
   
   
-   std::string fname = "20140424_CFscan_WithSyst/";
+   std::string fname = "20140516_CFscan_WithSyst/";
    // write result in a file 
    if (r != NULL && mWriteResult) {
     
@@ -462,7 +462,7 @@ RooStats::HypoTestInvTool::AnalyzeResult( HypoTestInverterResult * r,
       const char *  limitType = (useCLs) ? "CLs" : "Cls+b";
       const char * scanType = (npoints < 0) ? "auto" : "grid";
       if (mResultFileName.IsNull()) {
-         mResultFileName = TString::Format("20140424_CFscan_WithSyst/%s_%s_%s_ts%d_",calcType,limitType,scanType,testStatType);      
+         mResultFileName = TString::Format("20140516_CFscan_WithSyst/%s_%s_%s_ts%d_",calcType,limitType,scanType,testStatType);      
          //strip the / from the filename
          if (mMassValue.size()>0) {
             mResultFileName += mMassValue.c_str();

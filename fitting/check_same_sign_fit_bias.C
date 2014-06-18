@@ -23,7 +23,9 @@
 
 #include "TCanvas.h"
 #include "TFile.h"
-#include "TH1.h"
+#include "TH1F.h"
+#include "TH2F.h"
+#include "TF1.h"
 
 using namespace RooFit;
 
@@ -40,11 +42,14 @@ void check_same_sign_fit_bias(const int N=1, string infname="fwd_pbpb_cent0-20_w
 
   double Nevents =  ws->var("Nbkg_A")->getVal();
 
-  TH1F *h0 = new TH1F("h0","h0",(int) 1000,0,0.1);
-  TH1F *h1 = new TH1F("h1","h1",(int) 1000,0,0.1);
-  TH1F *h2 = new TH1F("h2","h2",(int) 1000,0,0.1);
+  TH1F *h0 = new TH1F("h0","h0",1000,0,0.1);
+  TH1F *h1 = new TH1F("h1","h1",1000,0,0.1);
+  TH1F *h2 = new TH1F("h2","h2",1000,0,0.1);
+  TH2F *h3 = new TH2F("h3","h3;N_{M1850};N_{M2242}",1000,0,0.1,1000,0,0.1);
   h0->Sumw2();
   h1->Sumw2();
+  h2->Sumw2();
+  h3->Sumw2();
   h1->SetMarkerColor(2);
   h1->SetLineColor(2);
   h2->SetMarkerColor(4);
@@ -101,6 +106,7 @@ void check_same_sign_fit_bias(const int N=1, string infname="fwd_pbpb_cent0-20_w
 
     cout << yield_bkg_M2242->getVal() << endl;
     h1->Fill(yield_bkg_M2242->getVal());
+    h3->Fill(yield_bkg_M2242->getVal(),yield_bkg->getVal());
   }
   
   // data[N-1]->plotOn(frame);
@@ -122,9 +128,19 @@ void check_same_sign_fit_bias(const int N=1, string infname="fwd_pbpb_cent0-20_w
 
   c2->SaveAs(Form("toy_fits_N%i.pdf",N));
 
+  TCanvas *c3 = new TCanvas("c3","c3");
+  c3->cd();
+  h3->Draw("colz");
+
+  TF1 *f3 = new TF1("f3","x",0,0.1);
+  f3->SetLineWidth(1);
+  f3->Draw("same");
+
   TFile *outf = new TFile(Form("toy_same_sign_fits_N%i.root",N),"RECREATE");
   h0->Write();
   h1->Write();
+  h2->Write();
+  h3->Write();
   outf->Close();
 
 

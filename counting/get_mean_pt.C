@@ -33,20 +33,28 @@ void get_mean_pt(bool isPbPb=true,bool savePlots=false)
   // c3->Divide(2,1);
   c2->cd(1);
 
-  TH1F *hmassMid = new TH1F("hmassMid","hmassMid;m_{#mu#mu} (GeV/c^{2});counts",200,2.2,4.2);
-  TH1F *hmassMida = new TH1F("hmassMida","hmassMida;m_{#mu#mu} (GeV/c^{2});counts",200,2.2,4.2);
-  TH1F *hmassFwd = new TH1F("hmassFwd","hmassFwd;m_{#mu#mu} (GeV/c^{2});counts",200,2.2,4.2);
-  TH1F *hmassFwda = new TH1F("hmassFwda","hmassFwda;p_{#mu#mu} (GeV/c^{2});counts",200,2.2,4.2);
+  TH1F *hmassMid = new TH1F("hmassMid","hmassMid;m_{#mu#mu} (GeV/c^{2});counts",160,1.8,5);
+  TH1F *hmassMida = new TH1F("hmassMida","hmassMida;m_{#mu#mu} (GeV/c^{2});counts",160,1.8,5);
+  TH1F *hmassFwd = new TH1F("hmassFwd","hmassFwd;m_{#mu#mu} (GeV/c^{2});counts",160,1.8,5);
+  TH1F *hmassFwda = new TH1F("hmassFwda","hmassFwda;m_{#mu#mu} (GeV/c^{2});counts",160,1.8,5);
+  TH1F *hmassFwdP = new TH1F("hmassFwdP","hmassFwdP;p_{#mu^{+}#mu^{+}} (GeV/c^{2});counts",160,1.8,5);
+  TH1F *hmassFwdM = new TH1F("hmassFwdM","hmassFwdM;p_{#mu^{-}#mu^{-}} (GeV/c^{2});counts",160,1.8,5);
   hmassMid->Sumw2();
   hmassMida->Sumw2();
   hmassFwd->Sumw2();
   hmassFwda->Sumw2();
+  hmassFwdP->Sumw2();
+  hmassFwdM->Sumw2();
 
   hmassMida->SetMarkerStyle(24);
-  hmassFwda->SetMarkerStyle(24);
+  hmassFwdP->SetMarkerStyle(24);
+  hmassFwdM->SetMarkerStyle(25);
 
   hmassMida->SetMarkerColor(2);
-  hmassFwda->SetMarkerColor(2);
+  hmassFwdP->SetMarkerColor(2);
+  hmassFwdM->SetMarkerColor(4);
+  hmassFwda->SetLineColor(kGreen+2);
+  hmassFwda->SetLineWidth(2);
 
 
   TH1F *h0 = new TH1F("h0","h0;p_{T} (#mu^{+}#mu^{-}) [GeV/c];counts",300,0.0,30.0);
@@ -110,11 +118,12 @@ void get_mean_pt(bool isPbPb=true,bool savePlots=false)
 
   if (isPbPb) {
     c0->cd(1);
-    ((TTree*) gROOT->FindObject("myTree"))->Draw("Reco_QQ_4mom.M()>>hmassMid","(HLTriggers&1)==1&&(Reco_QQ_trig&1)==1&&Reco_QQ_sign==0&&Reco_QQ_type==0&&abs(Reco_QQ_4mom.Rapidity())<1.6","e");
-    ((TTree*) gROOT->FindObject("myTree"))->Draw("Reco_QQ_4mom.M()>>hmassMida","(HLTriggers&1)==1&&(Reco_QQ_trig&1)==1&&Reco_QQ_sign!=0&&Reco_QQ_type==0&&abs(Reco_QQ_4mom.Rapidity())<1.6","esame");
+    ((TTree*) gROOT->FindObject("myTree"))->Draw("Reco_QQ_4mom.M()>>hmassMid","(HLTriggers&1)==1&&(Reco_QQ_trig&1)==1&&Reco_QQ_sign==0&&Reco_QQ_type==0&&abs(Reco_QQ_4mom.Rapidity())<1.6&&Reco_QQ_4mom.Pt()>6.5&&Reco_QQ_4mom.Pt()<30","e");
+    ((TTree*) gROOT->FindObject("myTree"))->Draw("Reco_QQ_4mom.M()>>hmassMida","(HLTriggers&1)==1&&(Reco_QQ_trig&1)==1&&Reco_QQ_sign!=0&&Reco_QQ_type==0&&abs(Reco_QQ_4mom.Rapidity())<1.6&&Reco_QQ_4mom.Pt()>6.5&&Reco_QQ_4mom.Pt()<30","esame");
     c1->cd(1);
-    ((TTree*) gROOT->FindObject("myTree"))->Draw("Reco_QQ_4mom.M()>>hmassFwd","(HLTriggers&1)==1&&(Reco_QQ_trig&1)==1&&Reco_QQ_sign==0&&Reco_QQ_type==0&&abs(Reco_QQ_4mom.Rapidity())>1.6&&abs(Reco_QQ_4mom.Rapidity())<2.4","e");
-    ((TTree*) gROOT->FindObject("myTree"))->Draw("Reco_QQ_4mom.M()>>hmassFwda","(HLTriggers&1)==1&&(Reco_QQ_trig&1)==1&&Reco_QQ_sign!=0&&Reco_QQ_type==0&&abs(Reco_QQ_4mom.Rapidity())>1.6&&abs(Reco_QQ_4mom.Rapidity())<2.4","esame");
+    ((TTree*) gROOT->FindObject("myTree"))->Draw("Reco_QQ_4mom.M()>>hmassFwd","(HLTriggers&1)==1&&(Reco_QQ_trig&1)==1&&Reco_QQ_sign==0&&Reco_QQ_type==0&&abs(Reco_QQ_4mom.Rapidity())>1.6&&abs(Reco_QQ_4mom.Rapidity())<2.4&&Reco_QQ_4mom.Pt()>3&&Reco_QQ_4mom.Pt()<30&&Centrality<8","e");
+    ((TTree*) gROOT->FindObject("myTree"))->Draw("Reco_QQ_4mom.M()>>hmassFwdP","(HLTriggers&1)==1&&(Reco_QQ_trig&1)==1&&Reco_QQ_sign==1&&Reco_QQ_type==0&&abs(Reco_QQ_4mom.Rapidity())>1.6&&abs(Reco_QQ_4mom.Rapidity())<2.4&&Reco_QQ_4mom.Pt()>3&&Reco_QQ_4mom.Pt()<30&&Centrality<8","esame");
+    ((TTree*) gROOT->FindObject("myTree"))->Draw("Reco_QQ_4mom.M()>>hmassFwdM","(HLTriggers&1)==1&&(Reco_QQ_trig&1)==1&&Reco_QQ_sign==2&&Reco_QQ_type==0&&abs(Reco_QQ_4mom.Rapidity())>1.6&&abs(Reco_QQ_4mom.Rapidity())<2.4&&Reco_QQ_4mom.Pt()>3&&Reco_QQ_4mom.Pt()<30&&Centrality<8","esame");
     c2->cd(1);
     ((TTree*) gROOT->FindObject("myTree"))->Draw("Reco_QQ_4mom.Pt()>>h0","(HLTriggers&1)==1&&(Reco_QQ_trig&1)==1&&Reco_QQ_sign==0&&Reco_QQ_type==0&&Reco_QQ_4mom.M()>=3.6&&Reco_QQ_4mom.M()<3.76&&abs(Reco_QQ_4mom.Rapidity())<1.6","e");
     ((TTree*) gROOT->FindObject("myTree"))->Draw("Reco_QQ_4mom.Pt()>>h0a","(HLTriggers&1)==1&&(Reco_QQ_trig&1)==1&&Reco_QQ_sign!=0&&Reco_QQ_type==0&&Reco_QQ_4mom.M()>=3.6&&Reco_QQ_4mom.M()<3.76&&abs(Reco_QQ_4mom.Rapidity())<1.6","esame");
@@ -150,20 +159,26 @@ void get_mean_pt(bool isPbPb=true,bool savePlots=false)
     // ((TTree*) gROOT->FindObject("myTree"))->Draw("Reco_QQ_4mom.Pt()>>h1a","(HLTriggers&2)==2&&(Reco_QQ_trig&2)==2&&Reco_QQ_sign!=0&&Reco_QQ_type==0&&Reco_QQ_4mom.M()>=3.0&&Reco_QQ_4mom.M()<3.2&&abs(Reco_QQ_4mom.Rapidity())>=1.6&&abs(Reco_QQ_4mom.Rapidity())<2.4","esame");
   }
 
+  for (int i=1;i<hmassFwdP->GetNbinsX();++i) {
+    hmassFwda->SetBinContent(i,2*sqrt(hmassFwdP->GetBinContent(i)*hmassFwdM->GetBinContent(i)));
+    hmassFwda->SetBinError(i,sqrt(hmassFwda->GetBinContent(i)));
+  }
+
   c0->cd();
   c0->SetLogy();
   hmassMid->GetXaxis()->CenterTitle(1);
   if (!isPbPb)
-    hmassMid->GetYaxis()->SetRangeUser(1,5e3);
+    hmassMid->GetYaxis()->SetRangeUser(1,1e4);
   hmassMid->Draw();
   hmassMida->Draw("same");
   c1->cd();
   c1->SetLogy();
   hmassFwd->GetXaxis()->CenterTitle(1);
   if (!isPbPb)
-    hmassFwd->GetYaxis()->SetRangeUser(1,5e3);
+    hmassFwd->GetYaxis()->SetRangeUser(10,6e3);
   hmassFwd->Draw();
   hmassFwda->Draw("same");
+
 
   if (savePlots) {
     if (isPbPb) {
