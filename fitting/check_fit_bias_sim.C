@@ -159,6 +159,18 @@ void check_fit_bias_sim(const int N=1, string infname="20140409_SimFits_M1850_Db
   h1_HI40100->GetXaxis()->CenterTitle(true);
   h2_HI40100->GetXaxis()->CenterTitle(true);
 
+  TH1F *h0_HI0100 = new TH1F("h0_HI0100","h0_HI0100;#chi_{#psi}^{HI0100};Events",5000,-1.0,4.0);
+  TH1F *h1_HI0100 = new TH1F("h1_HI0100","h1_HI0100;#chi_{#psi}^{HI0100};Events",5000,-1.0,4.0);
+  TH2F *h2_HI0100 = new TH2F("h2_HI0100","h2_HI0100;#chi_{#psi}^{HI0100} (M1850);#chi_{#psi}^{HI0100} (M2242)",500,-1,4,500,-1,4);
+  h0_HI0100->Sumw2();
+  h1_HI0100->Sumw2();
+  h2_HI0100->Sumw2();
+  h1_HI0100->SetMarkerColor(2);
+  h1_HI0100->SetLineColor(2);
+  h0_HI0100->GetXaxis()->CenterTitle(true);
+  h1_HI0100->GetXaxis()->CenterTitle(true);
+  h2_HI0100->GetXaxis()->CenterTitle(true);
+
 
   Jpsi_Mass->setRange("signal",3.6,3.76);
   Jpsi_Mass->setRange("M2045",2.0,4.5);
@@ -174,6 +186,7 @@ void check_fit_bias_sim(const int N=1, string infname="20140409_SimFits_M1850_Db
   RooRealVar c("c","c",-0.005);c.setConstant(false);
   // mid
   //  RooPolynomial bkg_pp("bkg_pp","bkg_pp",*Jpsi_Mass,RooArgSet(a,b,c));
+  // fwd
   RooPolynomial bkg_pp("bkg_pp","bkg_pp",*Jpsi_Mass,RooArgSet(a));//,b,c));
 
   RooRealVar a_HI020("a_HI020","a_HI020",0.0);a_HI020.setConstant(false);
@@ -197,7 +210,7 @@ void check_fit_bias_sim(const int N=1, string infname="20140409_SimFits_M1850_Db
   RooRealVar c_HI40100("c_HI40100","c_HI40100",-0.005);c_HI40100.setConstant(false);
   // mid
   // a_HI40100.setConstant(true);
-  //  RooPolynomial bkg_HI40100("bkg_HI40100","bkg_HI40100",*Jpsi_Mass,RooArgSet(a_HI40100));//,b_HI40100,c_HI40100));
+  // RooPolynomial bkg_HI40100("bkg_HI40100","bkg_HI40100",*Jpsi_Mass,RooArgSet(a_HI40100));//,b_HI40100,c_HI40100));
   // fwd
   RooPolynomial bkg_HI40100("bkg_HI40100","bkg_HI40100",*Jpsi_Mass,RooArgSet(a_HI40100));//,b_HI40100,c_HI40100));
 
@@ -257,10 +270,12 @@ void check_fit_bias_sim(const int N=1, string infname="20140409_SimFits_M1850_Db
     double R1850_HI020 = ws->var("doubleRatio_HI020")->getVal();
     double R1850_HI2040 = ws->var("doubleRatio_HI2040")->getVal();
     double R1850_HI40100 = ws->var("doubleRatio_HI40100")->getVal();
+    double R1850_HI0100 = ws->function("doubleRatio_HI0100")->getVal();
     h0_pp->Fill(R1850_pp);
     h0_HI020->Fill(R1850_HI020);
     h0_HI2040->Fill(R1850_HI2040);
     h0_HI40100->Fill(R1850_HI40100);
+    h0_HI0100->Fill(R1850_HI0100);
 
 
     redData = (RooDataSet*)data[i]->reduce("Jpsi_Mass>2.2&&Jpsi_Mass<4.2");
@@ -281,15 +296,18 @@ void check_fit_bias_sim(const int N=1, string infname="20140409_SimFits_M1850_Db
     double R2242_HI020 = ws->var("doubleRatio_HI020")->getVal();
     double R2242_HI2040 = ws->var("doubleRatio_HI2040")->getVal();
     double R2242_HI40100 = ws->var("doubleRatio_HI40100")->getVal();
+    double R2242_HI0100 = ws->function("doubleRatio_HI0100")->getVal();
     h1_pp->Fill(R2242_pp);
     h1_HI020->Fill(R2242_HI020);
     h1_HI2040->Fill(R2242_HI2040);
     h1_HI40100->Fill(R2242_HI40100);
+    h1_HI0100->Fill(R2242_HI0100);
 
     h2_pp->Fill(R1850_pp,R2242_pp);
     h2_HI020->Fill(R1850_HI020,R2242_HI020);
     h2_HI2040->Fill(R1850_HI2040,R2242_HI2040);
     h2_HI40100->Fill(R1850_HI40100,R2242_HI40100);
+    h2_HI0100->Fill(R1850_HI0100,R2242_HI0100);
   }
   TCanvas *c1 = new TCanvas("c1","c1");
   c1->Divide(2,2);
@@ -326,21 +344,37 @@ void check_fit_bias_sim(const int N=1, string infname="20140409_SimFits_M1850_Db
   cout << h1_HI40100->GetMean() << "\t" << h1_HI40100->GetRMS() << endl;
   cout << 1-(h0_HI40100->GetMean()/h1_HI40100->GetMean()) << endl;
 
+  cout << "HI0100" << endl;
+  cout << h0_HI0100->GetMean() << "\t" << h0_HI0100->GetRMS() << endl;
+  cout << h1_HI0100->GetMean() << "\t" << h1_HI0100->GetRMS() << endl;
+  cout << 1-(h0_HI0100->GetMean()/h1_HI0100->GetMean()) << endl;
+
   c1->SaveAs(Form("toy_fits_dblRatio_fwd_M1850_N%i.pdf",N));
 
+  TF1 *f3 = new TF1("f3","x",-0.5,3.0);
+  f3->SetLineWidth(1);
   TCanvas *c2 = new TCanvas("c2","c2");
   c2->Divide(2,2);
   c2->cd(1);
   h2_pp->Draw("colz");
+  f3->Draw("same");
   c2->cd(2);
   h2_HI020->Draw("colz");
+  f3->Draw("same");
   c2->cd(3);
   h2_HI2040->Draw("colz");
+  f3->Draw("same");
   c2->cd(4);
   h2_HI40100->Draw("colz");
+  f3->Draw("same");
 
-  TF1 *f3 = new TF1("f3","x",-0.5,3.0);
-  f3->SetLineWidth(1);
+  TCanvas *c3 = new TCanvas("c3","c3");
+  c3->Divide(2,1);
+  c3->cd(1);
+  h0_HI0100->Draw();
+  h1_HI0100->Draw("same");
+  c3->cd(2);
+  h2_HI0100->Draw("colz");
   f3->Draw("same");
 
   TFile *outf = new TFile(Form("toy_fits_dblRatio_fwd_M1850_N%i.root",N),"RECREATE");
@@ -356,6 +390,9 @@ void check_fit_bias_sim(const int N=1, string infname="20140409_SimFits_M1850_Db
   h0_HI40100->Write();
   h1_HI40100->Write();
   h2_HI40100->Write();
+  h0_HI0100->Write();
+  h1_HI0100->Write();
+  h2_HI0100->Write();
   outf->Close();
 
 

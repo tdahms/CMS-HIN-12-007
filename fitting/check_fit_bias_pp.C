@@ -65,7 +65,7 @@ void check_fit_bias_pp(const int N=1, string infname="20140409_SimFits_M1850_Dbl
   RooRealVar a("a","a",0.0);a.setConstant(false);
   RooRealVar b("b","b",0.01);b.setConstant(false);
   RooRealVar c("c","c",-0.005);c.setConstant(false);
-  RooPolynomial bkg("bkg","bkg",*Jpsi_Mass,RooArgSet(a,b,c));
+  RooPolynomial bkg("bkg","bkg",*Jpsi_Mass,RooArgSet(a));//,b,c));
   ws->import(bkg);
   ws->factory("SUM::sigMassPDF_M2242(NJpsi_pp*sigCB1G2_HI,NPsiP_pp*sigCB1G2P_HI,NBkg_pp*bkg)");
 
@@ -113,7 +113,7 @@ void check_fit_bias_pp(const int N=1, string infname="20140409_SimFits_M1850_Dbl
   cout << h0->GetMean() << "\t" << h0->GetRMS() << endl;
   cout << h1->GetMean() << "\t" << h1->GetRMS() << endl;
 
-  c1->SaveAs(Form("toy_fits_mid_pp_M1850_N%i.pdf",N));
+  c1->SaveAs(Form("toy_fits_fwd_pp_M1850_N%i.pdf",N));
 
   TCanvas *c2 = new TCanvas("c2","c2");
   c2->cd();
@@ -123,7 +123,7 @@ void check_fit_bias_pp(const int N=1, string infname="20140409_SimFits_M1850_Dbl
   f3->SetLineWidth(1);
   f3->Draw("same");
 
-  TFile *outf = new TFile(Form("toy_fits_mid_pp_M1850_N%i.root",N),"RECREATE");
+  TFile *outf = new TFile(Form("toy_fits_fwd_pp_M1850_N%i.root",N),"RECREATE");
   h0->Write();
   h1->Write();
   h2->Write();
