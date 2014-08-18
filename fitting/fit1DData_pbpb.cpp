@@ -151,6 +151,7 @@ int main(int argc, char* argv[]) {
   getOptRange(crange,&cmin,&cmax);
   getOptRange(yrange,&ymin,&ymax);
 
+
   string yrange_str, prange_str;
   if (yrange == "0.0-2.4")
     yrange_str = "0-24";
@@ -750,9 +751,9 @@ int main(int argc, char* argv[]) {
   }
   else {
     lCMS->SetTextSize(0.04);
-    lPre->SetTextSize(0.04)
-    lPre->SetText(0.47,0.90,"CMS Preliminary");
-    mframe->addObject(lPre,"");
+    //    lPre->SetTextSize(0.04)
+    //    lPre->SetText(0.47,0.90,"CMS Preliminary");
+    //    mframe->addObject(lPre,"");
 
     if (isPbPb)
       lCMS->SetText(0.17,0.90,"PbPb #sqrt{s_{NN}} = 2.76 TeV");
