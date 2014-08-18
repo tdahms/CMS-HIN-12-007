@@ -35,7 +35,7 @@
 #include <RooHist.h>
 #include <RooFitResult.h>
 #include <RooPlot.h>
-#include <RooChebychev.h>
+#include <RooPolynomial.h>
 
 #include <RooStats/ModelConfig.h>
 
@@ -57,11 +57,13 @@ void defineMassSig(RooWorkspace *ws);
 
 int main(int argc, char* argv[]) {
   gROOT->Macro("./rootlogon.C");
+  gStyle->SetLineStyleString(11,"8 12"); // thick dotted
+  gStyle->SetLineStyleString(12,"20 12"); // thick dashed
 
   RooMsgService::instance().setGlobalKillBelow(RooFit::WARNING);
 
   string FileName, FileNameMC1, FileNameMC2;
-  string mBkgFunct, mJpsiFunct, mPsiPFunct;
+  string mBkgFunct, mBkgPFunct, mJpsiFunct, mPsiPFunct;
   int  isGG = 0;
   string prange, lrange, yrange, crange;
   string dirPre;
@@ -144,7 +146,7 @@ int main(int argc, char* argv[]) {
     }
   }// End check options
  
-  string mBkgFunctP = mBkgFunct + "P";
+  mBkgPFunct = mBkgFunct + "P";
 
   float pmin=0, pmax=0, ymin=0, ymax=0, cmin=0, cmax=0;
   getOptRange(prange,&pmin,&pmax);
@@ -266,6 +268,9 @@ int main(int argc, char* argv[]) {
 
   ws->var("Jpsi_Mass")->setBinning(rbm);
 
+  ws->var("Jpsi_Mass")->setRange("jpsi",2.2,3.5);
+  ws->var("Jpsi_Mass")->setRange("psip",3.3,4.2);
+
   RooDataHist *binData = new RooDataHist("binData","binData",RooArgSet( *(ws->var("Jpsi_Mass")) ), *redData);
   cout << "DATA :: N events to fit: " << binData->sumEntries() << endl;
   
@@ -273,7 +278,7 @@ int main(int argc, char* argv[]) {
   // Just so RooFit does not crash on Ubuntu
   RooRealVar aa("aa","aa",0.5,-1,1);
   RooRealVar ab("ab","ab",-0.5,-1,1);
-  RooChebychev tmpPol("tmpPol","tmpPol",*(ws->var("Jpsi_Mass")),RooArgSet(aa,ab));
+  RooPolynomial tmpPol("tmpPol","tmpPol",*(ws->var("Jpsi_Mass")),RooArgSet(aa,ab));
 
   // J/psi mass parameterization
   defineMassBkg(ws);
@@ -336,46 +341,21 @@ int main(int argc, char* argv[]) {
   hMixLegend->SetLineColor(kRed); hMixLegend->SetLineWidth(2); hMixLegend->SetLineStyle(kDashed);hMixLegend->SetFillColor(kYellow);
 
   RooFitResult *fitM;
+  RooFitResult *fitMP;
 
   RooRealVar *NJpsi  = new RooRealVar("NJpsi","J/psi yield",0.5*binData->sumEntries(),0.0,2.0*binData->sumEntries());  ws->import(*NJpsi);
   RooRealVar *NBkg  = new RooRealVar("NBkg","Brackground yield", 0.5*binData->sumEntries(),0.0,2.0*binData->sumEntries());   ws->import(*NBkg);
-  RooRealVar *NBkg2  = new RooRealVar("NBkg2","Second brackground yield",0.5*binData->sumEntries(),0.0,2.0*binData->sumEntries());   ws->import(*NBkg2);
+  RooRealVar *NBkgP  = new RooRealVar("NBkgP","Brackground yield",0.5*binData->sumEntries(),0.0,2.0*binData->sumEntries());   ws->import(*NBkgP);
 
-  if (fitRatio) {
-    RooRealVar *fracP  = new RooRealVar("fracP","psi(2S) fraction" ,0.01);
-    fracP->setConstant(false); ws->import(*fracP);
-    RooFormulaVar *NPsiP = new RooFormulaVar("NPsiP", "@0*@1", RooArgList(*(ws->var("NJpsi")),*(ws->var("fracP"))));  ws->import(*NPsiP);
-  }
-  else {
-    RooRealVar *NPsiP  = new RooRealVar("NPsiP","psi(2S) yield", 0.01*binData->sumEntries(),0.0,2.0*binData->sumEntries());  ws->import(*NPsiP);
-  }
+  RooRealVar *NPsiP  = new RooRealVar("NPsiP","psi(2S) yield", 0.01*binData->sumEntries(),0.0,2.0*binData->sumEntries());  ws->import(*NPsiP);
 
-  sprintf(funct,"SUM::sigMassPDF(NJpsi*%s,NPsiP*%s,NBkg*%s)",mJpsiFunct.c_str(),mPsiPFunct.c_str(),mBkgFunct.c_str());
+  RooFormulaVar *fracP = new RooFormulaVar("fracP","psi(2S) fraction","@0/@1",RooArgList(*(ws->var("NPsiP")),*(ws->var("NJpsi")))); ws->import(*fracP);
+
+  sprintf(funct,"SUM::jpsiMassPDF(NJpsi*%s,NBkg*%s)",mJpsiFunct.c_str(),mBkgFunct.c_str());
   ws->factory(funct);
-  if (!isPbPb) {
-    RooRealVar *fracP_HI  = new RooRealVar("fracP_HI","psi(2S) fraction" ,0.1,0.0,1.0);   ws->import(*fracP_HI);
-    
-    // update these numbers later for the textbook cartoon
-    if (prange=="6.5-30.0" && yrange=="0.0-2.4")
-      ws->var("fracP_HI")->setVal(0.031);
-    else if (prange=="6.5-30.0" && yrange=="0.0-1.6")
-      ws->var("fracP_HI")->setVal(0.024);
-    else if (prange=="3.0-30.0" && yrange=="1.6-2.4")
-      ws->var("fracP_HI")->setVal(0.105);
-    else if (prange=="3.0-6.5" && yrange=="1.6-2.4")
-      ws->var("fracP_HI")->setVal(0.170);
-    else if (prange=="6.5-30.0" && yrange=="1.6-2.4")
-      ws->var("fracP_HI")->setVal(0.0516);
-    else
-      ws->var("fracP_HI")->setVal(0.0);
+  sprintf(funct,"SUM::psipMassPDF(NPsiP*%s,NBkgP*%s)",mPsiPFunct.c_str(),mBkgPFunct.c_str());
+  ws->factory(funct);
 
-    RooFormulaVar *NPsiP_HI = new RooFormulaVar("NPsiP_HI", "@0*@1", RooArgList(*(ws->var("NJpsi")),*(ws->var("fracP_HI"))));  ws->import(*NPsiP_HI);
-    sprintf(funct,"SUM::sigMassPDF_mix(NJpsi*%s,NPsiP_HI*%s,NBkg*%s)",mJpsiFunct.c_str(),mPsiPFunct.c_str(),mBkgFunct.c_str());
-    ws->factory(funct);
-  }
-
-
-    
   string str("CBG");
   string dirPre2 = dirPre;
   size_t found = dirPre2.find(str);
@@ -474,12 +454,19 @@ int main(int argc, char* argv[]) {
     else // read results from CB fit
       inputFNcb =  dirPre2 + "_" + mBkgFunct + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + "_allVars.txt";
 
-    RooArgSet *set = ws->pdf("sigMassPDF")->getParameters(*(ws->var("Jpsi_Mass")));
+    RooArgSet *set = ws->pdf("jpsiMassPDF")->getParameters(*(ws->var("Jpsi_Mass")));
     //    set->Print("v");
     set->readFromFile(inputFNcb.c_str());
     //    cout << set->getRealValue("sigmaSig1",0,1) << endl;
     cout << "Import variable values from: " << inputFNcb << endl;
     ws->import(*set);
+
+    RooArgSet *setP = ws->pdf("psipMassPDF")->getParameters(*(ws->var("Jpsi_Mass")));
+    //    set->Print("v");
+    setP->readFromFile(inputFNcb.c_str());
+    //    cout << set->getRealValue("sigmaSig1",0,1) << endl;
+    cout << "Import variable values from: " << inputFNcb << endl;
+    ws->import(*setP);
 
     if (!fixAlpha)
       ws->var("alpha")->setConstant(kFALSE);
@@ -514,7 +501,7 @@ int main(int argc, char* argv[]) {
     */
   }
 
-  fitM = ws->pdf("sigMassPDF")->fitTo(*redData,Extended(1),Hesse(1),Minos(0),Save(1),SumW2Error(0),NumCPU(8),PrintEvalErrors(0),Verbose(0));
+  fitM = ws->pdf("jpsiMassPDF")->fitTo(*redData,Extended(1),Hesse(1),Save(1),SumW2Error(0),NumCPU(8),PrintEvalErrors(0),Verbose(0),Range("jpsi"));
   fitM->printMultiline(cout,1,1,"");
 
   int edmStatus = 1;
@@ -538,9 +525,47 @@ int main(int argc, char* argv[]) {
   cout << " ---" << endl;
 
   int nFitParam = fitM->floatParsFinal().getSize();
+
+
+  ws->var("meanSig1")->setConstant(true);
+  ws->var("sigmaSig1")->setConstant(true);
+  ws->var("coeffGaus")->setConstant(true);
+  if (!fixGwidth)
+    ws->var("wideFactor")->setConstant(true);
+  fitMP = ws->pdf("psipMassPDF")->fitTo(*redData,Extended(1),Hesse(1),Save(1),SumW2Error(0),NumCPU(8),PrintEvalErrors(0),Verbose(0),Range("psip"));
+
+  fitMP->printMultiline(cout,1,1,"");
+  ws->var("meanSig1")->setConstant(false);
+  ws->var("sigmaSig1")->setConstant(false);
+  ws->var("coeffGaus")->setConstant(false);
+  if (!fixGwidth)
+    ws->var("wideFactor")->setConstant(false);
+
+  int edmStatusP = 1;
+  if (fitMP->edm()<1.0e-03)
+    edmStatusP = 0;
+
+  int covStatusP = 1;
+  if (fitMP->covQual()==3)
+    covStatusP = 0;
+
+  int fitStatusP = fitM->status();
+  if (found!=string::npos)
+    cout << "CBG_" << mBkgPFunct << "_rap" << yrange_str << "_pT" << prange_str << "_cent" << crange << fix_str << endl;
+  else
+    cout << "CB_" << mBkgPFunct << "_rap" << yrange_str << "_pT" << prange_str << "_cent" << crange << fix_str << endl;
+
+  cout << "---FIT result summary: " << edmStatusP << covStatusP << fitStatusP;
+  for (unsigned int i=0; i<fitMP->numStatusHistory(); ++i) {
+    cout << fitMP->statusCodeHistory(i);
+  }
+  cout << " ---" << endl;
+
   resultF.cd();
   fitM->Write();
+  fitMP->Write();
   cout << "fitM->Write() into: " << resultFN << endl;
+  cout << "fitMP->Write() into: " << resultFN << endl;
 
   // *** Draw mass plot
   RooPlot *mframe = ws->var("Jpsi_Mass")->frame();
@@ -557,35 +582,28 @@ int main(int argc, char* argv[]) {
   min = ws->var("NBkg")->getVal()/(double(nbins)) * 0.7;
   RooHist *hpull; 
 
-  // plot shaded areas
-  ws->pdf("sigMassPDF")->plotOn(mframe,VisualizeError(*fitM,1,kFALSE),FillColor(kAzure-9),Precision(1e-4));//,Normalization(redData->sumEntries(),RooAbsReal::NumEvent));
-
-  if (!isPaper && found!=string::npos) { 
-    ws->pdf("sigMassPDF")->plotOn(mframe,VisualizeError(*fitM,1,kFALSE),FillColor(kOrange-9),Components((mBkgFunct+",signalCB1,signalCB1P").c_str()),Precision(1e-4));
-    ws->pdf("sigMassPDF")->plotOn(mframe,VisualizeError(*fitM,1,kFALSE),FillColor(kGreen-9),Components((mBkgFunct+",signalG2,signalG2P").c_str()),Precision(1e-4));
-  }
-
-  ws->pdf("sigMassPDF")->plotOn(mframe,Components(mBkgFunct.c_str()),VisualizeError(*fitM,1,kFALSE),FillColor(kGray),Precision(1e-4));//,Normalization(redData->sumEntries(),RooAbsReal::NumEvent));
-  // replot data on top of shaded bands
-  redData->plotOn(mframe,DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(rbm));
-  
   // plot lines
-  ws->pdf("sigMassPDF")->plotOn(mframe,LineColor(kBlue),LineWidth(2),Precision(1e-4));//,Normalization(redData->sumEntries(),RooAbsReal::NumEvent));
+  ws->pdf("jpsiMassPDF")->plotOn(mframe,LineColor(kBlue),LineWidth(2),Precision(1e-4),Range("jpsi"));//,Normalization(redData->sumEntries(),RooAbsReal::NumEvent));
+  ws->pdf("psipMassPDF")->plotOn(mframe,LineColor(kBlue),LineWidth(2),Precision(1e-4),Range("psip"));//,Normalization(redData->sumEntries(),RooAbsReal::NumEvent));
 
   hpull = mframe->pullHist(0,0,true); hpull->SetName("hpullhist");
     
   if (!isPaper && found!=string::npos) { 
-    ws->pdf("sigMassPDF")->plotOn(mframe,Components((mBkgFunct+",signalCB1,signalCB1P").c_str()),LineColor(kOrange+2),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
-    ws->pdf("sigMassPDF")->plotOn(mframe,Components((mBkgFunct+",signalG2,signalG2P").c_str()),LineColor(kGreen+2),LineStyle(kDashed),LineWidth(2),Precision(1e-4));
+    ws->pdf("jpsiMassPDF")->plotOn(mframe,Components((mBkgFunct+",signalCB1").c_str()),LineColor(kOrange+2),LineStyle(kDashed),LineWidth(2),Precision(1e-4),Range("jpsi"));
+    ws->pdf("jpsiMassPDF")->plotOn(mframe,Components((mBkgFunct+",signalG2").c_str()),LineColor(kGreen+2),LineStyle(kDashed),LineWidth(2),Precision(1e-4),Range("jpsi"));
+
+    ws->pdf("psipMassPDF")->plotOn(mframe,Components((mBkgPFunct+",signalCB1P").c_str()),LineColor(kOrange+2),LineStyle(kDashed),LineWidth(2),Precision(1e-4),Range("psip"));
+    ws->pdf("psipMassPDF")->plotOn(mframe,Components((mBkgPFunct+",signalG2P").c_str()),LineColor(kGreen+2),LineStyle(kDashed),LineWidth(2),Precision(1e-4),Range("psip"));
   }
 
-  ws->pdf("sigMassPDF")->plotOn(mframe,Components(mBkgFunct.c_str()),LineColor(kBlack),LineStyle(kDashed),LineWidth(2),Precision(1e-4));//,Normalization(redData->sumEntries(),RooAbsReal::NumEvent));
+  ws->pdf("jpsiMassPDF")->plotOn(mframe,Components(mBkgFunct.c_str()),LineColor(kBlack),LineStyle(kDashed),LineWidth(2),Precision(1e-4),Range("jpsi"));//,Normalization(redData->sumEntries(),RooAbsReal::NumEvent));
+  ws->pdf("psipMassPDF")->plotOn(mframe,Components(mBkgPFunct.c_str()),LineColor(kBlack),LineStyle(kDashed),LineWidth(2),Precision(1e-4),Range("psip"));//,Normalization(redData->sumEntries(),RooAbsReal::NumEvent));
 
   //  redData->plotOn(mframe,DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(rbm));
 
   TH1 *hdata = redData->createHistogram("hdata",*ws->var("Jpsi_Mass"),Binning(rbm));
   TH1 *hdata_KStest = redData->createHistogram("hdata_KStest",*ws->var("Jpsi_Mass"),Binning(1000));
-  TH1 *hfit_KStest = ws->pdf("sigMassPDF")->createHistogram("hfit_KStest",*ws->var("Jpsi_Mass"),Binning(1000));
+  TH1 *hfit_KStest = ws->pdf("jpsiMassPDF")->createHistogram("hfit_KStest",*ws->var("Jpsi_Mass"),Binning(1000));
   double KStest = hdata_KStest->KolmogorovTest(hfit_KStest);
 
   // *** Calculate chi2/nDof for mass fitting
@@ -742,7 +760,7 @@ int main(int argc, char* argv[]) {
   }
 
   lCMS->SetTextSize(0.05);
-  if (false) {
+  if (true) {
     if (isPbPb)
       lCMS->SetText(0.17,0.90,"CMS PbPb #sqrt{s_{NN}} = 2.76 TeV");
     else
@@ -821,37 +839,17 @@ int main(int argc, char* argv[]) {
   lNJpsi->SetText(0.62,0.80,reduceDS);
   mframe->addObject(lNJpsi,"");
 
-  if (fitRatio) {
-    if (ws->var("fracP")->hasAsymError() && abs(-1.0*ws->var("fracP")->getErrorLo()/ws->var("fracP")->getErrorHi() - 1)>0.1)
-      sprintf(reduceDS,"R_{#psi(2S)} = %0.3f^{+%0.3f}_{%0.3f}",ws->var("fracP")->getVal(),ws->var("fracP")->getErrorHi(),ws->var("fracP")->getErrorLo());
-    else
-      sprintf(reduceDS,"R_{#psi(2S)} = %0.3f #pm %0.3f",ws->var("fracP")->getVal(),ws->var("fracP")->getError());
-    lRpsi->SetText(0.62,0.75,reduceDS);
-    mframe->addObject(lRpsi,"");
+  if (ws->var("NPsiP")->hasAsymError() && abs(-1.0*ws->var("NPsiP")->getErrorLo()/ws->var("NPsiP")->getErrorHi() - 1)>0.1)
+    sprintf(reduceDS,"N_{#psi(2S)} = %0.0f^{+%0.0f}_{%0.0f}",ws->var("NPsiP")->getVal(),ws->var("NPsiP")->getErrorHi(),ws->var("NPsiP")->getErrorLo());
+  else 
+    sprintf(reduceDS,"N_{#psi(2S)} = %0.1f #pm %0.1f",ws->var("NPsiP")->getVal(),ws->var("NPsiP")->getError());
 
-    double NJpsi = ws->var("NJpsi")->getVal();
-    double fracP = ws->var("fracP")->getVal();
-    double errNJpsi = ws->var("NJpsi")->getError();
-    double errFracP = ws->var("fracP")->getError();
-    double corr = fitM->correlation( *ws->var("NJpsi") , *ws->var("fracP") );
-    std::cout << "Correlation between NJpsi and fracP: " << corr << std::endl;
-    double Npsi2S = ws->function("NPsiP")->getVal();
-    double errNpsi2S = sqrt( pow(errNJpsi/NJpsi,2) + pow(errFracP/fracP,2) + 2*errNJpsi*errFracP*corr/Npsi2S )*Npsi2S;
-
-    // if (ws->var("fracP")->hasAsymError() && abs(-1.0*ws->var("fracP")->getErrorLo()/ws->var("fracP")->getErrorHi() - 1)>0.1)
-    //   sprintf(reduceDS,"N_{#psi(2S)} = %0.1f^{+%0.1f}_{%0.1f}",ws->function("NPsiP")->getVal(),ws->var("fracP")->getErrorHi()*ws->var("NJpsi")->getVal(),ws->var("fracP")->getErrorLo()*ws->var("NJpsi")->getVal());
-    // else
-    sprintf(reduceDS,"N_{#psi(2S)} = %0.1f #pm %0.1f",Npsi2S,errNpsi2S);
-    lNpsiP->SetText(0.62,0.70,reduceDS);
-  }
-  else {
-    if (ws->var("NPsiP")->hasAsymError() && abs(-1.0*ws->var("NPsiP")->getErrorLo()/ws->var("NPsiP")->getErrorHi() - 1)>0.1)
-      sprintf(reduceDS,"N_{#psi(2S)} = %0.0f^{+%0.0f}_{%0.0f}",ws->var("NPsiP")->getVal(),ws->var("NPsiP")->getErrorHi(),ws->var("NPsiP")->getErrorLo());
-    else
-      sprintf(reduceDS,"N_{#psi(2S)} = %0.1f #pm %0.1f",ws->var("NPsiP")->getVal(),ws->var("NPsiP")->getError());
-    lNpsiP->SetText(0.62,0.75,reduceDS);
-  }
+  lNpsiP->SetText(0.62,0.75,reduceDS);
   mframe->addObject(lNpsiP,"");
+
+  sprintf(reduceDS,"R_{#psi(2S)} = %0.3f #pm %0.3f",ws->function("fracP")->getVal(),ws->function("fracP")->getPropagatedError(*fitMP));
+  lRpsi->SetText(0.62,0.70,reduceDS);
+  mframe->addObject(lRpsi,"");
 
   double coeffGaus = ws->var("coeffGaus")->getVal();
   double sigmaSig1 = ws->var("sigmaSig1")->getVal();
@@ -996,48 +994,7 @@ int main(int argc, char* argv[]) {
   mframe->Write();
   mframepull->Write();
   hpull_proj->Write();
-
-  // prepare models for CLs calculations
-  RooStats::ModelConfig *model = new RooStats::ModelConfig("model",ws);
-  //  model->SetWorkspace(*ws);
-  model->SetPdf(*ws->pdf("sigMassPDF"));
-  model->SetParametersOfInterest(*ws->var("fracP"));
-  model->SetObservables(*ws->var("Jpsi_Mass"));
-
-  RooArgSet *pars = ws->pdf("sigMassPDF")->getParameters(redData);
-  //  pars.assignFast(pars);
-  //  pars->Print("v");
-  RooArgSet nuisances = RooArgSet(*pars);
-  nuisances.remove(*ws->var("fracP"));
-  // nuisances.remove(*ws->var("coeffGaus"));
-  // nuisances.remove(*ws->var("meanSig1"));
-  // nuisances.remove(*ws->var("wideFactor"));
-  //  nuisances.Print("v");
-  ws->defineSet("nuisParameters",nuisances);
-  model->SetNuisanceParameters(*ws->set("nuisParameters"));
-
-  /*
-    model->SetSnapshot(*pars);
-    // prepare models for CLs calculations
-    RooStats::ModelConfig *model_null = (RooStats::ModelConfig*)model->Clone("modell_null");
-    //  model_null->SetWorkSpace(ws);
-    //  model_null->SetPdf("sigMassPDF");
-    //  model_null->SetObservables(RooArgSet("Jpsi_Mass"));
-    //  RooArgSet *pars = ws->pdf("sigMassPDF")->getParameters(redData);
-    //  pars.assignFast(pars);
-    //  pars->Print("v");
-    //  RooArgSet *nuisances = RooArgSet(pars);
-    //  nuisances->remove(ws->var("fracP"));
-    //  model->SetNuisanceParameters(nuisances);
-    RooArgSet poiNew = RooArgSet(*ws->var("fracP"));
-    double oldVal = ws->var("fracP")->getVal();
-    ws->var("fracP")->setVal(0.0);
-    model_null->SetSnapshot(poiNew);
-    ws->var("fracP")->setVal(oldVal);
-    ws->import(*model_null);
-  */
-  ws->import(*model);
-
+  
   string fname = dirPre + "_" + mBkgFunct + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str + "Workspace.root";
   ws->writeToFile(fname.c_str(),kTRUE);
   fname = dirPre + "_" + mBkgFunct + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str + "allVars.txt";
@@ -1045,30 +1002,22 @@ int main(int argc, char* argv[]) {
 
   Double_t NJpsi_fin = ws->var("NJpsi")->getVal();
   Double_t ErrNJpsi_fin = ws->var("NJpsi")->getError();
-  Double_t NPsiP_fin = 0.0;
-  Double_t ErrNPsiP_fin = 0.0;
-  Double_t fracP_fin = 0.0;
-  Double_t ErrFracP_fin = 0.0;
-  if (fitRatio) {
-    fracP_fin = ws->var("fracP")->getVal();
-    ErrFracP_fin = ws->var("fracP")->getError();
-  }
-  else {
-    NPsiP_fin = ws->var("NPsiP")->getVal();
-    ErrNPsiP_fin = ws->var("NPsiP")->getError();
-  }
+  Double_t NPsiP_fin = ws->var("NPsiP")->getVal();
+  Double_t ErrNPsiP_fin = ws->var("NPsiP")->getError();
+  Double_t fracP_fin = ws->function("fracP")->getVal();
+  Double_t ErrFracP_fin = ws->function("fracP")->getPropagatedError(*fitMP);
+  
   Double_t NBkg_fin = ws->var("NBkg")->getVal();
   Double_t ErrNBkg_fin = ws->var("NBkg")->getError();
+
+  // Double_t NBkgP_fin = ws->var("NBkgP")->getVal();
+  // Double_t ErrNBkgP_fin = ws->var("NBkgP")->getError();
 
   // To check values of fit parameters
   cout << endl << "J/psi yields:" << endl;
   cout << "NJpsi:       Fit: "  << NJpsi_fin << " +/- " << ErrNJpsi_fin << endl;
-  if (fitRatio) {
-    cout << "R_psi(2S)    Fit: "  << fracP_fin << " +/- " << ErrFracP_fin << endl;
-    cout << "NPsiP:       Fit: "  << fracP_fin*NJpsi_fin << " +/- " << ErrFracP_fin*NJpsi_fin << endl;
-  }
-  else
-    cout << "NPsiP:       Fit: "  << NPsiP_fin << " +/- " << ErrNPsiP_fin << endl;
+  cout << "NPsiP:       Fit: "  << NPsiP_fin << " +/- " << ErrNPsiP_fin << endl;
+  cout << "R_psi(2S)    Fit: "  << fracP_fin << " +/- " << ErrFracP_fin << endl;
   cout << "KS test result: " << KStest << endl;
 
   titlestr = dirPre + "_" + mBkgFunct + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + fix_str + "fitResult.txt";
@@ -1182,21 +1131,21 @@ void setWSRange(RooWorkspace *ws){
 
 void defineMassBkg(RooWorkspace *ws) {
   // 0th order polynomial
-  ws->factory("Chebychev::pol0(Jpsi_Mass,{coeffPol0[0.0]})");
+  ws->factory("Polynomial::pol0(Jpsi_Mass,{coeffPol0[0.0]})");
   // 1st order polynomial
-  ws->factory("Chebychev::pol1(Jpsi_Mass,{coeffPol1[-0.8]})");
+  ws->factory("Polynomial::pol1(Jpsi_Mass,{coeffPol1[0.0]})");
   // 2nd order polynomial
-  ws->factory("Chebychev::pol2(Jpsi_Mass,{coeffPol1, coeffPol2[0.0]})");
+  ws->factory("Polynomial::pol2(Jpsi_Mass,{coeffPol1, coeffPol2[0.0]})");
   // 3rd order polynomial
-  ws->factory("Chebychev::pol3(Jpsi_Mass,{coeffPol1, coeffPol2, coeffPol3[0.0]})");
+  ws->factory("Polynomial::pol3(Jpsi_Mass,{coeffPol1, coeffPol2, coeffPol3[0.0]})");
   // 4th order polynomial
-  ws->factory("Chebychev::pol4(Jpsi_Mass,{coeffPol1, coeffPol2, coeffPol3, coeffPol4[0.0]})");
+  ws->factory("Polynomial::pol4(Jpsi_Mass,{coeffPol1, coeffPol2, coeffPol3, coeffPol4[0.0]})");
   // 5th order polynomial
-  ws->factory("Chebychev::pol5(Jpsi_Mass,{coeffPol1, coeffPol2, coeffPol3, coeffPol4, coeffPol5[0.0]})");
+  ws->factory("Polynomial::pol5(Jpsi_Mass,{coeffPol1, coeffPol2, coeffPol3, coeffPol4, coeffPol5[0.0]})");
   // 6th order polynomial
-  ws->factory("Chebychev::pol6(Jpsi_Mass,{coeffPol1, coeffPol2, coeffPol3, coeffPol4, coeffPol5, coeffPol6[0.0]})");
+  ws->factory("Polynomial::pol6(Jpsi_Mass,{coeffPol1, coeffPol2, coeffPol3, coeffPol4, coeffPol5, coeffPol6[0.0]})");
   // 7th order polynomial
-  ws->factory("Chebychev::pol7(Jpsi_Mass,{coeffPol1, coeffPol2, coeffPol3, coeffPol4, coeffPol5, coeffPol6, coeffPol7[0.0]})");
+  ws->factory("Polynomial::pol7(Jpsi_Mass,{coeffPol1, coeffPol2, coeffPol3, coeffPol4, coeffPol5, coeffPol6, coeffPol7[0.0]})");
   ws->var("coeffPol0")->setConstant(true);
   ws->var("coeffPol1")->setConstant(false);
   ws->var("coeffPol2")->setConstant(false);
@@ -1206,62 +1155,24 @@ void defineMassBkg(RooWorkspace *ws) {
   ws->var("coeffPol6")->setConstant(false);
   ws->var("coeffPol7")->setConstant(false);
 
-  // 1st order polynomial in exponential function
-  ws->factory("Chebychev::expPol1Arg(Jpsi_Mass,{expCoeffPol1[-0.1]})");
-  ws->factory("Exponential::expPol1(expPol1Arg,expCoeffPol0[1.0])");
-  // 2nd order polynomial in exponential function
-  ws->factory("Chebychev::expPol2Arg(Jpsi_Mass,{expCoeffPol1, expCoeffPol2[0.0]})");
-  ws->factory("Exponential::expPol2(expPol2Arg,expCoeffPol0)");
-  // 3rd order polynomial in exponential function
-  ws->factory("Chebychev::expPol3Arg(Jpsi_Mass,{expCoeffPol1, expCoeffPol2, expCoeffPol3[0.0]})");
-  ws->factory("Exponential::expPol3(expPol3Arg,expCoeffPol0)");
-  // 4th order polynomial in exponential function
-  ws->factory("Chebychev::expPol4Arg(Jpsi_Mass,{expCoeffPol1, expCoeffPol2, expCoeffPol3, expCoeffPol4[0.0]})");
-  ws->factory("Exponential::expPol4(expPol4Arg,expCoeffPol0)");
-  // 5th order polynomial in exponential function
-  ws->factory("Chebychev::expPol5Arg(Jpsi_Mass,{expCoeffPol1, expCoeffPol2, expCoeffPol3, expCoeffPol4, expCoeffPol5[0.0]})");
-  ws->factory("Exponential::expPol5(expPol5Arg,expCoeffPol0)");
-  // 6th order polynomial in exponential function
-  ws->factory("Chebychev::expPol6Arg(Jpsi_Mass,{expCoeffPol1, expCoeffPol2, expCoeffPol3, expCoeffPol4, expCoeffPol5, expCoeffPol6[0.0]})");
-  ws->factory("Exponential::expPol6(expPol6Arg,expCoeffPol0)");
-  // 7th order polynomial in exponential function
-  ws->factory("Chebychev::expPol7Arg(Jpsi_Mass,{expCoeffPol1, expCoeffPol2, expCoeffPol3, expCoeffPol4, expCoeffPol5, expCoeffPol6, expCoeffPol7[0.0]})");
-  ws->factory("Exponential::expPol7(expPol7Arg,expCoeffPol0)");
-
-  ws->var("expCoeffPol0")->setConstant(true);
-  ws->var("expCoeffPol1")->setConstant(false);
-  ws->var("expCoeffPol2")->setConstant(false);
-  ws->var("expCoeffPol3")->setConstant(false);
-  ws->var("expCoeffPol4")->setConstant(false);
-  ws->var("expCoeffPol5")->setConstant(false);
-  ws->var("expCoeffPol6")->setConstant(false);
-  ws->var("expCoeffPol7")->setConstant(false);
-
-  // 0th order Bernstein polynomial
-  ws->factory("Bernstein::Bern0(Jpsi_Mass,{coeffBern0[1.0]})");
-  // 1st order Bernstein polynomial
-  ws->factory("Bernstein::Bern1(Jpsi_Mass,{coeffBern0, coeffBern1[1.0]})");
-  // 2nd order Bernstein polynomial
-  ws->factory("Bernstein::Bern2(Jpsi_Mass,{coeffBern0, coeffBern1, coeffBern2[1.0]})");
-  // 3rd order Bernstein polynomial
-  ws->factory("Bernstein::Bern3(Jpsi_Mass,{coeffBern0, coeffBern1, coeffBern2, coeffBern3[1.0]})");
-  // 4th order Bernstein polynomial
-  ws->factory("Bernstein::Bern4(Jpsi_Mass,{coeffBern0, coeffBern1, coeffBern2, coeffBern3, coeffBern4[1.0]})");
-  // 5th order Bernstein polynomial
-  ws->factory("Bernstein::Bern5(Jpsi_Mass,{coeffBern0, coeffBern1, coeffBern2, coeffBern3, coeffBern4, coeffBern5[1.0]})");
-  // 6th order Bernstein polynomial
-  ws->factory("Bernstein::Bern6(Jpsi_Mass,{coeffBern0, coeffBern1, coeffBern2, coeffBern3, coeffBern4, coeffBern5, coeffBern6[1.0]})");
-  // 7th order Bernstein polynomial
-  ws->factory("Bernstein::Bern7(Jpsi_Mass,{coeffBern0, coeffBern1, coeffBern2, coeffBern3, coeffBern4, coeffBern5, coeffBern6, coeffBern7[1.0]})");
-  ws->var("coeffBern0")->setConstant(false);
-  ws->var("coeffBern1")->setConstant(false);
-  ws->var("coeffBern2")->setConstant(false);
-  ws->var("coeffBern3")->setConstant(false);
-  ws->var("coeffBern4")->setConstant(false);
-  ws->var("coeffBern5")->setConstant(false);
-  ws->var("coeffBern6")->setConstant(false);
-  ws->var("coeffBern7")->setConstant(false);
-
+  // psi(2S) part
+  ws->factory("Polynomial::pol0P(Jpsi_Mass,{coeffPol0P[0.0]})");
+  ws->factory("Polynomial::pol1P(Jpsi_Mass,{coeffPol1P[0.0]})");
+  ws->factory("Polynomial::pol2P(Jpsi_Mass,{coeffPol1P, coeffPol2P[0.0]})");
+  ws->factory("Polynomial::pol3P(Jpsi_Mass,{coeffPol1P, coeffPol2P, coeffPol3P[0.0]})");
+  ws->factory("Polynomial::pol4P(Jpsi_Mass,{coeffPol1P, coeffPol2P, coeffPol3P, coeffPol4P[0.0]})");
+  ws->factory("Polynomial::pol5P(Jpsi_Mass,{coeffPol1P, coeffPol2P, coeffPol3P, coeffPol4P, coeffPol5P[0.0]})");
+  ws->factory("Polynomial::pol6P(Jpsi_Mass,{coeffPol1P, coeffPol2P, coeffPol3P, coeffPol4P, coeffPol5P, coeffPol6P[0.0]})");
+  ws->factory("Polynomial::pol7P(Jpsi_Mass,{coeffPol1P, coeffPol2P, coeffPol3P, coeffPol4P, coeffPol5P, coeffPol6P, coeffPol7P[0.0]})");
+  ws->var("coeffPol0P")->setConstant(true);
+  ws->var("coeffPol1P")->setConstant(false);
+  ws->var("coeffPol2P")->setConstant(false);
+  ws->var("coeffPol3P")->setConstant(false);
+  ws->var("coeffPol4P")->setConstant(false);
+  ws->var("coeffPol5P")->setConstant(false);
+  ws->var("coeffPol6P")->setConstant(false);
+  ws->var("coeffPol7P")->setConstant(false);
+  
   return;
 }
 

@@ -6,15 +6,18 @@
 
 #include "RooRealVar.h"
 #include "RooAbsPdf.h"
+#include "RooExtendPdf.h"
 #include "RooConstVar.h"
 #include "RooGaussian.h"
 #include "RooCBShape.h"
+#include "RooPolynomial.h"
 #include "RooChebychev.h"
 #include "RooFormulaVar.h"
 #include "RooAddPdf.h"
 #include "RooPlot.h"
 #include "RooDataSet.h"
 #include "RooDataHist.h"
+#include "RooHist.h"
 #include "RooFitResult.h"
 #include "RooBinning.h"
 
@@ -42,6 +45,34 @@ void fitSideBands(bool isHI=false, double ptmin=0.0, double ptmax=30.0, double y
   else
     rapCut = Form("Jpsi_Y>%3.1f&&Jpsi_Y<%3.1f",ymin,ymax);
 
+  double ctmax = 1;
+  if (isHI) {
+    if (ptmin==6.5 && ptmax==30.0 && ymin==0.0 && ymax==2.4)
+      ctmax = 0.04;
+    else if (ptmin==6.5 && ptmax==30.0 && ymin==0.0 && ymax==1.6)
+      ctmax = 0.04;
+    else if (ptmin==3.0 && ptmax==30.0 && ymin==1.6 && ymax==2.4)
+      ctmax = 0.08;
+    else if (ptmin==3.0 && ptmax==6.5 && ymin==1.6 && ymax==2.4)
+      ctmax = 0.09;
+    else if (ptmin==6.5 && ptmax==30.0 && ymin==1.6 && ymax==2.4)
+      ctmax = 0.06;
+  }
+  else {
+    if (ptmin==6.5 && ptmax==30.0 && ymin==0.0 && ymax==2.4)
+      ctmax = 0.04;
+    else if (ptmin==6.5 && ptmax==30.0 && ymin==0.0 && ymax==1.6)
+      ctmax = 0.04;
+    else if (ptmin==3.0 && ptmax==30.0 && ymin==1.6 && ymax==2.4)
+      ctmax = 0.09;
+    else if (ptmin==3.0 && ptmax==6.5 && ymin==1.6 && ymax==2.4)
+      ctmax = 0.11;
+    else if (ptmin==6.5 && ptmax==30.0 && ymin==1.6 && ymax==2.4)
+      ctmax = 0.06;
+  }
+
+  TCut ctauCut = Form("Jpsi_Ct<%3.3f",ctmax);
+
   RooRealVar Jpsi_Mass("Jpsi_Mass","m_{#mu#mu}",2.2,3.4,"GeV/c^{2}");
   RooRealVar Jpsi_Pt("Jpsi_Pt","J/#psi pt",0,30,"GeV/c");
   RooRealVar Jpsi_Y("Jpsi_Y","J/#psi y",-2.4,2.4);
@@ -62,7 +93,7 @@ void fitSideBands(bool isHI=false, double ptmin=0.0, double ptmax=30.0, double y
     rbm.addUniform(11,2.2,2.860); // 60 MeV
     rbm.addUniform(19,2.860,3.240); // 20 MeV
     rbm.addUniform(6,3.240,3.600); // 60 MeV
-    rbm.addUniform(4,3.600,3.720); // 30 MeV
+    rbm.addUniform(5,3.600,3.720); // 24 MeV
     rbm.addUniform(8,3.720,4.2); // 60 MeV
   }
 
@@ -72,24 +103,54 @@ void fitSideBands(bool isHI=false, double ptmin=0.0, double ptmax=30.0, double y
   // Jpsi_Ct.setBins(1);
   // Jpsi_CtErr.setBins(1);
 
-  RooRealVar a0("a0","a0",0.0,-1.0,1.0);
-  RooRealVar a1("a1","a1",0.0,-1.0,1.0);
-  RooRealVar a2("a2","a2",0.0,-1.0,1.0);
-  RooRealVar a3("a3","a3",0.0,-1.0,1.0);
-  RooRealVar a4("a4","a4",0.0,-1.0,1.0);
-  RooRealVar a5("a5","a5",0.0,-1.0,1.0);
-  RooChebychev pol1("pol1","Background (pol1)",Jpsi_Mass,RooArgSet(a0));
-  RooChebychev pol2("pol2","Background (pol2)",Jpsi_Mass,RooArgSet(a0,a1));
-  RooChebychev pol3("pol3","Background (pol3)",Jpsi_Mass,RooArgSet(a0,a1,a2));
-  RooChebychev pol4("pol4","Background (pol4)",Jpsi_Mass,RooArgSet(a0,a1,a2,a3));
-  RooChebychev pol5("pol5","Background (pol5)",Jpsi_Mass,RooArgSet(a0,a1,a2,a3,a4));
-  RooChebychev pol6("pol6","Background (pol6)",Jpsi_Mass,RooArgSet(a0,a1,a2,a3,a4,a5));
+  RooRealVar a0("a0","a0",0.0);a0.setConstant(false);
+
+  RooRealVar b0("b0","b0",0.0);b0.setConstant(false);
+  RooRealVar b1("b1","b1",0.0);b1.setConstant(false);
+
+  RooRealVar c0("c0","c0",0.0);c0.setConstant(false);
+  RooRealVar c1("c1","c1",0.0);c1.setConstant(false);
+  RooRealVar c2("c2","c2",0.0);c2.setConstant(false);
+
+  RooRealVar d0("d0","d0",0.0);d0.setConstant(false);
+  RooRealVar d1("d1","d1",0.0);d1.setConstant(false);
+  RooRealVar d2("d2","d2",0.0);d2.setConstant(false);
+  RooRealVar d3("d3","d3",0.0);d3.setConstant(false);
+
+  RooRealVar e0("e0","e0",0.0);e0.setConstant(false);
+  RooRealVar e1("e1","e1",0.0);e1.setConstant(false);
+  RooRealVar e2("e2","e2",0.0);e2.setConstant(false);
+  RooRealVar e3("e3","e3",0.0);e3.setConstant(false);
+  RooRealVar e4("e4","e4",0.0);e4.setConstant(false);
+
+  RooRealVar f0("f0","f0",0.0);f0.setConstant(false);
+  RooRealVar f1("f1","f1",0.0);f1.setConstant(false);
+  RooRealVar f2("f2","f2",0.0);f2.setConstant(false);
+  RooRealVar f3("f3","f3",0.0);f3.setConstant(false);
+  RooRealVar f4("f4","f4",0.0);f4.setConstant(false);
+  RooRealVar f5("f5","f5",0.0);f5.setConstant(false);
+
+  RooPolynomial pol1("pol1","Background (pol1)",Jpsi_Mass,RooArgSet(a0));
+  RooPolynomial pol2("pol2","Background (pol2)",Jpsi_Mass,RooArgSet(b0,b1));
+
+  RooPolynomial pol3("pol3","Background (pol3)",Jpsi_Mass,RooArgSet(c0,c1,c2));
+  RooPolynomial pol3a("pol3a","Background (pol3a)",Jpsi_Mass,RooArgSet(d0,d1,d2));
+
+  RooPolynomial pol4("pol4","Background (pol4)",Jpsi_Mass,RooArgSet(d0,d1,d2,d3));
+  RooPolynomial pol5("pol5","Background (pol5)",Jpsi_Mass,RooArgSet(e0,e1,e2,e3,e4));
+  RooPolynomial pol6("pol6","Background (pol6)",Jpsi_Mass,RooArgSet(f0,f1,f2,f3,f4,f5));
   RooRealVar nbkg("nbkg","nbkg",1000,0,100000);
-  RooAddPdf model("model","model",RooArgList(pol6),RooArgList(nbkg));
+  RooRealVar nbkga("nbkga","nbkga",1000,0,100000);
+  RooRealVar nzero("nzero","nzero",0);
+  RooRealVar F0("F0","F0",0.0);F0.setConstant(true);
+  RooPolynomial fake("fake","fake background",Jpsi_Mass,RooArgSet(F0));
+  RooAddPdf model("model","model",RooArgList(pol2,fake),RooArgList(nbkg,nzero));
+
+  //  RooExtendPdf model2("model2","model2",pol3a,nbkga);
 
   std::string fname;
   if (isHI)
-    fname = "../root_files/PbPbData2011_DblMu0_cent0-100_M22-42.root";
+    fname = "../root_files/PbPbData2011_DblMu0_cent40-100_M22-42.root";
   else
     fname = "../root_files/ppData2013_DblMu0_cent0-100_M22-42.root";
 
@@ -100,22 +161,29 @@ void fitSideBands(bool isHI=false, double ptmin=0.0, double ptmax=30.0, double y
 
   RooDataSet *redData;
   RooArgList list(Jpsi_Mass);
-  redData = (RooDataSet*)data->reduce(list, (ptCut+rapCut).GetTitle());
+  redData = (RooDataSet*)data->reduce(list, (ptCut+rapCut+ctauCut).GetTitle());
   redData->Print("v");
 
-  RooFitResult *fitM1;
-  RooFitResult *fitM2;
-  RooFitResult *fitM3;
-  RooFitResult *fitM4;
-  RooFitResult *fitM5;
-  RooFitResult *fitM6;
-  //  fitM1 = pol1.fitTo(*redData,Extended(0),Minos(0),Save(1),SumW2Error(kFALSE),NumCPU(4),Range("SBLow,SBMid,SBHigh"));
-  //  fitM2 = pol2.fitTo(*redData,Extended(0),Minos(0),Save(1),SumW2Error(kFALSE),NumCPU(4),Range("SBLow,SBMid,SBHigh"));
-  fitM3 = pol3.fitTo(*redData,Extended(0),Minos(0),Save(1),SumW2Error(kFALSE),NumCPU(4),Range("SBLow"));
-  // fitM4 = pol4.fitTo(*redData,Extended(0),Minos(0),Save(1),SumW2Error(kFALSE),NumCPU(4),Range("SBLow,SBMid,SBHigh"));
-  // fitM5 = pol5.fitTo(*redData,Extended(0),Minos(0),Save(1),SumW2Error(kFALSE),NumCPU(4),Range("SBLow,SBMid,SBHigh"));
-  //  fitM6 = pol6.fitTo(*redData,Extended(0),Minos(0),Save(1),SumW2Error(kFALSE),NumCPU(4),Range("SBLow"));
-  //  fitM6->printMultiline(std::cout,1,1,"");
+  cout << (ptCut+rapCut+ctauCut).GetTitle() << endl;
+
+  // RooFitResult *fitM1;
+  // RooFitResult *fitM2;
+  // RooFitResult *fitM3;
+  // RooFitResult *fitM4;
+  // RooFitResult *fitM5;
+  // RooFitResult *fitM6;
+  RooFitResult *fitM;
+  //  RooFitResult *fitMa;
+  // fitM1 = pol1.fitTo(*redData,Extended(0),Minos(0),Save(1),SumW2Error(kFALSE),NumCPU(4),Range("SBLow,SBMid"));
+  // fitM2 = pol2.fitTo(*redData,Extended(0),Minos(0),Save(1),SumW2Error(kFALSE),NumCPU(4),Range("SBLow,SBMid"));
+  // fitM3 = pol3.fitTo(*redData,Extended(0),Minos(0),Save(1),SumW2Error(kFALSE),NumCPU(4),Range("SBLow,SBMid"));
+  // fitM4 = pol4.fitTo(*redData,Extended(0),Minos(0),Save(1),SumW2Error(kFALSE),NumCPU(4),Range("SBLow,SBMid"));
+  // fitM5 = pol5.fitTo(*redData,Extended(0),Minos(0),Save(1),SumW2Error(kFALSE),NumCPU(4),Range("SBLow,SBMid"));
+  // fitM6 = pol6.fitTo(*redData,Extended(0),Minos(0),Save(1),SumW2Error(kFALSE),NumCPU(4),Range("SBLow,SBMid"));
+  fitM = model.fitTo(*redData,Extended(1),Minos(0),Save(1),SumW2Error(kFALSE),NumCPU(4),Range("SBLow,SBMid,SBHigh"));
+  //  fitMa = model2.fitTo(*redData,Extended(1),Minos(0),Save(1),SumW2Error(kFALSE),NumCPU(4),Range("SBLow,SBHigh"));
+  fitM->printMultiline(std::cout,1,1,"");
+  //  fitMa->printMultiline(std::cout,1,1,"");
 
 
   // RooDataHist* binnedData = redData->binnedClone("binnedData","binnedData");
@@ -134,23 +202,67 @@ void fitSideBands(bool isHI=false, double ptmin=0.0, double ptmax=30.0, double y
   //  model_g.plotOn(xframe,LineWidth(1),LineColor(kBlack));
   //  model_cb.plotOn(xframe,LineWidth(1), LineColor(kBlue));
 
-  // pol1.plotOn(xframe, LineColor(kRed));
-  pol3.plotOn(xframe, LineColor(kRed),Range("SBLow"));
-  pol3.plotOn(xframe, LineColor(kBlue),LineStyle(kDashed),Range("Full"));
+  model.plotOn(xframe, LineColor(kBlue));
+  model.plotOn(xframe, LineColor(kBlue),LineStyle(kDashed),Range("Full"));
+
+
+  // model2.plotOn(xframe, LineColor(kRed));
+  // model2.plotOn(xframe, LineColor(kRed),LineStyle(kDashed),Range("Full"));
+  // pol1.plotOn(xframe, LineColor(kBlue));
+  // pol2.plotOn(xframe, LineColor(kRed));
+  // //  pol3.plotOn(xframe, LineColor(kRed),Range("SBLow,SBMid,SBHigh"));
+  // //  pol3.plotOn(xframe, LineColor(kBlue),LineStyle(kDashed),Range("Full"));
   // pol3.plotOn(xframe, LineColor(kGreen+2), LineWidth(2));
   // pol4.plotOn(xframe, LineColor(kOrange+2), LineWidth(2));
   // pol5.plotOn(xframe, LineColor(kMagenta-1), LineStyle(kDashed));
-  //pol6.plotOn(xframe, LineColor(kCyan+2), LineStyle(kDotted),Range("Full"));
+  // pol6.plotOn(xframe, LineColor(kCyan+2), LineStyle(kDotted));
 
   //  redData->plotOn(xframe,RooFit::Binning(rbm));
 
-  xframe->SetMinimum(90.0);
-  xframe->SetMaximum(1e4);
+  // xframe->SetMinimum(90.0);
+  // xframe->SetMaximum(1e4);
 
+  RooHist *h =  xframe->residHist();
 
-  TCanvas *c1 = new TCanvas("c1","c1");
-  c1->SetLogy();
+  TCanvas *cc1 = new TCanvas("cc1","cc1");
+  //  cc1->SetLogy();
+  xframe->GetXaxis()->CenterTitle(true);
   xframe->Draw();
+
+  TCanvas *cc2 = new TCanvas("cc2","cc2");
+  h->Draw("AP");
+
+  cc1->cd();
+
+  double sigma = 0.030;
+  if (ymin==1.6 && ymax==2.4)
+    sigma = 0.051;
+
+  double meanJpsi = 3.097;
+  double meanPsiP = 3.686;
+
+  double NJpsi = h->getFitRangeNEvt(meanJpsi-1.5*sigma,meanJpsi+1.5*sigma);
+  double NpsiP = h->getFitRangeNEvt(meanPsiP-1.5*1.19025*sigma,meanPsiP+1.5*1.19025*sigma);
+
+  double errJpsi = 0.0;
+  double errPsiP = 0.0;
+
+  for (int i=0; i<h->GetN(); ++i) {
+    double x,y;
+    h->GetPoint(i,x,y);
+    if (x>=meanJpsi-1.5*sigma && x<=meanJpsi+1.5*sigma)
+      errJpsi+=pow(h->GetErrorY(i),2);
+    else if (x>=meanPsiP-1.5*1.19025*sigma && x<=meanPsiP+1.5*1.19025*sigma)
+      errPsiP+=pow(h->GetErrorY(i),2);
+  }
+  errJpsi = sqrt(errJpsi);
+  errPsiP = sqrt(errPsiP);
+
+  cout << "Integrated J/psi yield in " << meanJpsi-1.5*sigma << "--" << meanJpsi+1.5*sigma << endl;
+  cout << "Integrated psi(2S) yield in " << meanPsiP-1.5*1.19025*sigma << "--" << meanPsiP+1.5*1.19025*sigma << endl;
+
+  cout << "NJpsi: " << NJpsi << " +/- " << errJpsi << "\tNpsi(2S): " << NpsiP << " +/- " << errPsiP  << endl;
+  cout << "Rpsi: " << NpsiP/NJpsi << " +/- " << sqrt(pow(errJpsi/NJpsi,2)+pow(errPsiP/NpsiP,2))*NpsiP/NJpsi  << endl;
 
   TLatex *lcoll;
   if (isHI)
@@ -188,13 +300,13 @@ void fitSideBands(bool isHI=false, double ptmin=0.0, double ptmax=30.0, double y
 
   TString outfname;
   if (isHI)
-    outfname = Form("PbPb_Mass_Sidebands_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f.pdf",ymin,ymax,ptmin,ptmax);
+    outfname = Form("PbPb_Mass_Sidebands_pol2_cent40-100_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f.pdf",ymin,ymax,ptmin,ptmax);
   else
-    outfname = Form("pp_Mass_SideBands_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f.pdf",ymin,ymax,ptmin,ptmax);
+    outfname = Form("pp_Mass_SideBands_pol1_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f.pdf",ymin,ymax,ptmin,ptmax);
 
   if (savePlot) {
     std::cout << outfname << std::endl;
-    c1->SaveAs(outfname);
+    cc1->SaveAs(outfname);
   }
 
   return;

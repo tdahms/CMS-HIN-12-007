@@ -2,7 +2,7 @@
 TODAY=`date +%Y%m%d`
 echo "Today is ${TODAY}"
 
-SUFFIX="SimFits_M2242_DblMu0_AllCent_WithSyst_final_fixAxis_newUncertainties_preliminary"
+SUFFIX="SimFits_M2242_DblMu0_AllCent_WithSyst_final_fixAxis_newUncertainties"
 
 DIRECTORY="${TODAY}_${SUFFIX}"
 

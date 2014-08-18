@@ -69,8 +69,14 @@ Fit2DDataPbPb:	$(INCLUDEDIR)fit2DData_pbpb.cpp
 Fit1DDataPbPb:	$(INCLUDEDIR)fit1DData_pbpb.cpp
 	$(CXX) $(CXXFLAGS) -o Fit1DDataPbPb $< $(OUTLIB)/*.o $(GLIBS)
 
+Fit1DDataPbPbSplit:	$(INCLUDEDIR)fit1DData_pbpb_split.cpp
+	$(CXX) $(CXXFLAGS) -o Fit1DDataPbPbSplit $< $(OUTLIB)/*.o $(GLIBS)
+
 Fit1DDataPbPbSim:	$(INCLUDEDIR)fit1DData_pbpb_simul.cpp
 	$(CXX) $(CXXFLAGS) -o Fit1DDataPbPbSim $< $(OUTLIB)/*.o $(GLIBS)
+
+Fit1DDataPbPbSimSplit:	$(INCLUDEDIR)fit1DData_pbpb_split_simul.cpp
+	$(CXX) $(CXXFLAGS) -o Fit1DDataPbPbSimSplit $< $(OUTLIB)/*.o $(GLIBS)
 
 Sideband:	$(INCLUDEDIR)ctau.cpp
 	$(CXX) $(CXXFLAGS) -o Sideband $< $(OUTLIB)/*.o $(GLIBS)
