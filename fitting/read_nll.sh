@@ -7,7 +7,7 @@ ptbins=(65-30 3-30)
 rapbins=(0-16 16-24)
 #centbins=(0-100)
 
-DIRECTORY="20140818_M2242_DblMu0/"
+DIRECTORY="20140819_M2242_DblMu0_Split/"
 echo "pp"
 for pt in "${ptbins[@]}";
 do
@@ -25,7 +25,7 @@ do
 	do
 	echo "rap${rap}_pT${pt}_cent${cent}"
 #	grep NLL ${DIRECTORY}ppFracLogCBG_Bern*_rap${rap}_pT${pt}_cent${cent}_fitResult.txt | awk '{print $2}'
-	grep NLL ${DIRECTORY}ppFracLogCBG_pol*_rap${rap}_pT${pt}_cent${cent}_fitResult.txt | awk '{print $2}'
+	grep NLL ${DIRECTORY}ppFracLogCBG_pol*_rap${rap}_pT${pt}_cent${cent}_fitResult.txt | awk '{print $2 " " $3}'
 #	grep NLL ${DIRECTORY}ppFracLogCBG_expPol*_rap${rap}_pT${pt}_cent${cent}_fitResult.txt | awk '{print $2}'
 #	grep NLL ${DIRECTORY}ppFracLogCBG_gaus*_rap${rap}_pT${pt}_cent${cent}_fitResult.txt | awk '{print $2}'
 	echo $'\n\n'
@@ -62,7 +62,7 @@ do
 	    fi;
 	    echo "rap${rap}_pT${pt}_cent${cent}"
 #	    grep NLL ${DIRECTORY}fracLogCBG_Bern*_rap${rap}_pT${pt}_cent${cent}_fitResult.txt | awk '{print $2}'
-	    grep NLL ${DIRECTORY}fracLogCBG_pol*_rap${rap}_pT${pt}_cent${cent}_fitResult.txt | awk '{print $2}'
+	    grep NLL ${DIRECTORY}fracLogCBG_pol*_rap${rap}_pT${pt}_cent${cent}_fitResult.txt | awk '{print $2 " " $3}'
 #	    grep NLL ${DIRECTORY}fracLogCBG_expPol*_rap${rap}_pT${pt}_cent${cent}_fitResult.txt | awk '{print $2}'
 #	    grep NLL ${DIRECTORY}fracLogCBG_gaus*_rap${rap}_pT${pt}_cent${cent}_fitResult.txt | awk '{print $2}'
 ##	    grep NLL ${DIRECTORY}fracLogCBG_*_rap${rap}_pT${pt}_cent${cent}_fitResult.txt | awk '{print $2}'

@@ -93,9 +93,11 @@ int main(int argc, char* argv[]) {
 	mJpsiFunct = argv[i+1];
 	mPsiPFunct = argv[i+2];
 	mBkgFunct = argv[i+3];
+	mBkgPFunct = argv[i+4];
 	cout << "Mass J/psi function: " << mJpsiFunct << endl;
 	cout << "Mass psi(2S) function: " << mPsiPFunct << endl;
 	cout << "Mass background function: " << mBkgFunct << endl;
+	cout << "Mass psi(2S) background function: " << mBkgPFunct << endl;
 	break;
       case 'd':
 	dirPre = argv[i+1];
@@ -146,7 +148,7 @@ int main(int argc, char* argv[]) {
     }
   }// End check options
  
-  mBkgPFunct = mBkgFunct + "P";
+  mBkgPFunct += "P";
 
   float pmin=0, pmax=0, ymin=0, ymax=0, cmin=0, cmax=0;
   getOptRange(prange,&pmin,&pmax);
@@ -194,7 +196,7 @@ int main(int argc, char* argv[]) {
 
   // *** TFile for saving fitting results
   string resultFN;
-  resultFN = dirPre + "_" + mBkgFunct + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + fix_str + "fitResult.root";
+  resultFN = dirPre + "_" + mBkgFunct + "_" + mBkgPFunct + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + fix_str + "fitResult.root";
   TFile resultF(resultFN.c_str(),"RECREATE");
 
   // *** Read Data files
@@ -450,9 +452,9 @@ int main(int argc, char* argv[]) {
   if ( found!=string::npos ) {
     string inputFNcb;
     if ( !fixAlpha || !fixN || !fixGwidth) // read for free alpha, n, or wideFactor from the default CBG fit
-      inputFNcb =  dirPre + "_" + mBkgFunct + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + "_allVars.txt";
+      inputFNcb =  dirPre + "_" + mBkgFunct + "_" + mBkgPFunct + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + "_allVars.txt";
     else // read results from CB fit
-      inputFNcb =  dirPre2 + "_" + mBkgFunct + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + "_allVars.txt";
+      inputFNcb =  dirPre2 + "_" + mBkgFunct + "_" + mBkgPFunct + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + "_allVars.txt";
 
     RooArgSet *set = ws->pdf("jpsiMassPDF")->getParameters(*(ws->var("Jpsi_Mass")));
     //    set->Print("v");
@@ -530,15 +532,15 @@ int main(int argc, char* argv[]) {
   ws->var("meanSig1")->setConstant(true);
   ws->var("sigmaSig1")->setConstant(true);
   ws->var("coeffGaus")->setConstant(true);
-  if (!fixGwidth)
-    ws->var("wideFactor")->setConstant(true);
+  ws->var("wideFactor")->setConstant(true);
+
   fitMP = ws->pdf("psipMassPDF")->fitTo(*redData,Extended(1),Hesse(1),Save(1),SumW2Error(0),NumCPU(8),PrintEvalErrors(0),Verbose(0),Range("psip"));
 
   fitMP->printMultiline(cout,1,1,"");
   ws->var("meanSig1")->setConstant(false);
   ws->var("sigmaSig1")->setConstant(false);
   ws->var("coeffGaus")->setConstant(false);
-  if (!fixGwidth)
+  if (isPbPb && !fixGwidth)
     ws->var("wideFactor")->setConstant(false);
 
   int edmStatusP = 1;
@@ -555,7 +557,7 @@ int main(int argc, char* argv[]) {
   else
     cout << "CB_" << mBkgPFunct << "_rap" << yrange_str << "_pT" << prange_str << "_cent" << crange << fix_str << endl;
 
-  cout << "---FIT result summary: " << edmStatusP << covStatusP << fitStatusP;
+  cout << "---FITP result summary: " << edmStatusP << covStatusP << fitStatusP;
   for (unsigned int i=0; i<fitMP->numStatusHistory(); ++i) {
     cout << fitMP->statusCodeHistory(i);
   }
@@ -632,6 +634,9 @@ int main(int argc, char* argv[]) {
 
   double theNLL=0;
   theNLL = fitM->minNll();
+
+  double theNLLP=0;
+  theNLLP = fitMP->minNll();
 
   RooPlot* mframepull =  ws->var("Jpsi_Mass")->frame(Title("Pull")) ;
   mframepull->GetYaxis()->SetTitle("Pull");
@@ -988,16 +993,16 @@ int main(int argc, char* argv[]) {
     st->SetTextFont(42);
   }
 
-  titlestr = dirPre + "_" + mBkgFunct + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str +  "massfit.pdf";
+  titlestr = dirPre + "_" + mBkgFunct + "_" + mBkgPFunct + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str +  "massfit.pdf";
   c00.SaveAs(titlestr.c_str());
   resultF.cd();
   mframe->Write();
   mframepull->Write();
   hpull_proj->Write();
   
-  string fname = dirPre + "_" + mBkgFunct + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str + "Workspace.root";
+  string fname = dirPre + "_" + mBkgFunct + "_" + mBkgPFunct + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str + "Workspace.root";
   ws->writeToFile(fname.c_str(),kTRUE);
-  fname = dirPre + "_" + mBkgFunct + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str + "allVars.txt";
+  fname = dirPre + "_" + mBkgFunct + "_" + mBkgPFunct + "_rap" + yrange_str  + "_pT" + prange_str + "_cent" + crange + fix_str + "allVars.txt";
   ws->allVars().writeToFile(fname.c_str());
 
   Double_t NJpsi_fin = ws->var("NJpsi")->getVal();
@@ -1020,7 +1025,7 @@ int main(int argc, char* argv[]) {
   cout << "R_psi(2S)    Fit: "  << fracP_fin << " +/- " << ErrFracP_fin << endl;
   cout << "KS test result: " << KStest << endl;
 
-  titlestr = dirPre + "_" + mBkgFunct + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + fix_str + "fitResult.txt";
+  titlestr = dirPre + "_" + mBkgFunct + "_" + mBkgPFunct + "_rap" + yrange_str + "_pT" + prange_str + "_cent" + crange + fix_str + "fitResult.txt";
 
   ofstream outputFile(titlestr.c_str());
   if (!outputFile.good()) {cout << "Fail to open result file." << endl; return 1;}
@@ -1099,7 +1104,8 @@ int main(int argc, char* argv[]) {
     << "KS test "      << KStest                            << "\n"
     << "chi2 "         << UnNormChi2                        << "\n"
     << "DOF "          << Dof                               << "\n"
-    << "NLL "          << theNLL                            << endl;
+    << "NLL "          << theNLL                            << "\t"
+    << theNLLP         << endl;
 
 
   fInData.Close();
