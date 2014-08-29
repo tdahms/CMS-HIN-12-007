@@ -45,7 +45,7 @@ void plot_double_ratio(bool isPaper=false, bool plotGlobalPP = false, bool overl
 
   // 0-20%, 20-40%, 40-100%
   double Npart[3] = {308.3853, 158.5653, 32.7694};
-  double Npart2[3] = {310.3853, 160.5653, 34.7694};
+  double Npart2[3] = {313.3853, 163.5653, 37.7694};
   double Npart_err[3] = {0,0,0};
   double Npart_sys[3] = {10,10,10};
 

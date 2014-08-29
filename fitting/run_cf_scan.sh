@@ -1,10 +1,10 @@
 #! /bin/bash
 
-DATEIN="20140516"
-SUFFIXIN="SimFits_M2242_DblMu0_AllCent_WithSyst_final_fixAxis_newUncertainties"
+DATEIN="20140821"
+SUFFIXIN="SimFits_M2242_DblMu0_AllCent_maxUncertainties"
 DIRECTORYIN="${DATEIN}_${SUFFIXIN}"
 
-DATEOUT="20140516"
+DATEOUT="20140821"
 SUFFIXOUT="CFscan_WithSyst"
 DIRECTORYOUT="${DATEOUT}_${SUFFIXOUT}"
 
@@ -29,7 +29,7 @@ ptbins=(3-30 65-30)
 #rapbins=(0-16 16-24)
 rapbins=(16-24)
 #centbins=(HI020 HI2040 HI40100)
-centbins=(HI020)
+centbins=(HI2040 HI40100)
 
 for pt in "${ptbins[@]}";
 do
@@ -111,7 +111,7 @@ do
 	    fi;
 	    echo "Running F-C scan for rap${rap} pT${pt} ${bkg} ${cent}."
 	    echo "Scanning with: ntoys = ${ntoys} in ${nsteps} steps from ${rmin} to ${rmax}:"
-	    root -b -q StandardHypoTestInvDemo.C+\(\"${DIRECTORYIN}/fracLogCBG_${bkg}_rap${rap}_pT${pt}_centMult_Workspace.root\",\"workspace\",\"model_${cent}\",\"B_only_model_${cent}\",\"redDataSim\",0,2,false,${nsteps},${rmin},${rmax},${ntoys},false\) &> ${DIRECTORYOUT}/rap${rap}_pt${pt}_cent${cent}.log 
+	    root -b -q StandardHypoTestInvDemo.C+\(\"${DIRECTORYIN}/fracCBG_${bkg}_rap${rap}_pT${pt}_centMult_Workspace.root\",\"workspace\",\"model_${cent}\",\"B_only_model_${cent}\",\"redDataSim\",0,2,false,${nsteps},${rmin},${rmax},${ntoys},false\) &> ${DIRECTORYOUT}/rap${rap}_pt${pt}_cent${cent}.log 
 	    gzip "${DIRECTORYOUT}/rap${rap}_pt${pt}_cent${cent}.log"
 	    mv ${DIRECTORYOUT}/*.* ${DIRECTORYOUT}/${cent}/
 	    echo "Done with F-C scan for rap${rap} pT${pt} ${bkg} ${cent}."
