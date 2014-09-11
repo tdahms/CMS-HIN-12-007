@@ -77,7 +77,7 @@ void fitSideBands(bool isHI=false, double ptmin=0.0, double ptmax=30.0, double y
 
   TCut ctauCut = Form("Jpsi_Ct<%3.3f",ctmax);
 
-  RooRealVar Jpsi_Mass("Jpsi_Mass","m_{#mu#mu}",2.2,3.4,"GeV/c^{2}");
+  RooRealVar Jpsi_Mass("Jpsi_Mass","m_{#mu^{+}#mu^{-}}",2.2,3.4,"GeV/c^{2}");
   RooRealVar Jpsi_Pt("Jpsi_Pt","J/#psi pt",0,30,"GeV/c");
   RooRealVar Jpsi_Y("Jpsi_Y","J/#psi y",-2.4,2.4);
   RooRealVar Jpsi_Ct("Jpsi_Ct","J/#psi c#tau",-3.0,3.5,"mm");
@@ -264,12 +264,25 @@ void fitSideBands(bool isHI=false, double ptmin=0.0, double ptmax=30.0, double y
   // xframe->SetMaximum(1e4);
 
   RooHist *h =  xframe->residHist();
+  h->GetXaxis()->SetRangeUser(2.200001,4.199999);
+  h->GetXaxis()->CenterTitle(true);
+  h->GetXaxis()->SetTitle("m_{#mu^{+}#mu^{-}} (GeV/c^{2})");
+  h->GetYaxis()->SetTitle("Events / (0.02 GeV/c^{2})");
+  h->GetYaxis()->SetTitleOffset(1.4);
 
   TCanvas *cc1 = new TCanvas("cc1","cc1",1200,600);
   cc1->Divide(2,1);
+  cc1->GetPad(1)->SetLeftMargin(0.14);
+  cc1->GetPad(1)->SetRightMargin(0.045);
+  cc1->GetPad(2)->SetLeftMargin(0.14);
+  cc1->GetPad(2)->SetRightMargin(0.045);
+
   cc1->cd(1);
   //  cc1->SetLogy();
   xframe->GetXaxis()->CenterTitle(true);
+  xframe->GetYaxis()->SetTitleOffset(1.4);
+  double max = xframe->GetMaximum();
+  xframe->SetMaximum(1.2*max);
   xframe->Draw();
 
   //  TCanvas *cc2 = new TCanvas("cc2","cc2");
@@ -310,30 +323,30 @@ void fitSideBands(bool isHI=false, double ptmin=0.0, double ptmax=30.0, double y
 
   TLatex *lcoll;
   if (isHI)
-    lcoll = new TLatex(0.15,0.9,"CMS PbPb #sqrt{s_{NN}} = 2.76 TeV");
+    lcoll = new TLatex(0.1,0.9,"CMS PbPb #sqrt{s_{NN}} = 2.76 TeV");
   else
-    lcoll = new TLatex(0.15,0.9,"CMS pp #sqrt{s} = 2.76 TeV");
+    lcoll = new TLatex(0.1,0.9,"CMS pp #sqrt{s} = 2.76 TeV");
 
   lcoll->SetNDC(kTRUE);
   lcoll->Draw();
 
   TLatex *lpt;
   if (ptmin==0.0)
-    lpt = new TLatex(0.15,0.84,Form("p_{T} < %3.1f GeV/c",ptmax));
+    lpt = new TLatex(0.1,0.84,Form("p_{T} < %3.1f GeV/c",ptmax));
   else
-    lpt = new TLatex(0.15,0.84,Form("%3.1f < p_{T} < %3.1f GeV/c",ptmin,ptmax));
+    lpt = new TLatex(0.1,0.84,Form("%3.1f < p_{T} < %3.1f GeV/c",ptmin,ptmax));
   TLatex *lrap;
   if (absRapidity){
     if (ymin==0.0)
-      lrap = new TLatex(0.15,0.78,Form("|y| < %3.1f",ymax));
+      lrap = new TLatex(0.1,0.78,Form("|y| < %3.1f",ymax));
     else
-      lrap = new TLatex(0.15,0.78,Form("%3.1f < |y| < %3.1f",ymin,ymax));
+      lrap = new TLatex(0.1,0.78,Form("%3.1f < |y| < %3.1f",ymin,ymax));
   }
   else {
     if (ymin==0.0)
-      lrap = new TLatex(0.15,0.78,Form("y < %3.1f",ymax));
+      lrap = new TLatex(0.1,0.78,Form("y < %3.1f",ymax));
     else
-      lrap = new TLatex(0.15,0.78,Form("%3.1f < y < %3.1f",ymin,ymax));
+      lrap = new TLatex(0.1,0.78,Form("%3.1f < y < %3.1f",ymin,ymax));
   }
 
   lpt->SetNDC(kTRUE);
@@ -344,9 +357,9 @@ void fitSideBands(bool isHI=false, double ptmin=0.0, double ptmax=30.0, double y
 
   TString outfname;
   if (isHI)
-    outfname = Form("PbPb_Mass_Sidebands_pol2_cent40-100_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f.pdf",ymin,ymax,ptmin,ptmax);
+    outfname = Form("PbPb_Mass_Sidebands_pol%d_cent0-100_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f.pdf",n,ymin,ymax,ptmin,ptmax);
   else
-    outfname = Form("pp_Mass_SideBands_pol1_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f.pdf",ymin,ymax,ptmin,ptmax);
+    outfname = Form("pp_Mass_SideBands_pol%d_Rap_%3.1f-%3.1f_Pt_%3.1f-%3.1f.pdf",n,ymin,ymax,ptmin,ptmax);
 
   if (savePlot) {
     std::cout << outfname << std::endl;
