@@ -87,7 +87,7 @@ int main(int argc, char* argv[]) {
   bool useSystematics = false;
   bool twoCB=false;
   bool overlay=false;
-  bool showInsert=false;
+  bool showInsert=true;
 
   // *** Check options
   for (int i=1; i<argc; ++i) {
@@ -471,6 +471,8 @@ int main(int argc, char* argv[]) {
   lPre->SetNDC(); lPre->SetTextAlign(11);
   TLatex *lCMS = new TLatex();
   lCMS->SetNDC(); lCMS->SetTextAlign(11);
+  TLatex *lPad = new TLatex();
+  lPad->SetNDC(); lCMS->SetTextAlign(11);
   TLatex *lLumi = new TLatex();
   lLumi->SetNDC(); lLumi->SetTextAlign(11);
   TLatex *lRap = new TLatex();
@@ -710,11 +712,11 @@ int main(int argc, char* argv[]) {
 	      sigma_eff[i]->setVal(0.01);
 	    }
 	    else if (prange=="6.5-30.0" && yrange=="0.0-1.6") {
-	      sigma_fit[i]->setVal(0.16); // default: 0.12, max: 0.14, sum: 0.16
+	      sigma_fit[i]->setVal(0.14); // default: 0.12, max: 0.14, sum: 0.16
 	      sigma_eff[i]->setVal(0.01);
 	    }
 	    else if (prange=="3.0-30.0" && yrange=="1.6-2.4") {
-	      sigma_fit[i]->setVal(0.14); // default: 0.14, max: 0.13, sum: 0.14
+	      sigma_fit[i]->setVal(0.13); // default: 0.14, max: 0.13, sum: 0.14
 	      sigma_eff[i]->setVal(0.05);
 	    }
 	  }
@@ -724,7 +726,7 @@ int main(int argc, char* argv[]) {
 	      sigma_eff[i]->setVal(0.01);
 	    }
 	    else if (prange=="6.5-30.0" && yrange=="0.0-1.6") {
-	      sigma_fit[i]->setVal(0.15); // default: 0.11, max: 0.13, sum: 0.15 
+	      sigma_fit[i]->setVal(0.13); // default: 0.11, max: 0.13, sum: 0.15 
 	      sigma_eff[i]->setVal(0.01);
 	    }
 	    else if (prange=="3.0-30.0" && yrange=="1.6-2.4") {
@@ -747,11 +749,11 @@ int main(int argc, char* argv[]) {
 	    sigma_eff[i]->setVal(0.01);
 	  }
 	  else if (prange=="6.5-30.0" && yrange=="0.0-1.6") {
-	    sigma_fit[i]->setVal(0.09); // default: 0.08, max: 0.08, sum: 0.09
+	    sigma_fit[i]->setVal(0.08); // default: 0.08, max: 0.08, sum: 0.09
 	    sigma_eff[i]->setVal(0.01);
 	  }
 	  else if (prange=="3.0-30.0" && yrange=="1.6-2.4") {
-	    sigma_fit[i]->setVal(0.29); // default: 0.28, max: 0.28, sum: 0.29
+	    sigma_fit[i]->setVal(0.28); // default: 0.28, max: 0.28, sum: 0.29
 	    sigma_eff[i]->setVal(0.05);
 	  }
 	  break;
@@ -761,11 +763,11 @@ int main(int argc, char* argv[]) {
 	    sigma_eff[i]->setVal(0.01);
 	  }
 	  else if (prange=="6.5-30.0" && yrange=="0.0-1.6") {
-	    sigma_fit[i]->setVal(1.36); // default: 0.92, max: 1.15, sum: 1.36
+	    sigma_fit[i]->setVal(1.15); // default: 0.92, max: 1.15, sum: 1.36
 	    sigma_eff[i]->setVal(0.01);
 	  }
 	  else if (prange=="3.0-30.0" && yrange=="1.6-2.4") {
-	    sigma_fit[i]->setVal(0.19); // default: 0.10, max: 0.16, sum: 0.19
+	    sigma_fit[i]->setVal(0.16); // default: 0.10, max: 0.16, sum: 0.19
 	    sigma_eff[i]->setVal(0.05);
 	  }
 	  break;
@@ -1171,14 +1173,14 @@ int main(int argc, char* argv[]) {
     mframezoom[i]->SetTitle(("A RooPlot of \"J/#psi mass\" in "+varSuffix.at(i)).c_str());
     mframezoom[i]->GetYaxis()->SetTitle(mframe[i]->GetYaxis()->GetTitle());
 
-    if (yrange=="1.6-2.4" && i==1) {
-      redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(*rbm[i+1]));
-      redData[i]->plotOn(mframezoom[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(*rbm[i+1]));
-    }
-    else {
-      redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(*rbm[i]));
-      redData[i]->plotOn(mframezoom[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(*rbm[i]));
-    }
+    // if (yrange=="1.6-2.4" && i==1) {
+    //   redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(*rbm[i+1]));
+    //   redData[i]->plotOn(mframezoom[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(*rbm[i+1]));
+    // }
+    // else {
+    redData[i]->plotOn(mframe[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(*rbm[i]));
+    redData[i]->plotOn(mframezoom[i],DataError(RooAbsData::SumW2),XErrorSize(0),MarkerSize(0.8),Binning(*rbm[i]));
+    // }
     titlestr = "2D fit for" + partTit + "muons (mass projection), p_{T} = " + prange + " GeV/c and |y| = " + yrange;
     mframe[i]->GetXaxis()->SetTitle("m_{#mu^{+}#mu^{-}} (GeV/c^{2})");
     mframe[i]->GetXaxis()->CenterTitle(1);
@@ -1393,7 +1395,7 @@ int main(int argc, char* argv[]) {
     pad3->SetLeftMargin(0.2);
     pad3->SetBottomMargin(0.2);
     //    TPad *pad4 = new TPad("pad4","This is pad4",0.52,0.33,0.90,0.71);
-    TPad *pad4 = new TPad("pad4","This is pad4",0.52,0.37,0.92,0.77);
+    TPad *pad4 = new TPad("pad4","This is pad4",0.53,0.38,0.96,0.81);
     pad4->SetFillStyle(0);
     pad4->SetLeftMargin(0.2);
     pad4->SetBottomMargin(0.2);
@@ -1543,6 +1545,7 @@ int main(int argc, char* argv[]) {
     double stepLarge = 0.07;
 
     lCMS->SetTextSize(0.05);
+    lPad->SetTextSize(0.05);
     if (true) { // paper
       if (isPbPb)
 	lCMS->SetText(minX,maxY-0.01,"CMS PbPb #sqrt{s_{NN}} = 2.76 TeV");
@@ -1550,6 +1553,24 @@ int main(int argc, char* argv[]) {
 	lCMS->SetText(minX,maxY-0.01,"CMS pp #sqrt{s} = 2.76 TeV");
 
       mframe[i]->addObject(lCMS,"");
+      switch (i) {
+      case 0:
+	if (yrange == "0.0-1.6")
+	  lPad->SetText(0.88,maxY-0.01,"(a)");
+	else if (yrange == "1.6-2.4")
+	  lPad->SetText(0.88,maxY-0.01,"(c)");
+	break;
+      case 3:
+	if (yrange == "0.0-1.6")
+	  lPad->SetText(0.88,maxY-0.01,"(b)");
+	else if (yrange == "1.6-2.4")
+	  lPad->SetText(0.88,maxY-0.01,"(d)");
+	break;
+      default:
+	break;
+      }
+      if (i==0||i==3)
+	mframe[i]->addObject(lPad,"");
 
       maxY-=stepLarge;
     }
@@ -1876,7 +1897,8 @@ int main(int argc, char* argv[]) {
 	if (overlay)  // paper+insert+overlay
 	  leg1 = new TLegend(minX,0.6895-4*step,maxX,0.680,NULL,"brNDC");
 	else // paper+insert
-	  leg1 = new TLegend(minX,0.6895-3*step,maxX,0.680,NULL,"brNDC");
+	  leg1 = new TLegend(minX,0.6395-3*step,maxX,0.630,NULL,"brNDC");
+	//	  leg1 = new TLegend(minX,0.6895-3*step,maxX,0.680,NULL,"brNDC");
       }
     else if (overlay)
       // paper + overlay
@@ -1929,11 +1951,11 @@ int main(int argc, char* argv[]) {
       st->SetTextFont(42);
     }
     else {
-      if (showInsert && isPbPb) {
+      if (showInsert) {
 	switch (i) {
 	case 0:
 	  if (yrange == "0.0-1.6")
-	    mframezoom[i]->GetYaxis()->SetRangeUser(50,130);
+	    mframezoom[i]->GetYaxis()->SetRangeUser(50,150);
 	  else if (yrange == "1.6-2.4")
 	    mframezoom[i]->GetYaxis()->SetRangeUser(300,600);
 	  break;
@@ -1941,17 +1963,34 @@ int main(int argc, char* argv[]) {
 	  if (yrange == "0.0-1.6")
 	    mframezoom[i]->GetYaxis()->SetRangeUser(0,60);
 	  else if (yrange == "1.6-2.4")
-	    mframezoom[i]->GetYaxis()->SetRangeUser(150,300);
+	    mframezoom[i]->GetYaxis()->SetRangeUser(80,180);
 	  break;
 	case 2:
 	  if (yrange == "0.0-1.6")
-	    mframezoom[i]->GetYaxis()->SetRangeUser(0,30);
+	    mframezoom[i]->GetYaxis()->SetRangeUser(0,20);
 	  else if (yrange == "1.6-2.4")
-	    mframezoom[i]->GetYaxis()->SetRangeUser(20,70);
+	    mframezoom[i]->GetYaxis()->SetRangeUser(10,50);
+	  break;
+	case 3:
+	  if (yrange == "0.0-1.6")
+	    mframezoom[i]->GetYaxis()->SetRangeUser(0,250);
+	  else if (yrange == "1.6-2.4")
+	    mframezoom[i]->GetYaxis()->SetRangeUser(0,250);
 	  break;
 	default:
 	  break;
 	}
+	mframezoom[i]->GetYaxis()->SetTitleOffset(1.3);
+	mframezoom[i]->GetXaxis()->SetLabelOffset(0.012);
+
+	mframezoom[i]->GetYaxis()->SetLabelSize(0.06);
+	mframezoom[i]->GetXaxis()->SetLabelSize(0.06);
+
+	mframezoom[i]->GetYaxis()->SetTitleSize(0.072);
+	mframezoom[i]->GetXaxis()->SetTitleSize(0.072);
+
+	// pad4->SetLeftMargin(0.15);
+	// pad4->SetRightMargin(0.035);
 	pad4->Draw();
 	pad4->cd();mframezoom[i]->Draw();
 	pad4->RedrawAxis();

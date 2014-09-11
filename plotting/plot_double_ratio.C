@@ -37,7 +37,7 @@ void plot_double_ratio(bool isPaper=false, bool plotGlobalPP = false, bool overl
   gStyle->SetOptFit(0);
   gStyle->SetOptStat(0);
   
-  bool preliminary = true;
+  bool preliminary = false;
   bool overlayPAS = false;
 
   double split = 0.86;
@@ -176,7 +176,7 @@ void plot_double_ratio(bool isPaper=false, bool plotGlobalPP = false, bool overl
   gr_mid_pt6530_glb->RemovePoint(2);
   gr_mid_pt6530P->RemovePoint(2);
 
-  double ratio_mid_pt6530_limit[1] = {0.452};
+  double ratio_mid_pt6530_limit[1] = {0.470};
   double ratio_mid_pt6530_arrow[1] = {0.36};
   double Npart_limit[1] = {32.7694};
   TGraphAsymmErrors *gr_mid_pt6530_limit = new TGraphAsymmErrors(1, Npart_limit, ratio_mid_pt6530_limit, Npart_err, Npart_err, ratio_mid_pt6530_arrow, Npart_err);
