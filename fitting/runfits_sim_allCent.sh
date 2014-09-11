@@ -2,7 +2,7 @@
 TODAY=`date +%Y%m%d`
 echo "Today is ${TODAY}"
 
-SUFFIX="SimFits_M2242_DblMu0_AllCent_maxUncertainties"
+SUFFIX="SimFits_M2242_DblMu0_AllCent_sumSqUncertainties"
 
 DIRECTORY="${TODAY}_${SUFFIX}"
 

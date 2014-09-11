@@ -710,11 +710,11 @@ int main(int argc, char* argv[]) {
 	      sigma_eff[i]->setVal(0.01);
 	    }
 	    else if (prange=="6.5-30.0" && yrange=="0.0-1.6") {
-	      sigma_fit[i]->setVal(0.14); // default: 0.12, max: 0.14, sum: 0.16
+	      sigma_fit[i]->setVal(0.16); // default: 0.12, max: 0.14, sum: 0.16
 	      sigma_eff[i]->setVal(0.01);
 	    }
 	    else if (prange=="3.0-30.0" && yrange=="1.6-2.4") {
-	      sigma_fit[i]->setVal(0.13); // default: 0.14, max: 0.13, sum: 0.14
+	      sigma_fit[i]->setVal(0.14); // default: 0.14, max: 0.13, sum: 0.14
 	      sigma_eff[i]->setVal(0.05);
 	    }
 	  }
@@ -724,7 +724,7 @@ int main(int argc, char* argv[]) {
 	      sigma_eff[i]->setVal(0.01);
 	    }
 	    else if (prange=="6.5-30.0" && yrange=="0.0-1.6") {
-	      sigma_fit[i]->setVal(0.13); // default: 0.11, max: 0.13, sum: 0.15 
+	      sigma_fit[i]->setVal(0.15); // default: 0.11, max: 0.13, sum: 0.15 
 	      sigma_eff[i]->setVal(0.01);
 	    }
 	    else if (prange=="3.0-30.0" && yrange=="1.6-2.4") {
@@ -747,11 +747,11 @@ int main(int argc, char* argv[]) {
 	    sigma_eff[i]->setVal(0.01);
 	  }
 	  else if (prange=="6.5-30.0" && yrange=="0.0-1.6") {
-	    sigma_fit[i]->setVal(0.08); // default: 0.08, max: 0.08, sum: 0.09
+	    sigma_fit[i]->setVal(0.09); // default: 0.08, max: 0.08, sum: 0.09
 	    sigma_eff[i]->setVal(0.01);
 	  }
 	  else if (prange=="3.0-30.0" && yrange=="1.6-2.4") {
-	    sigma_fit[i]->setVal(0.28); // default: 0.28, max: 0.28, sum: 0.29
+	    sigma_fit[i]->setVal(0.29); // default: 0.28, max: 0.28, sum: 0.29
 	    sigma_eff[i]->setVal(0.05);
 	  }
 	  break;
@@ -761,11 +761,11 @@ int main(int argc, char* argv[]) {
 	    sigma_eff[i]->setVal(0.01);
 	  }
 	  else if (prange=="6.5-30.0" && yrange=="0.0-1.6") {
-	    sigma_fit[i]->setVal(1.15); // default: 0.92, max: 1.15, sum: 1.36
+	    sigma_fit[i]->setVal(1.36); // default: 0.92, max: 1.15, sum: 1.36
 	    sigma_eff[i]->setVal(0.01);
 	  }
 	  else if (prange=="3.0-30.0" && yrange=="1.6-2.4") {
-	    sigma_fit[i]->setVal(0.16); // default: 0.10, max: 0.16, sum: 0.19
+	    sigma_fit[i]->setVal(0.19); // default: 0.10, max: 0.16, sum: 0.19
 	    sigma_eff[i]->setVal(0.05);
 	  }
 	  break;

@@ -453,7 +453,7 @@ RooStats::HypoTestInvTool::AnalyzeResult( HypoTestInverterResult * r,
    std::cout << " expected limit (+2 sig) " << r->GetExpectedUpperLimit(2) << std::endl;
   
   
-   std::string fname = "20140821_CFscan_WithSyst/";
+   std::string fname = "20140829_CFscan_WithSyst/";
    // write result in a file 
    if (r != NULL && mWriteResult) {
     
@@ -462,7 +462,7 @@ RooStats::HypoTestInvTool::AnalyzeResult( HypoTestInverterResult * r,
       const char *  limitType = (useCLs) ? "CLs" : "Cls+b";
       const char * scanType = (npoints < 0) ? "auto" : "grid";
       if (mResultFileName.IsNull()) {
-         mResultFileName = TString::Format("20140821_CFscan_WithSyst/%s_%s_%s_ts%d_",calcType,limitType,scanType,testStatType);      
+         mResultFileName = TString::Format("20140829_CFscan_WithSyst/%s_%s_%s_ts%d_",calcType,limitType,scanType,testStatType);      
          //strip the / from the filename
          if (mMassValue.size()>0) {
             mResultFileName += mMassValue.c_str();
