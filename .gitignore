@@ -2,9 +2,13 @@
 *.o
 *.so
 *.d
+discussion.txt
+fitting/*.txt
+plotting/alice*.txt
+*split.txt
+hepdata.txt
 *.pdf
 *.png
-*.txt
 *.log
 *.gz
 *.tgz
